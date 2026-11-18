@@ -59,6 +59,13 @@ jobs:
         run: npm run compile
       - name: Execute mock contract tests
         run: npm test
+      - name: Export compiled SealedGambit ABI and bytecode
+        uses: actions/upload-artifact@v4
+        with:
+          name: gambit-sealed-contract-build
+          path: fhe/artifacts/contracts/SealedGambit.sol/SealedGambit.json
+          if-no-files-found: error
+          retention-days: 7
 
   browser:
     name: Browser gameplay — desktop and mobile
