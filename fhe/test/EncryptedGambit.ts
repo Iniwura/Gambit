@@ -21,7 +21,7 @@ describe('EncryptedGambit',function(){
   async function fixture(){
     const [alice,bob,eve]=await ethers.getSigners();
     const factory=await ethers.getContractFactory('EncryptedGambit');
-    const contract=await factory.deploy();await contract.waitForDeployment();
+    const contract:any=await factory.deploy();await contract.waitForDeployment();
     await (await contract.connect(alice).open(await bob.getAddress())).wait();
     return {contract,alice,bob,eve};
   }
