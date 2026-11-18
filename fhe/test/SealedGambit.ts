@@ -38,7 +38,7 @@ describe('SealedGambit — reusable confidential defender',function(){
     if(!fhevm.isMock)this.skip();
     const [owner,alice,bob,outsider]=await ethers.getSigners();
     const f=await ethers.getContractFactory('SealedGambit');
-    const contract=await f.deploy();await contract.waitForDeployment();
+    const contract:any=await f.deploy();await contract.waitForDeployment();
     return {contract,owner,alice,bob,outsider};
   }
 
