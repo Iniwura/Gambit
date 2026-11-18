@@ -14,6 +14,7 @@ const ROLES=['SCOUT','GUARDIAN','STRIKER','CIPHER','ASSASSIN','TITAN'];
 const FORMATIONS=[{x:288,y:299},{x:244,y:407},{x:303,y:515},{x:1138,y:299},{x:1181,y:407},{x:1120,y:515}];
 type Field='base'|'trigger'|'response';
 type Plan={base:number,trigger:number,response:number};
+let lastSelectedPlan:Plan={base:0,trigger:0,response:1};
 type Actor={shell:Phaser.GameObjects.Container,origin:{x:number,y:number}};
 const names=['STRIKE','GUARD','FLANK'];
 class GambitArena extends Phaser.Scene {
@@ -38,6 +39,7 @@ class GambitArena extends Phaser.Scene {
     // state and GameObject references MUST be reset on every create().
     this.match=makeMatch(1102);
     this.plan={base:0,trigger:0,response:1};
+    lastSelectedPlan={...this.plan};
     this.busy=false;
     this.finished=false;
     this.active=false;
@@ -197,7 +199,7 @@ class GambitArena extends Phaser.Scene {
 
   private choose(field:Field,index:number){
     if(!this.active||this.busy||this.finished)return;
-    this.plan[field]=index;this.refresh();
+    this.plan[field]=index;lastSelectedPlan={...this.plan};this.refresh();
   }
   private refresh(){
     this.round.setText('ROUND '+Math.min(this.match.round+1,5)+' / 5');
@@ -284,4 +286,20 @@ const game=new Phaser.Game({
 function fail(message:string){const box=document.getElementById('error');if(box){box.style.display='block';box.textContent='GAMBIT could not start: '+message;}}
 window.addEventListener('error',(event)=>fail(event.message));
 window.addEventListener('unhandledrejection',(event)=>fail(String(event.reason)));
+// Onchain controls are mounted only AFTER a real Sepolia contract address is
+// configured. Local practice never creates a pretend wallet or fake receipt.
+const configuredAddress=import.meta.env.VITE_GAMBIT_CONTRACT_ADDRESS;
+if(typeof configuredAddress==='string'&&/^0x[a-fA-F0-9]{40}$/.test(configuredAddress)){
+  void import('./chain/panel').then(({mountSepoliaPanel})=>{
+    mountSepoliaPanel(configuredAddress,()=>({
+      base:lastSelectedPlan.base as 0|1|2,
+      trigger:lastSelectedPlan.trigger as 0|1|2,
+      response:lastSelectedPlan.response as 0|1|2
+    }));
+  }).catch(error=>{
+    const e=document.getElementById('error');
+    if(e){e.textContent='Unable to initialize Sepolia wallet controls: '+String(error);e.style.display='block';}
+  });
+}
+
 export default game;
