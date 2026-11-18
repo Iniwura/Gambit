@@ -53,6 +53,8 @@ jobs:
           node-version: '22'
       - name: Install Zama Hardhat dependencies
         run: npm install --no-audit --no-fund
+      - name: Typecheck scripts and FHE workspace
+        run: npm run typecheck
       - name: Compile encrypted encounter
         run: npm run compile
       - name: Execute mock contract tests
