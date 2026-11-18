@@ -16,6 +16,7 @@
   "include": [
     "hardhat.config.ts",
     "test/**/*.ts",
-    "tasks/**/*.ts"
+    "tasks/**/*.ts",
+    "scripts/**/*.ts"
   ]
 }
