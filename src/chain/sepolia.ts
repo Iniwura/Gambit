@@ -25,6 +25,7 @@ const ABI=[
  'function finalize(uint256 id,uint8 outcome,bytes decryptionProof)',
  'function policyStatus(uint256 id) view returns (address owner,bool active,uint32 completions)',
  'function challengeStatus(uint256 id) view returns (uint256 policyId,address challenger,bool submitted,bool resolved,bool finalized,bool expired,uint8 finalOutcome)',
+ 'function publicResultHandle(uint256 id) view returns (bytes32)',
  'event PolicySealed(uint256 indexed policyId,address indexed owner)',
  'event ChallengeOpened(uint256 indexed challengeId,uint256 indexed policyId,address indexed challenger)',
  'event ChallengeReady(uint256 indexed challengeId,bytes32 resultHandle)',
@@ -141,9 +142,18 @@ export async function createGambitSepoliaClient(rawAddress:string){
   async function resolveAndFinalize(challengeId:bigint):Promise<MatchReceipt>{
     const before=await contract.challengeStatus(challengeId);
     if(!before.submitted||before.finalized||before.expired)throw Error('Challenge not resolvable');
-    const resolved=await committedTransaction(contract.resolve(challengeId));
-    const ready=findEvent(resolved.receipt.logs,'ChallengeReady');
-    const handle=ready.args.resultHandle as `0x${string}`;
+    // If a previous browser session already resolved, resume from the stored
+    // publicly decryptable outcome handle. Don't resubmit a duplicate resolve.
+    let handle:`0x${string}`;
+    let resolutionTx='';
+    if(before.resolved){
+      handle=await contract.publicResultHandle(challengeId) as `0x${string}`;
+    }else{
+      const resolved=await committedTransaction(contract.resolve(challengeId));
+      const ready=findEvent(resolved.receipt.logs,'ChallengeReady');
+      handle=ready.args.resultHandle as `0x${string}`;
+      resolutionTx=resolved.hash;
+    }
     const proof=await sdk.decryption.decryptPublicValues([handle]);
     const value=proof.clearValues[handle];
     if(typeof value!=='bigint'&&typeof value!=='number')throw Error('Invalid decrypted result');
@@ -155,7 +165,7 @@ export async function createGambitSepoliaClient(rawAddress:string){
     if(!after.finalized||Number(after.finalOutcome)!==outcome)
       throw Error('KMS finalization mismatch');
     return {challengeId,outcome:outcome as 0|1|2,
-      resolutionTx:resolved.hash,finalizationTx:finalized.hash,
+      resolutionTx,finalizationTx:finalized.hash,
       explorerUrl:'https://sepolia.etherscan.io/tx/'+finalized.hash,
       authenticated:true};
   }
