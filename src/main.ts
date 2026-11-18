@@ -213,7 +213,7 @@ class GambitArena extends Phaser.Scene {
     const bg=this.add.rectangle(W/2,496,280,57,0x0d6179).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
     overlay.add([bg,this.text(W/2,496,'ENTER ARENA',20,C.white,true).setOrigin(.5)]);
     const begin=()=>{overlay.destroy(true);this.active=true;this.writeState('ready');window.removeEventListener('keydown',enterKey);};
-    const enterKey=(e:KeyboardEvent)=>{if(e.key==='Enter'){e.preventDefault();begin();}};
+    const enterKey=(e:KeyboardEvent)=>{if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();begin();}};
     bg.on('pointerdown',begin);
     window.addEventListener('keydown',enterKey);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>window.removeEventListener('keydown',enterKey));
