@@ -57,7 +57,10 @@ export async function createGambitSepoliaClient(rawAddress:string){
   const userAddress=getAddress(await signer.getAddress());
   const config=createConfig({
     chains:[sepolia],
-    ethereum,
+    // The injected provider's event signatures differ between wallet libraries.
+    // EIP-1193 request support is checked above; runtime wallet events are used
+    // only by Zama's adapter, whose exact type is defined in its own package.
+    ethereum:ethereum as any,
     relayers:{[sepolia.id]:web()}
   });
   const sdk=new ZamaSDK(config);
@@ -66,8 +69,8 @@ export async function createGambitSepoliaClient(rawAddress:string){
   async function encryptedPlan(plan:Plan){
     assertPlan(plan);
     const encrypted=await sdk.encrypt({
-      contractAddress:address,
-      userAddress,
+      contractAddress:address as `0x${string}`,
+      userAddress:userAddress as `0x${string}`,
       values:[
         {value:BigInt(plan.base),type:'euint8'},
         {value:BigInt(plan.trigger),type:'euint8'},
