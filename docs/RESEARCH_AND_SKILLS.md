@@ -10,7 +10,7 @@ A serious game-production pipeline goes pre-production → prototype of core fun
 - Phaser v4.2.1 release list: https://phaser.io/download/phaser4
 - Phaser architecture/scenes: https://docs.phaser.io/phaser/concepts/scenes
 - Phaser tilemaps and object-layer collisions: https://docs.phaser.io/api-documentation/class/tilemaps-tilemap
-- Zama official setup: https://docs.zama.org/protocol/solidity-guides/getting-started/setup
+- Zama SDK 3.x quick start: https://github.com/zama-ai/sdk/blob/main/docs/gitbook/src/tutorials/quick-start.md\n- Zama official setup: https://docs.zama.org/protocol/solidity-guides/getting-started/setup
 - Zama public decryption guide: https://docs.zama.org/protocol/solidity-guides/smart-contract/oracle
 - Zama ACL: https://docs.zama.org/protocol/solidity-guides/smart-contract/acl
 - Zama competition rules: https://www.zama.org/post/zama-developer-program-mainnet-season-5-confidential-gaming
