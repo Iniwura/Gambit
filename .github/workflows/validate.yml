@@ -81,11 +81,14 @@ jobs:
           npm install --no-audit --no-fund
           npm install --no-save --no-audit --no-fund playwright@1.65.1
           npx playwright install --with-deps chromium
-      - name: Start Phaser game and exercise complete matches
+      - name: Generate the exact contract artifact served by Vite
+        run: npm run build:contract-artifact
+      - name: Run real browser game and deployment safety checks
         run: |
           npm run dev -- --host 127.0.0.1 --port 4173 >/tmp/gambit-vite.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173 >/dev/null && break; sleep 1; done
           node tests/browser-check.mjs
+          node tests/deploy-browser-check.mjs
       - name: Upload real game screenshots
         if: always()
         uses: actions/upload-artifact@v4
