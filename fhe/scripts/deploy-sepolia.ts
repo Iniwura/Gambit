@@ -23,7 +23,7 @@ async function main(){
   await contract.waitForDeployment();
   const address=await contract.getAddress();
   const receipt=await ethers.provider.getTransactionReceipt(tx.hash);
-  if(!receipt||receipt.status!==1n&&receipt.status!==1)throw Error('Deployment receipt unavailable or reverted');
+  if(!receipt||receipt.status!==1)throw Error('Deployment receipt unavailable or reverted');
   if((await ethers.provider.getCode(address))==='0x')throw Error('Missing deployed bytecode');
   const manifest={
     chainId:11155111,
