@@ -8,10 +8,10 @@ try{
   page.on('pageerror',(error)=>errors.push(error.message));
   const response=await page.goto(BASE+'/deploy.html',{waitUntil:'networkidle'});
   assert.equal(response.status(),200);
-  await page.locator('#status').getByText(/Compiled SealedGambit verified/).waitFor({timeout:8000});
+  await page.locator('#status') .filter({hasText:/Compiled SealedGambit verified/}).waitFor({timeout:8000});
   assert.equal(await page.locator('#deploy').isDisabled(),true,'deploy disabled without wallet');
   await page.locator('#connect').click();
-  await page.locator('#status').getByText(/No browser wallet found/).waitFor({timeout:4000});
+  await page.locator('#status') .filter({hasText:/No browser wallet found/}).waitFor({timeout:4000});
   assert.equal(await page.locator('#deploy').isDisabled(),true);
 
   // A malicious wallet on the WRONG network must never authorize deployment.
@@ -27,9 +27,9 @@ try{
     };
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#status').getByText(/Compiled SealedGambit verified/).waitFor({timeout:8000});
+  await page.locator('#status') .filter({hasText:/Compiled SealedGambit verified/}).waitFor({timeout:8000});
   await page.locator('#connect').click();
-  await page.locator('#status').getByText(/Wrong chain/).waitFor({timeout:7000});
+  await page.locator('#status') .filter({hasText:/Wrong chain/}).waitFor({timeout:7000});
   assert.equal(await page.locator('#deploy').isDisabled(),true);
   assert.equal(errors.length,0,'unexpected errors: '+errors.join(';'));
   console.log('PASS browser deployment helper: exact built bytecode, no-wallet and mainnet refusal');
