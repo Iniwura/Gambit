@@ -25,7 +25,7 @@ Release one small but outstanding top-down confidential tactics game. Do not con
 | --- | --- | --- |
 | Wed Nov 18 | Audit and repair repo structure, pull in the real Phaser source/assets, pin dependencies, launch CI | `npm ci`, typecheck, build, engine tests, real browser boot |
 | Thu Nov 19 | Contract compile against current official template; 729-plan parity against reference + adversarial tests | Genuine Hardhat logs, rejected bad permissions/replay, public-decrypt test |
-| Fri Nov 20 | Wire browser wallet/Relayer SDK to match lifecycle and deploy to Sepolia | Two wallets submit encrypted plans, transaction hashes and verified outcome |
+| Fri Nov 20 | Wire browser wallet/new Zama SDK (`@zama-fhe/sdk`) to match lifecycle and deploy to Sepolia | Two wallets submit encrypted plans, transaction hashes and verified outcome |
 | Sat Nov 21 | Join chain result to match renderer; timeout/error/reconnect workflows; full rematch loop | 3 complete real matches and negative-path evidence |
 | Sun Nov 22 | Independent QA, newcomer playtests, final blocker triage, freeze credible RC only if gates pass | Evidence matrix complete, no P0/P1 failures, documented release verdict |
 
@@ -36,7 +36,7 @@ The user requested completion before next week. This is an aggressive internal p
 - GitHub repository contains README, rules reference, layout and tests, **but not the full Phaser game source / binary art pack**; there is no verified production build.
 - Current reference engine reduces an encounter to one ternary base/trigger/response pair per side. Three character drawings are not three autonomous gameplay units. A deeper squad layer must be designed and tested before asserting 'advanced 3v3'.
 - FHE candidate is a research draft; NOT compiled, security-audited or deployed. Its APIs and decryption proof structure must be checked against the latest official Zama template.
-- No wallet or Relayer SDK integration, signed finalization, canonical Sepolia receipt, lobby/challenge lifecycle, reconnect, or proof-driven replay.
+- No wallet or current Zama SDK integration, signed finalization, canonical Sepolia receipt, lobby/challenge lifecycle, reconnect, or proof-driven replay.
 - Existing visuals are illustrations and local browser experiments, not a shipped or browser-verified Phaser 4 release.
 - Repo is currently **PUBLIC** as created by the owner; do not commit secrets.
 
@@ -57,3 +57,9 @@ The user requested completion before next week. This is an aggressive internal p
 ## Decision at Sunday gate
 - `GO`: all P0 gates actually verified. Proceed to independent audit, demo polishing and submission packaging.
 - `NO-GO`: report precise blocker and remaining work, no claim of production-readiness. Continue toward official Dec 14 deadline with quality protected.
+
+## Important SDK version decision (18 Nov 2026)
+
+Zama ended maintenance of the **legacy** `@zama-fhe/relayer-sdk` on **6 November 2026**. New GAMBIT integrations must use `@zama-fhe/sdk` (core SDK) plus a wallet adapter (ethers/viem), not the obsolete `initSDK/createInstance` approach. Official guide: https://github.com/zama-ai/sdk/blob/main/docs/gitbook/src/tutorials/quick-start.md
+
+Current npm package checked on 18 Nov: `@zama-fhe/sdk` **3.8.0**. Actual custom FHE contract input/public-decrypt method integration remains unverified and requires SDK-specific tests. Do not assume the new SDK uses identical low-level APIs as the old Relayer SDK.
