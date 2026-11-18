@@ -16,7 +16,7 @@ async function runCase(label,viewport){
   assert.equal(response.status(),200,'game page should load');
   const canvas=page.locator('canvas');
   await canvas.waitFor({state:'visible'});
-  await page.locator('#game-state[data-phase="intro"]').waitFor({timeout:15000});
+  await page.locator('#game-state[data-phase="intro"]').waitFor({state:"attached",timeout:15000});
   assert.equal(await page.locator('#status').textContent(),'LOCAL PRACTICE · NOT ENCRYPTED');
   await page.screenshot({path:'browser-evidence/'+label+'-intro.png'});
   if(viewport.width>600){
@@ -27,7 +27,7 @@ async function runCase(label,viewport){
     const r=await canvas.boundingBox();
     await page.mouse.click(r.x+r.width/2,r.y+r.height*(496/810));
   }
-  await page.locator('#game-state[data-phase="ready"]').waitFor({timeout:8000});
+  await page.locator('#game-state[data-phase="ready"]').waitFor({state:"attached",timeout:8000});
   for(let turn=0;turn<5;turn++){
     const phase=await page.locator('#game-state').getAttribute('data-phase');
     if(phase==='finished')break;
@@ -42,7 +42,7 @@ async function runCase(label,viewport){
       await page.mouse.click(r.x+r.width*((108+turn%3*105)/1440),r.y+r.height*(755/810));
       await page.mouse.click(r.x+r.width*(1261/1440),r.y+r.height*(754/810));
     }
-    await page.locator('#game-state[data-phase="resolving"]').waitFor({timeout:5000});
+    await page.locator('#game-state[data-phase="resolving"]').waitFor({state:"attached",timeout:5000});
     await page.waitForFunction(()=>{
       const p=document.getElementById('game-state')?.dataset.phase;
       return p==='ready'||p==='finished';
@@ -55,7 +55,7 @@ async function runCase(label,viewport){
   await page.screenshot({path:'browser-evidence/'+label+'-finished.png'});
   const r=await canvas.boundingBox();
   await page.mouse.click(r.x+r.width/2,r.y+r.height*(498/810));
-  await page.locator('#game-state[data-phase="intro"][data-round="0"]').waitFor({timeout:5000});
+  await page.locator('#game-state[data-phase="intro"][data-round="0"]').waitFor({state:"attached",timeout:5000});
   assert.equal(errors.length,0,'no uncaught browser errors: '+errors.join(' / '));
   console.log('PASS '+label+' · complete match in '+rounds+' rounds, rematch reset, no errors');
   passed++;
