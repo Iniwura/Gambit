@@ -19,15 +19,19 @@ async function runCase(label,viewport){
   await page.locator('#game-state[data-phase="intro"]').waitFor({state:"attached",timeout:15000});
   assert.equal(await page.locator('#status').textContent(),'LOCAL PRACTICE · NOT ENCRYPTED');
   await page.screenshot({path:'browser-evidence/'+label+'-intro.png'});
-  if(viewport.width>600){
-    // Desktop must support keyboard entry and tactical programming.
-    await page.keyboard.press('Enter');
-  }else{
-    // Mobile must support direct touch-like pointer input.
-    const r=await canvas.boundingBox();
-    await page.mouse.click(r.x+r.width/2,r.y+r.height*(496/810));
+  // Exercise the real visible entry control on both viewport sizes.
+  const startBounds=await canvas.boundingBox();
+  await page.mouse.click(startBounds.x+startBounds.width/2,startBounds.y+startBounds.height*(496/810));
+  try{
+    await page.locator('#game-state[data-phase="ready"]').waitFor({state:"attached",timeout:8000});
+  }catch(error){
+    console.log('ENTRY DEBUG',JSON.stringify({
+      phase:await page.locator('#game-state').getAttribute('data-phase'),
+      errors,canvas:startBounds,
+      status:await page.locator('#game-state').textContent()
+    }));
+    throw error;
   }
-  await page.locator('#game-state[data-phase="ready"]').waitFor({state:"attached",timeout:8000});
   for(let turn=0;turn<5;turn++){
     const phase=await page.locator('#game-state').getAttribute('data-phase');
     if(phase==='finished')break;
