@@ -5,9 +5,13 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "test:sepolia": "hardhat test --network sepolia"
+    "test:sepolia": "hardhat test --network sepolia",
+    "typecheck": "tsc --noEmit",
+    "deploy:sepolia": "hardhat run --network sepolia scripts/deploy-sepolia.ts"
   },
-  "dependencies": {"@fhevm/solidity": "^0.11.1"},
+  "dependencies": {
+    "@fhevm/solidity": "^0.11.1"
+  },
   "devDependencies": {
     "@fhevm/hardhat-plugin": "^0.4.2",
     "@fhevm/mock-utils": "^0.4.2",
