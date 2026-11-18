@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "phaser": "^4.2.1"
+    "phaser": "^4.2.1",
+    "@zama-fhe/sdk": "^3.8.0",
+    "ethers": "^6.16.0"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
