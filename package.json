@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "npm run build:contract-artifact && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test tests/*.test.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:contract-artifact": "npm --prefix fhe install --no-audit --no-fund && npm --prefix fhe run compile && node scripts/export-contract.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1",
