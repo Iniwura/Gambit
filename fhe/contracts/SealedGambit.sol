@@ -163,6 +163,17 @@ contract SealedGambit is ZamaEthereumConfig {
         SealedPolicy storage p=policies[id];
         return(p.owner,p.active,p.completions);
     }
+    /**
+     * @notice Resume public KMS decryption after reload or relayer outage.
+     * Only the authorized FINAL RESULT handle is readable; neither plan is
+     * publicly decryptable or exposed via a plaintext getter.
+     */
+    function publicResultHandle(uint256 id) external view returns(bytes32) {
+        Challenge storage c=challenges[id];
+        require(c.resolved && !c.expired,"Result not ready");
+        return FHE.toBytes32(c.encryptedOutcome);
+    }
+
     function challengeStatus(uint256 id) external view returns(
         uint256 policyId,address challenger,bool submitted,bool resolved,
         bool finalized,bool expired,uint8 finalOutcome
