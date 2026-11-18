@@ -8,11 +8,6 @@ function asPositiveId(raw:string,name:string):bigint{
   if(!/^[1-9][0-9]*$/.test(s))throw Error(name+' must be a positive integer.');
   return BigInt(s);
 }
-function button(text:string,handler:Action,id:string):HTMLButtonElement{
-  const b=document.createElement('button');b.type='button';b.id=id;b.textContent=text;
-  b.addEventListener('click',()=>{void handler();});
-  return b;
-}
 function textNode(tag:'h2'|'p'|'label'|'div',content:string):HTMLElement{
   const e=document.createElement(tag);e.textContent=content;return e;
 }
@@ -28,6 +23,18 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
   let client:Client|null=null;
   let busy=false;
   let challengeId:bigint|null=null;
+  function button(text:string,handler:Action,id:string):HTMLButtonElement{
+    const b=document.createElement('button');
+    b.type='button';b.id=id;b.textContent=text;
+    b.addEventListener('click',()=>{
+      if(busy)return;
+      setBusy(true);
+      Promise.resolve().then(handler).catch(error=>{
+        setStatus('Action failed: '+(error instanceof Error?error.message:String(error)));
+      }).finally(()=>setBusy(false));
+    });
+    return b;
+  }
   const launch=document.createElement('button');
   launch.id='gambit-chain-launch';
   launch.textContent='SEPOLIA CHALLENGES';
@@ -127,12 +134,5 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
     for(const b of controls)b.disabled=next;
     close.disabled=next;
     launch.disabled=next;
-  }
-  for(const b of controls){
-    const original=b.onclick;
-    b.addEventListener('click',async()=>{
-      // The original handler catches its own error through wrapped callback;
-      // this listener should not affect game state.
-    });
   }
 }
