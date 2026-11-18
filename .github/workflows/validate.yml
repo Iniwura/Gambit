@@ -1,0 +1,59 @@
+name: GAMBIT quality gates
+on:
+  push:
+    branches: [main, build/verified-first-slice]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: gambit-ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  reference:
+    name: Deterministic rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run deterministic rules and arena tests
+        run: node --test tests/*.test.mjs
+
+  game:
+    name: Phaser install, typecheck and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Install production game
+        run: npm install --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build browser release
+        run: npm run build
+
+  fhe:
+    name: FHEVM compile (no testnet claims)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: fhe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Zama Hardhat dependencies
+        run: npm install --no-audit --no-fund
+      - name: Compile encrypted encounter
+        run: npm run compile
+      - name: Execute mock contract tests
+        run: npm test
