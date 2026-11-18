@@ -34,6 +34,16 @@ class GambitArena extends Phaser.Scene {
   constructor(){super('GambitArena');}
 
   create(){
+    // Phaser Scene.restart() reuses this class instance. All mutable gameplay
+    // state and GameObject references MUST be reset on every create().
+    this.match=makeMatch(1102);
+    this.plan={base:0,trigger:0,response:1};
+    this.busy=false;
+    this.finished=false;
+    this.active=false;
+    this.actors=[];
+    this.buttons=[];
+    this.choices={base:[],trigger:[],response:[]};
     this.cameras.main.setBackgroundColor('#060b16');
     this.drawWorld();
     this.drawFighters();
