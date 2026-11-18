@@ -92,7 +92,12 @@ describe('SealedGambit — reusable confidential defender',function(){
     await (await contract.connect(owner).closePolicy(1n)).wait();
     await expect(contract.connect(alice).openChallenge(1n)).to.be.revertedWith('Unavailable policy');
     const res=await prove(contract,1n,p,d);
-    await (await contract.finalize(1n,res.actual,res.proof)).wait();
+    const storedHandle=await contract.publicResultHandle(1n);
+    expect(storedHandle).to.equal((res as any).handle ?? storedHandle);
+    // Proof recovery is independent of the session that called resolve().
+    const recovered=await fhevm.publicDecrypt([storedHandle]);
+    expect(Number(recovered.clearValues[storedHandle])).to.equal(res.actual);
+    await (await contract.finalize(1n,res.actual,recovered.decryptionProof)).wait();
     expect((await contract.challengeStatus(1n)).finalized).to.equal(true);
   });
 
