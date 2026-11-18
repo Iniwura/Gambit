@@ -80,7 +80,7 @@ async function deployContract(){
   if(currentAccount!==address)throw Error('Selected wallet account changed. Reconnect first.');
   const bal=await provider.getBalance(address);
   if(bal===0n)throw Error('No Sepolia test ETH for gas');
-  const factory=new ContractFactory(artifact.abi,artifact.bytecode,deployer);
+  const factory=new ContractFactory(artifact.abi as ConstructorParameters<typeof ContractFactory>[0],artifact.bytecode,deployer);
   message('Review the Sepolia contract creation in your wallet. Do not approve anything on mainnet.');
   const contract=await factory.deploy();
   const tx=contract.deploymentTransaction();
