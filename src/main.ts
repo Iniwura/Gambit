@@ -40,6 +40,7 @@ class GambitArena extends Phaser.Scene {
     this.drawHUD();
     this.drawControls();
     this.refresh();
+    this.writeState('intro');
     this.intro();
     this.keyboardListener=(e:KeyboardEvent)=>{
       if(e.target instanceof HTMLInputElement)return;
@@ -53,6 +54,19 @@ class GambitArena extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{
       if(this.keyboardListener)window.removeEventListener('keydown',this.keyboardListener);
     });
+  }
+
+  private writeState(phase:string){
+    const el=document.getElementById('game-state');
+    if(!el)return;
+    el.dataset.phase=phase;
+    el.dataset.round=String(this.match.round);
+    el.dataset.finished=String(this.finished);
+    el.dataset.scoreA=String(this.match.scoreA);
+    el.dataset.scoreB=String(this.match.scoreB);
+    el.textContent=phase==='finished'
+      ? 'Match complete. '+(this.match.winner===1?'Victory':this.match.winner===2?'Defeat':'Draw')
+      : 'GAMBIT '+phase+', round '+(this.match.round+1);
   }
 
   private text(x:number,y:number,s:string,px=16,color=C.white,bold=false) {
@@ -198,7 +212,11 @@ class GambitArena extends Phaser.Scene {
     overlay.add(this.text(W/2,427,'LOCAL PRACTICE ONLY  •  NO WALLET OR ENCRYPTION',13,'#a9b8d7',true).setOrigin(.5));
     const bg=this.add.rectangle(W/2,496,280,57,0x0d6179).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
     overlay.add([bg,this.text(W/2,496,'ENTER ARENA',20,C.white,true).setOrigin(.5)]);
-    bg.on('pointerdown',()=>{overlay.destroy(true);this.active=true;});
+    const begin=()=>{overlay.destroy(true);this.active=true;this.writeState('ready');window.removeEventListener('keydown',enterKey);};
+    const enterKey=(e:KeyboardEvent)=>{if(e.key==='Enter'){e.preventDefault();begin();}};
+    bg.on('pointerdown',begin);
+    window.addEventListener('keydown',enterKey);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>window.removeEventListener('keydown',enterKey));
   }
 
   private lockPlan(){
@@ -206,7 +224,7 @@ class GambitArena extends Phaser.Scene {
     let res:any;
     try{res=commitTurn(this.match,validatePlan(this.plan));}
     catch(err){this.notice.setText('That plan is not valid. Choose again.');return;}
-    this.busy=true;this.match=res.match;
+    this.busy=true;this.match=res.match;this.writeState('resolving');
     const event=res.event;
     this.notice.setText('Resolving confrontation…');
     this.hint.setText('Local simulator resolving a deterministic match');
@@ -229,12 +247,12 @@ class GambitArena extends Phaser.Scene {
     this.time.delayedCall(1670,()=>{
       this.busy=false;this.refresh();
       if(this.match.finished)this.gameOver();
-      else this.hint.setText('Watch the score. Change your plan and lock the next round.');
+      else {this.hint.setText('Watch the score. Change your plan and lock the next round.');this.writeState('ready');}
     });
   }
 
   private gameOver(){
-    this.finished=true;this.active=false;
+    this.finished=true;this.active=false;this.writeState('finished');
     const result=this.match.winner===0?'DRAW':this.match.winner===1?'VICTORY':'DEFEAT';
     const overlay=this.add.container(0,0).setDepth(7200);
     overlay.add(this.add.rectangle(W/2,H/2,W,H,0x070b17,.77));
