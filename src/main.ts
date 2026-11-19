@@ -14,6 +14,7 @@ const ROLES=['SCOUT','GUARDIAN','STRIKER','CIPHER','ASSASSIN','TITAN'];
 const FORMATIONS=[{x:288,y:299},{x:244,y:407},{x:303,y:515},{x:1138,y:299},{x:1181,y:407},{x:1120,y:515}];
 type Field='base'|'trigger'|'response';
 type Plan={base:number,trigger:number,response:number};
+type VerifiedDuel={challengeId:bigint,outcome:0|1|2,explorerUrl:string,authenticated:true};
 let lastSelectedPlan:Plan={base:0,trigger:0,response:1};
 type Actor={shell:Phaser.GameObjects.Container,origin:{x:number,y:number}};
 const names=['STRIKE','GUARD','FLANK'];
@@ -32,6 +33,7 @@ class GambitArena extends Phaser.Scene {
   private shade?:Phaser.GameObjects.Container;
   private buttons:Phaser.GameObjects.Container[]=[];
   private keyboardListener?: (e:KeyboardEvent)=>void;
+  private watchingVerifiedDuel=false;
   constructor(){super('GambitArena');}
 
   create(){
@@ -43,6 +45,9 @@ class GambitArena extends Phaser.Scene {
     this.busy=false;
     this.finished=false;
     this.active=false;
+    this.watchingVerifiedDuel=false;
+    const mode=document.getElementById('status');
+    if(mode)mode.textContent='LOCAL PRACTICE · NOT ENCRYPTED';
     this.actors=[];
     this.buttons=[];
     this.choices={base:[],trigger:[],response:[]};
@@ -65,7 +70,9 @@ class GambitArena extends Phaser.Scene {
     window.addEventListener('keydown',this.keyboardListener);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{
       if(this.keyboardListener)window.removeEventListener('keydown',this.keyboardListener);
+      this.game.events.off('gambit:verified-duel',this.showVerifiedDuel,this);
     });
+    this.game.events.on('gambit:verified-duel',this.showVerifiedDuel,this);
   }
 
   private writeState(phase:string){
@@ -232,7 +239,7 @@ class GambitArena extends Phaser.Scene {
   }
 
   private lockPlan(){
-    if(!this.active||this.busy||this.finished)return;
+    if(!this.active||this.busy||this.finished||this.watchingVerifiedDuel)return;
     let res:any;
     try{res=commitTurn(this.match,validatePlan(this.plan));}
     catch(err){this.notice.setText('That plan is not valid. Choose again.');return;}
@@ -246,6 +253,7 @@ class GambitArena extends Phaser.Scene {
     this.tweens.add({targets:a.shell,x:645,y,duration:370,ease:'Sine.easeOut'});
     this.tweens.add({targets:b.shell,x:790,y:otherY,duration:370,ease:'Sine.easeOut'});
     this.time.delayedCall(530,()=>{
+      if(this.watchingVerifiedDuel)return;
       const color=event.outcome===1?C.cyan:event.outcome===2?C.pink:C.gold;
       const impact=this.add.circle(720,(y+otherY)/2,32,color,.3).setStrokeStyle(5,color).setDepth(1900);
       this.tweens.add({targets:impact,alpha:0,scale:4,duration:560,onComplete:()=>impact.destroy()});
@@ -254,15 +262,70 @@ class GambitArena extends Phaser.Scene {
         event.outcome===2?'COUNTERED · REPLAN':'STALEMATE · TRY A NEW COUNTER');
     });
     this.time.delayedCall(1230,()=>{
+      if(this.watchingVerifiedDuel)return;
       for(const unit of [a,b])this.tweens.add({targets:unit.shell,x:unit.origin.x,y:unit.origin.y,duration:380});
     });
     this.time.delayedCall(1670,()=>{
+      if(this.watchingVerifiedDuel)return;
       this.busy=false;this.refresh();
       if(this.match.finished)this.gameOver();
       else {this.hint.setText('Watch the score. Change your plan and lock the next round.');this.writeState('ready');}
     });
   }
 
+
+  /**
+   * Single onchain duel presentation. There is intentionally NO simulated
+   * five-round scoreboard and NO animation before verified final contract
+   * state is returned by the wallet client. Do not infer unrevealed plans.
+   */
+  private showVerifiedDuel(receipt:VerifiedDuel){
+    if(!receipt||receipt.authenticated!==true||
+       typeof receipt.challengeId!=='bigint'||receipt.challengeId<=0n||
+       ![0,1,2].includes(receipt.outcome)||
+       !/^https:\/\/sepolia\.etherscan\.io\/(tx|address)\/0x[0-9a-fA-F]+$/.test(receipt.explorerUrl))return;
+    if(this.watchingVerifiedDuel)return;
+    this.watchingVerifiedDuel=true;
+    this.active=false;
+    this.busy=true;
+    const mode=document.getElementById('status');
+    if(mode)mode.textContent='SEPOLIA · AUTHENTICATED RESULT';
+    const phase=document.getElementById('game-state');
+    if(phase){
+      phase.dataset.phase='chain-verified';
+      phase.dataset.challengeId=String(receipt.challengeId);
+      phase.dataset.outcome=String(receipt.outcome);
+      phase.textContent='Sepolia verified challenge '+receipt.challengeId;
+    }
+    this.round.setText('VERIFIED DUEL #'+receipt.challengeId);
+    this.scoreboard.setText(receipt.outcome===1?'1 : 0':receipt.outcome===2?'0 : 1':'0 : 0');
+    this.notice.setText('VERIFIED ON SEPOLIA · ENCRYPTED PLANS NEVER REVEALED');
+    this.hint.setText('One signed duel outcome. This is not yet a full five-round onchain match.');
+    // The motion reflects ONLY the public outcome; it does not reconstruct
+    // the secret moves, counters or traits of either player.
+    this.actors.forEach((actor,i)=>{
+      const isChallenger=i<3;
+      this.tweens.add({targets:actor.shell,
+        x:isChallenger?565+(i*31):874-((i-3)*31),
+        y:290+(i%3)*105,duration:550+i*65,ease:'Sine.easeOut'});
+    });
+    const win=receipt.outcome===1?'CHALLENGER WINS':receipt.outcome===2?'DEFENDER WINS':'DRAW';
+    const accent=receipt.outcome===1?C.cyan:receipt.outcome===2?C.pink:C.gold;
+    const curtain=this.add.rectangle(W/2,H/2,W,H,0x050912,.70);
+    const card=this.add.rectangle(W/2,H/2,800,360,0x111e35,.98).setStrokeStyle(3,accent,.95);
+    const heading=this.text(W/2,294,'ONCHAIN VERIFIED',24,'#a6d3ec',true).setOrigin(.5);
+    const verdict=this.text(W/2,367,win,53,C.white,true).setOrigin(.5);
+    const proof=this.text(W/2,430,'ZAMA FHE · PUBLIC RESULT PROOF · SEPOLIA',17,'#d5e8ff',true).setOrigin(.5);
+    const see=this.add.rectangle(W/2-158,518,280,55,0x1d536d).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
+    const back=this.add.rectangle(W/2+158,518,280,55,0x303953).setStrokeStyle(2,0x9db1d7).setInteractive({useHandCursor:true});
+    const seeLabel=this.text(W/2-158,518,'VIEW ONCHAIN EVIDENCE',17,C.white,true).setOrigin(.5);
+    const backLabel=this.text(W/2+158,518,'BACK TO PRACTICE',17,C.white,true).setOrigin(.5);
+    const overlay=this.add.container(0,0,[curtain,card,heading,verdict,proof,see,back,seeLabel,backLabel]).setDepth(9000);
+    overlay.setAlpha(0);
+    this.tweens.add({targets:overlay,alpha:1,delay:620,duration:420});
+    see.on('pointerdown',()=>window.open(receipt.explorerUrl,'_blank','noopener,noreferrer'));
+    back.on('pointerdown',()=>this.scene.restart());
+  }
   private gameOver(){
     this.finished=true;this.active=false;this.writeState('finished');
     const result=this.match.winner===0?'DRAW':this.match.winner===1?'VICTORY':'DEFEAT';
@@ -295,7 +358,7 @@ if(typeof configuredAddress==='string'&&/^0x[a-fA-F0-9]{40}$/.test(configuredAdd
       base:lastSelectedPlan.base as 0|1|2,
       trigger:lastSelectedPlan.trigger as 0|1|2,
       response:lastSelectedPlan.response as 0|1|2
-    }));
+    }),receipt=>game.events.emit('gambit:verified-duel',receipt));
   }).catch(error=>{
     const e=document.getElementById('error');
     if(e){e.textContent='Unable to initialize Sepolia wallet controls: '+String(error);e.style.display='block';}

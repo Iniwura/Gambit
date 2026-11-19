@@ -1,4 +1,4 @@
-import {createGambitSepoliaClient,type Plan} from './sepolia';
+import {createGambitSepoliaClient,type Plan,type MatchReceipt} from './sepolia';
 
 type Client=Awaited<ReturnType<typeof createGambitSepoliaClient>>;
 type Action=()=>Promise<void>;
@@ -16,13 +16,14 @@ function textNode(tag:'h2'|'p'|'label'|'div',content:string):HTMLElement{
  * Real, opt-in Sepolia controller. It is never mounted without a configured
  * contract address. No fake receipts or simulated wallet interactions.
  */
-export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
+export function mountSepoliaPanel(address:string,getPlan:()=>Plan,onVerified?:(receipt:MatchReceipt)=>void){
   if(document.getElementById('gambit-chain-launch'))return;
   if(!/^0x[a-fA-F0-9]{40}$/.test(address))return;
 
   let client:Client|null=null;
   let busy=false;
   let challengeId:bigint|null=null;
+  let verifiedReceipt:MatchReceipt|null=null;
   function button(text:string,handler:Action,id:string):HTMLButtonElement{
     const b=document.createElement('button');
     b.type='button';b.id=id;b.textContent=text;
@@ -99,14 +100,25 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
   status.style.cssText='padding:12px;background:#1b304d;border-radius:10px;overflow-wrap:anywhere;min-height:52px';
   const result=document.createElement('div');result.id='gambit-chain-receipt';
   result.style.cssText='overflow-wrap:anywhere;color:#bdf6ff;font-size:13px';
+  const watch=document.createElement('button');
+  watch.type='button';
+  watch.id='gambit-chain-watch';
+  watch.textContent='WATCH VERIFIED DUEL IN ARENA';
+  watch.disabled=true;
+  watch.hidden=!onVerified;
+  watch.addEventListener('click',()=>{
+    if(busy||!verifiedReceipt||!onVerified)return;
+    overlay.hidden=true;setVisibility();
+    onVerified(verifiedReceipt);
+  });
   const controls=[connect,seal,challenge,resume];
   const styleControls=(el:HTMLElement)=>{
     el.style.cssText='width:100%;margin-top:8px;min-height:40px;padding:9px 12px;border:1px solid #567d9b;border-radius:9px;background:#19415f;color:#e7faff;font-size:14px';
   };
-  for(const e of [...controls,policyInput,challengeInput])styleControls(e);
+  for(const e of [...controls,policyInput,challengeInput,watch])styleControls(e);
   policyLabel.style.display='block';policyLabel.style.marginTop='15px';
   challengeLabel.style.display='block';challengeLabel.style.marginTop='15px';
-  card.append(connect,seal,policyLabel,policyInput,challenge,challengeLabel,challengeInput,resume,status,result);
+  card.append(connect,seal,policyLabel,policyInput,challenge,challengeLabel,challengeInput,resume,status,result,watch);
   overlay.append(card);document.body.append(launch,overlay);
   // A hidden dialog must be truly non-interactive.
   const setVisibility=()=>{overlay.style.display=overlay.hidden?'none':'flex';};
@@ -137,6 +149,8 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
     if(receipt.authenticated!==true)throw Error('Unauthenticated game result refused.');
     setStatus('VERIFIED ON SEPOLIA · '+(receipt.outcome===1?'Challenger wins':receipt.outcome===2?'Defender wins':'Draw'));
     result.replaceChildren();
+    verifiedReceipt=receipt as MatchReceipt;
+    watch.disabled=false;
     const link=document.createElement('a');link.textContent=receipt.evidence==='transaction'
       ?'View verified match transaction on Sepolia Etherscan'
       :'Inspect finalized game contract on Sepolia Etherscan';
