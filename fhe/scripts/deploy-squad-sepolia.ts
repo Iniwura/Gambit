@@ -74,7 +74,23 @@ async function main(){
       getAddress(await signer.getAddress())!==wallet)
     throw Error('Network or account changed after preflight');
   const marginGas=(estimated*120n+99n)/100n;
-  const transaction=await factory.deploy({gasLimit:marginGas});
+  const freshQuote=await ethers.provider.getFeeData();
+  const freshMaxPerGas=freshQuote.maxFeePerGas??freshQuote.gasPrice;
+  if(!freshMaxPerGas||freshMaxPerGas<=0n)
+    throw Error('No fresh transaction fee parameters before signing');
+  const latestMax=marginGas*freshMaxPerGas;
+  if(latestMax>cap||latestMax>balance||latestMax>HARD_CEILING)
+    throw Error('Latest transaction fee exceeds explicit approval, wallet balance or hard ceiling');
+  const txOptions:Record<string,bigint>={gasLimit:marginGas};
+  if(freshQuote.maxFeePerGas!==null&&freshQuote.maxPriorityFeePerGas!==null){
+    if(freshQuote.maxPriorityFeePerGas>freshQuote.maxFeePerGas)
+      throw Error('Inconsistent EIP-1559 fee quote');
+    txOptions.maxFeePerGas=freshQuote.maxFeePerGas;
+    txOptions.maxPriorityFeePerGas=freshQuote.maxPriorityFeePerGas;
+  }else{
+    txOptions.gasPrice=freshMaxPerGas;
+  }
+  const transaction=await factory.deploy(txOptions);
   const tx=transaction.deploymentTransaction();
   if(!tx)throw Error('Deployment transaction missing');
   await transaction.waitForDeployment();
@@ -90,6 +106,7 @@ async function main(){
     runtimeBytes:(runtime.length-2)/2,
     actualGasUsed:receipt.gasUsed.toString(),
     approvedMaximumCostWei:cap.toString(),
+    maximumQuotedTransactionCostWei:latestMax.toString(),
     explorer:'https://sepolia.etherscan.io/tx/'+tx.hash,
     testStatus:'DEPLOYED ONLY — no signed encrypted two-wallet match',
     note:'Do not claim testnet FHE viability until separate live 10-input and KMS proof validation'
