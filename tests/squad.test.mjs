@@ -180,3 +180,20 @@ test('formation replay validates source and rejects tampered formation or score'
   assert.equal(verifySquadTranscript(1447,edited,events),false);
   assert.deepEqual(enemyFormationFor(makeSquadMatch(100)),enemyFormationFor(makeSquadMatch(100)));
 });
+
+test('bot learning follows defender ROLE across formation changes, never previous lane',()=>{
+  const source=makeSquadMatch(20261119);
+  const rotated=[
+    {role:'GUARDIAN',enemyRole:'STRIKER',defenderIndex:2,outcome:0},
+    {role:'STRIKER',enemyRole:'SCOUT',defenderIndex:0,outcome:1},
+    {role:'SCOUT',enemyRole:'GUARDIAN',defenderIndex:1,outcome:0}
+  ];
+  const unchanged=rotated.map(l=>({...l,outcome:0}));
+  const stateWithScoutLoss={...source,round:1,history:[{lanes:rotated,formationA:1,formationB:2}]};
+  const stateWithoutLoss={...source,round:1,history:[{lanes:unchanged,formationA:1,formationB:2}]};
+  const a=enemySquadFor(stateWithScoutLoss),b=enemySquadFor(stateWithoutLoss);
+  assert.notDeepEqual(a[0],b[0],'Scout bot adapts to its own lane-two loss');
+  assert.deepEqual(a[1],b[1],'Guardian bot must not adapt from another role loss');
+  assert.deepEqual(a[2],b[2],'Striker bot must not adapt from another role loss');
+  assert.deepEqual(a,enemySquadFor(stateWithScoutLoss),'deterministic role adaptation');
+});

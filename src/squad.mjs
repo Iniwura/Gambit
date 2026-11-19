@@ -53,8 +53,14 @@ export function enemySquadFor(match) {
     // Adapt only to the PUBLIC previous lane result; the bot never reads
     // the player's private conditional order. Losing a lane causes a larger
     // repertoire shift. This isn't ML or an unbeatable expert opponent.
-    const lastLane=match.history.at(-1)?.lanes?.[index]?.outcome;
-    const shift=lastLane===1?3:lastLane===2?1:0;
+    const lanes=match.history.at(-1)?.lanes;
+    // Formation moves fighters between lanes. Adapt to the previous result
+    // for THIS DEFENDER ROLE, not the same lane number. Legacy role-aligned
+    // transcripts without defenderIndex retain their original behavior.
+    const defenderResult=lanes?.find(l=>l.defenderIndex===index)
+      ?? (lanes?.every(l=>l.defenderIndex===undefined)?lanes?.[index]:undefined);
+    const lastOutcome=defenderResult?.outcome;
+    const shift=lastOutcome===1?3:lastOutcome===2?1:0;
     return {...STRATEGIES[(mix+shift)%STRATEGIES.length]};
   });
 }
