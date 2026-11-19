@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES} from './squad.mjs';
 import {createMobileDeck} from './mobile-deck';
+import {renderReactorDeck} from './visual/arena';
+import {makeFighter} from './visual/characters';
 
 /**
  * GAMBIT's actual Phaser gameplay entrypoint.
@@ -10,8 +12,7 @@ import {createMobileDeck} from './mobile-deck';
  * Gameplay and visual presentation are intentionally decoupled.
  */
 const W=1440,H=810;
-const C={bg:0x070d1b,ink:0x111b30,wall:0x26304c,cyan:0x58e4f3,pink:0xfa69ae,gold:0xffcb62,muted:'#a8b9d2',white:'#eff8ff'};
-const ROLES=['SCOUT','GUARDIAN','STRIKER','CIPHER','ASSASSIN','TITAN'];
+const C={cyan:0x58e4f3,pink:0xfa69ae,gold:0xffcb62,white:'#eff8ff'};
 const FORMATIONS=[{x:288,y:299},{x:244,y:407},{x:303,y:515},{x:1138,y:299},{x:1181,y:407},{x:1120,y:515}];
 type Field='base'|'trigger'|'response';
 type Plan={base:number,trigger:number,response:number};
@@ -36,7 +37,6 @@ class GambitArena extends Phaser.Scene {
   private choices:Record<Field,Phaser.GameObjects.Rectangle[]>={base:[],trigger:[],response:[]};
   private roleButtons:Phaser.GameObjects.Rectangle[]=[];
   private roleHint!:Phaser.GameObjects.Text;
-  private shade?:Phaser.GameObjects.Container;
   private buttons:Phaser.GameObjects.Container[]=[];
   private keyboardListener?: (e:KeyboardEvent)=>void;
   private watchingVerifiedDuel=false;
@@ -130,70 +130,20 @@ class GambitArena extends Phaser.Scene {
   }
 
   private drawWorld(){
-    const g=this.add.graphics();
-    g.fillStyle(0x0b1126).fillRect(0,0,W,H);
-    // Distinct tactical rooms and navigable-looking approaches are the goal.
-    const rooms=[
-      [52,90,390,212,0x182c41],[999,90,389,212,0x241d3d],
-      [53,315,390,236,0x142339],[999,315,389,236,0x291c38],
-      [57,565,386,105,0x1a2031],[995,565,390,105,0x26203a]];
-    for(const [x,y,w,h,color] of rooms){
-      g.fillStyle(Number(color)).fillRoundedRect(Number(x),Number(y),Number(w),Number(h),21);
-      g.lineStyle(5,C.wall,1).strokeRoundedRect(Number(x),Number(y),Number(w),Number(h),21);
-    }
-    for(let i=0;i<9;i++){
-      g.lineStyle(2,0x364664,.23);
-      g.lineBetween(0,87+i*70,W,87+i*70);
-    }
-    // Three purposeful lanes with obstacles and line-of-sight cover.
-    for(const y of [230,415,592]){
-      g.fillStyle(0x15233b).fillRoundedRect(440,y-50,560,100,22);
-      g.lineStyle(2,0x587393,.35).strokeRoundedRect(440,y-50,560,100,22);
-      for(let x=475;x<995;x+=64){g.lineStyle(2,0x55729a,.12).lineBetween(x,y-46,x,y+46);}
-    }
-    const props=[
-      [164,191,110,48],[1180,191,110,48],
-      [113,608,92,45],[1230,607,92,45],
-      [492,297,79,56],[942,297,79,56],
-      [491,516,79,56],[940,516,79,56]];
-    for(const [x,y,w,h] of props){
-      g.fillStyle(0x303b58).fillRoundedRect(x,y,w,h,7);
-      g.lineStyle(3,0x7898b4,.5).strokeRoundedRect(x,y,w,h,7);
-    }
-    // The reactor is a readable objective, not just decoration.
-    g.fillStyle(0x151b31).fillCircle(W/2,414,114);
-    g.lineStyle(18,C.gold,.31).strokeCircle(W/2,414,101);
-    g.lineStyle(5,C.gold,.75).strokeCircle(W/2,414,83);
-    g.fillStyle(0xc77831).fillCircle(W/2,414,53);
-    g.fillStyle(0xffdf85).fillCircle(W/2,414,31);
-    const glow=this.add.circle(W/2,414,79,C.gold,.10).setDepth(5);
-    this.tweens.add({targets:glow,scale:1.30,alpha:.35,yoyo:true,repeat:-1,duration:1350});
-    this.text(154,104,'HYDROPONICS',17,'#7bdce3',true);
-    this.text(1108,104,'COMMAND',17,'#e5a5fc',true);
-    this.text(154,330,'CYAN ENTRY',17,'#79e6f7',true);
-    this.text(1113,330,'VIOLET ENTRY',17,'#f6a1d1',true);
-    this.text(152,576,'CARGO',17,C.muted,true);
-    this.text(1127,576,'FABRICATION',17,C.muted,true);
-    this.text(720,543,'REACTOR',16,'#ffe4a7',true).setOrigin(.5);
-    // Character selection, not fake free-roaming. The reactor isn't a move selector.
+    renderReactorDeck(this);
   }
 
   private drawFighters(){
     for(let i=0;i<6;i++){
-      const pos=FORMATIONS[i],color=i<3?C.cyan:C.pink;
-      const unit=this.add.container(pos.x,pos.y).setDepth(1200);
-      const ring=this.add.ellipse(0,35,78,23,color,.16).setStrokeStyle(3,color,.8);
-      const body=this.add.ellipse(0,0,56,65,i<3?0x2a6c89:0x8e315f,1).setStrokeStyle(3,color,.92);
-      const helm=this.add.ellipse(0,-21,58,48,i===1?0x6b913c:i===4?0x5a2d8a:0x3f5579,1).setStrokeStyle(2,0xeeeeee,.4);
-      const eyes=this.add.rectangle(1,-22,31,12,i<3?0x9fffff:0xffc9ec,1);
-      const marker=this.text(0,53,ROLES[i],12,i<3?'#9cf8ff':'#ffb4df',true).setOrigin(.5);
-      unit.add([ring,body,helm,eyes,marker]);
-      if(i<3){
-        unit.setSize(90,112).setInteractive(new Phaser.Geom.Rectangle(-45,-52,90,112),Phaser.Geom.Rectangle.Contains);
-        unit.on('pointerdown',()=>{if(this.active&&!this.busy&&!this.finished)this.selectRole(i);});
-      }
+      const pos=FORMATIONS[i];
+      const unit=makeFighter(this,i,pos.x,pos.y);
+      if(i<3)unit.on('pointerdown',()=>{
+        if(this.active&&!this.busy&&!this.finished)this.selectRole(i);
+      });
       this.actors.push({shell:unit,origin:{...pos}});
-      this.tweens.add({targets:unit,angle:i%2?2:-2,duration:950+i*40,yoyo:true,repeat:-1});
+      // Low-amplitude suit idle motion, rather than rotating the whole sprite.
+      this.tweens.add({targets:unit,y:pos.y-3,duration:1000+i*91,
+        ease:'Sine.easeInOut',yoyo:true,repeat:-1});
     }
   }
 

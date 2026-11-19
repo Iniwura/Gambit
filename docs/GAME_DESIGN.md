@@ -67,3 +67,10 @@ Track match start-to-complete, input-to-outcome time, aborted/failed transaction
 The practice scene uses Phaser, not HTML gameplay, for staged three-role encounters. Scout generates radar pulses/mark VFX, Guardian projects a transient energy shield, and Striker generates staggered energy slashes. Winner color follows public lane outcome (cyan, violet, draw gold). The winning actor gets a brief impact emphasis; draws do not show a winner. These short-lived GameObjects are destroyed after the tween to avoid buildup and do **not** reconstruct encrypted opponent tactics.
 
 Browser QA asserts all three role animations trigger during a real local round. This is interim procedural art, not a replacement for approved original character sheets or the rejected arena environment.
+
+## Reactor Deck visual iteration (19 November)
+
+- Replaced six disconnected rounded rooms with one original connected orbital ship hull, three navigational-looking role lanes, illustrated docking bays, power conduits and a layered reactor core. This is **visual staging**, not a claim of genuine spatial collision or pathfinding.
+- Replaced placeholder oval-headed fighters with role-specific original vector suit silhouettes: Scout antenna and compact chassis, Guardian heavy shoulder armor, Striker assault plates. No Among Us art or third-party sprite assets are copied.
+- All scenery and characters are native Phaser objects in `src/visual/`. Rule evaluation, wallet flow, and FHE contract remain untouched. Existing practice role selection tests must still pass.
+- This remains procedural placeholder art, not final production sprite art. Do not represent it as approved artist-quality character animation. The remaining art gate is custom high-resolution sprite sheets and full animation states after beginner UX validation.
