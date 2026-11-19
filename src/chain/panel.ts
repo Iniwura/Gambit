@@ -58,7 +58,7 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
   close.style.cssText='border:1px solid #536987;border-radius:8px;background:transparent;color:#e2f3ff;padding:8px 12px';
   close.addEventListener('click',()=>{if(!busy)overlay.hidden=true;});
   header.append(title,close);card.append(header);
-  const caution=textNode('p','Real wallet signatures and testnet transactions. Only authenticated KMS results count. Use local practice before connecting.');
+  const caution=textNode('p','Real Sepolia wallet signatures. Your sealed plan stays encrypted. Keep the challenge ID to recover after a rejected signature, network interruption, or reload.');
   caution.style.cssText='color:#bbd1e5;font-size:13px';card.append(caution);
   const account=textNode('p','Not connected');account.style.cssText='font-weight:700;color:#89edf7';card.append(account);
   const connect=button('Connect Sepolia wallet',async()=>{client=await createGambitSepoliaClient(address);account.textContent='Connected: '+client.userAddress;setStatus('Wallet verified on Sepolia.');},'gambit-chain-connect');
@@ -84,15 +84,15 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
     setStatus('Encrypted plan submitted. Calculating FHE outcome and fetching KMS proof…');
     showResult(await c.resolveAndFinalize(challengeId));
   },'gambit-chain-challenge');
-  const challengeLabel=textNode('label','Existing challenge ID (recovery)');
+  const challengeLabel=textNode('label','Continue an existing challenge ID');
   challengeLabel.setAttribute('for','gambit-challenge-id');
   const challengeInput=document.createElement('input');challengeInput.id='gambit-challenge-id';
   challengeInput.type='text';challengeInput.inputMode='numeric';challengeInput.placeholder='Resume after interrupted decryption';
-  const resume=button('Resume KMS finalization',async()=>{
+  const resume=button('Continue challenge',async()=>{
     const c=requireClient();
     challengeId=asPositiveId(challengeInput.value,'Challenge ID');
-    setStatus('Reading onchain challenge state, then resuming KMS verification…');
-    showResult(await c.resolveAndFinalize(challengeId));
+    setStatus('Reading the authoritative Sepolia challenge status…');
+    showResult(await c.resumeChallenge(challengeId,getPlan(),setStatus));
   },'gambit-chain-resume');
   const status=textNode('p','No transactions sent.');status.id='gambit-chain-status';
   status.setAttribute('role','status');status.setAttribute('aria-live','polite');
@@ -116,16 +116,30 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!busy){overlay.hidden=true;setVisibility();}});
   setVisibility();
 
+  // Provider changes invalidate the account and every pending write.
+  const wallet=(window as unknown as {ethereum?:{
+    on?:(event:string,listener:(value:unknown)=>void)=>void
+  }}).ethereum;
+  const disconnect=()=>{
+    client=null;
+    account.textContent='Not connected';
+    setStatus('Wallet or network changed. Reconnect to continue safely.');
+  };
+  wallet?.on?.('accountsChanged',disconnect);
+  wallet?.on?.('chainChanged',disconnect);
+
   function requireClient(){
     if(!client)throw Error('Connect a Sepolia wallet first.');
     return client;
   }
   function setStatus(message:string){status.textContent=message;}
-  function showResult(receipt:{outcome:number,challengeId:bigint,explorerUrl:string,authenticated:true}){
+  function showResult(receipt:{outcome:number,challengeId:bigint,explorerUrl:string,authenticated:true,evidence:'transaction'|'contract-state'}){
     if(receipt.authenticated!==true)throw Error('Unauthenticated game result refused.');
     setStatus('VERIFIED ON SEPOLIA · '+(receipt.outcome===1?'Challenger wins':receipt.outcome===2?'Defender wins':'Draw'));
     result.replaceChildren();
-    const link=document.createElement('a');link.textContent='View verified match transaction on Sepolia Etherscan';
+    const link=document.createElement('a');link.textContent=receipt.evidence==='transaction'
+      ?'View verified match transaction on Sepolia Etherscan'
+      :'Inspect finalized game contract on Sepolia Etherscan';
     link.href=receipt.explorerUrl;link.target='_blank';link.rel='noopener noreferrer';
     link.style.color='#7ce7f7';result.append(link);
   }

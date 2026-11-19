@@ -164,7 +164,7 @@ class GambitArena extends Phaser.Scene {
     this.text(1240,34,'VIOLET SQUAD',19,'#ffa1d8',true).setDepth(2000);
     const shadow=this.add.rectangle(720,121,690,47,0x090d1a,.8).setStrokeStyle(1,0x49678f,.55).setDepth(1900);
     this.notice=this.text(720,107,'Capture the reactor by outsmarting the opposing squad',20,'#fff0b5',true).setOrigin(.5,0).setDepth(2000);
-    this.hint=this.text(720,154,'Pick an opening lane, predict the enemy, then set your response',15,'#d7e7ff').setOrigin(.5,0).setDepth(2000);
+    this.hint=this.text(720,154,'Pick your first move, predict the enemy move, then set your response',15,'#d7e7ff').setOrigin(.5,0).setDepth(2000);
   }
 
   private button(x:number,y:number,w:number,h:number,title:string,cb:()=>void,accent=C.cyan){
@@ -183,7 +183,7 @@ class GambitArena extends Phaser.Scene {
     b.fillStyle(0x071021,.97).fillRoundedRect(17,681,W-34,117,17);
     b.lineStyle(2,0x536d92,.65).strokeRoundedRect(17,681,W-34,117,17);
     const field:Field[]=['base','trigger','response'];
-    const groups=[{x:50,title:'OPENING ROUTE',opts:['REACTOR','UPPER','LOWER']},
+    const groups=[{x:50,title:'OPENING MOVE',opts:names}, 
       {x:410,title:'IF ENEMY CHOOSES',opts:names},{x:795,title:'COUNTER WITH',opts:names}];
     for(let col=0;col<3;col++){
       const row=groups[col];
