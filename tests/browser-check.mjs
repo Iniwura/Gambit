@@ -76,6 +76,12 @@ async function runCase(label,viewport){
   await page.locator('#game-state[data-phase="intro"][data-round="0"]').waitFor({state:"attached",timeout:5000});
   const seedAfter=await page.locator('#game-state').getAttribute('data-practice-seed');
   assert.notEqual(seedAfter,seedBefore,'rematch loads a different local bot scenario');
+  assert.equal(await page.locator('#game-state').getAttribute('data-report-round'),null,
+    'rematch must clear previous round report');
+  assert.equal(await page.locator('#game-state').getAttribute('data-last-role-effects'),null,
+    'rematch must clear previous battle VFX evidence');
+  assert.equal(await page.locator('#game-state').getAttribute('data-enemy-formation'),null,
+    'rematch must clear previous opponent formation');
   assert.equal(errors.length,0,'no uncaught browser errors: '+errors.join(' / '));
   console.log('PASS '+label+' · complete match in '+rounds+' rounds, rematch reset, no errors');
   passed++;

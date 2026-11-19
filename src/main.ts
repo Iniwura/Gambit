@@ -74,6 +74,15 @@ class GambitArena extends Phaser.Scene {
     this.formationButtons=[];
     this.battleReport=undefined;
     this.lastDebrief=null;
+    const gameplayState=document.getElementById('game-state');
+    if(gameplayState){
+      delete gameplayState.dataset.lastLaneCount;
+      delete gameplayState.dataset.lastRoleEffects;
+      delete gameplayState.dataset.enemyFormation;
+      delete gameplayState.dataset.reportRound;
+      delete gameplayState.dataset.challengeId;
+      delete gameplayState.dataset.outcome;
+    }
     this.cameras.main.setBackgroundColor('#060b16');
     this.drawWorld();
     this.drawFighters();
@@ -489,6 +498,8 @@ class GambitArena extends Phaser.Scene {
     this.watchingVerifiedDuel=true;
     this.active=false;
     this.busy=true;
+    this.lastDebrief=null;
+    this.battleReport?.setVisible(false);
     this.syncMobileDeck();
     const mode=document.getElementById('status');
     if(mode)mode.textContent='SEPOLIA · AUTHENTICATED RESULT';
