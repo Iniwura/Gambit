@@ -26,13 +26,15 @@ Browser-first, short-attention-span-friendly, strategic yet understandable to ne
 6. **Adapt** — learn from observable consequence; change plans for next round, keeping strategy secret.
 7. **Finish** — first to 3 reactor-control points or best at five rounds (finalize exact fairness rule after tests), with verified final outcome, replay and rematch.
 
-## Squad depth: prospective, NOT implemented
-Three visually distinct combat roles with a meaningful purpose each:
-- **Scout:** gathers a restricted clue or challenges deceptive routes.
-- **Bulwark:** protects or reinforces a controlled objective.
-- **Striker:** threatens contested territory with an offensive counterplay.
+## New solo-practice squad prototype (19 November 2026)
 
-The finished game must prove these roles change choices and outcome — not simply show three sprites while one global RPS action decides everything.
+Three independent fighter plans per turn: Scout, Guardian and Striker each have a separate primary move, trigger and response. Select the fighter (4/5/6 keyboard or on-canvas tabs) and edit its tactic, then lock the entire squad. The deterministic opponent also has one plan per role. All three duels animate independently. This layer is implemented as `src/squad.mjs`, with exhaustive parity, role-impact and anti-symmetry tests in `tests/squad.test.mjs`.
+
+Each lane victory gives +1 reactor pressure. A winning Striker receives +1 breach; a winning allied Scout adds +1 mark to the Striker's bonus, while a winning opposing Guardian blocks 1 point of that bonus. Scout's mark and Guardian's protection are meaningful interactions rather than cosmetic effects. Five rounds maximum, with early control at +/-3; results depend only on actions and deterministic bot rules.
+
+**Scope restriction:** This is CLEAR-TEXT local practice. The Sepolia `SealedGambit` contract still accepts one (base, trigger, response) tuple per side; it does NOT run the 3-role practice rules. The opt-in browser wallet explicitly sends only the currently selected fighter tactic. Completing a real FHE three-role match requires a new versioned Solidity contract and a fresh independent deployment/validation gate. No assertion of production privacy or secure multiplayer is warranted.
+
+**Longer-term gameplay risks:** role-bonus balance with real players, reaction to a living opponent, exploitably small encrypted policy space, accessible mobile planning UI, and judge playtests need evidence.
 
 ## UX design rules
 - Show a visible goal (control reactor) and a single primary action button.

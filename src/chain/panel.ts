@@ -59,7 +59,7 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan,onVerified?:(r
   close.style.cssText='border:1px solid #536987;border-radius:8px;background:transparent;color:#e2f3ff;padding:8px 12px';
   close.addEventListener('click',()=>{if(!busy)overlay.hidden=true;});
   header.append(title,close);card.append(header);
-  const caution=textNode('p','Real Sepolia wallet signatures. Your sealed plan stays encrypted. Keep the challenge ID to recover after a rejected signature, network interruption, or reload.');
+  const caution=textNode('p','Experimental ONE-FIGHTER encrypted duel, not the full 3v3 practice game. Only your currently selected fighter\'s tactic is sent. Real Sepolia wallet signatures; keep the challenge ID for recovery.');
   caution.style.cssText='color:#bbd1e5;font-size:13px';card.append(caution);
   const account=textNode('p','Not connected');account.style.cssText='font-weight:700;color:#89edf7';card.append(account);
   const connect=button('Connect Sepolia wallet',async()=>{client=await createGambitSepoliaClient(address);account.textContent='Connected: '+client.userAddress;setStatus('Wallet verified on Sepolia.');},'gambit-chain-connect');
