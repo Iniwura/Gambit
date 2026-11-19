@@ -4,6 +4,7 @@ import {createMobileDeck} from './mobile-deck';
 import {buildPracticeDebrief} from './tactical-report.mjs';
 import {renderReactorDeck} from './visual/arena';
 import {makeFighter} from './visual/characters';
+import type {SquadResult,FighterPlan} from './chain/squad-sepolia';
 
 /**
  * GAMBIT's actual Phaser gameplay entrypoint.
@@ -105,8 +106,10 @@ class GambitArena extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{
       if(this.keyboardListener)window.removeEventListener('keydown',this.keyboardListener);
       this.game.events.off('gambit:verified-duel',this.showVerifiedDuel,this);
+      this.game.events.off('gambit:verified-squad',this.showVerifiedSquad,this);
     });
     this.game.events.on('gambit:verified-duel',this.showVerifiedDuel,this);
+    this.game.events.on('gambit:verified-squad',this.showVerifiedSquad,this);
     const touchCommand=(e:Event)=>{
       const command=(e as CustomEvent<{action:string,role?:number,formation?:number,field?:Field,value?:number}>).detail;
       if(!command)return;
@@ -121,6 +124,22 @@ class GambitArena extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>
       window.removeEventListener('gambit:mobile-control',touchCommand));
     this.syncMobileDeck();
+  }
+
+  /**
+   * Capture a validated snapshot for the separately configured v2 panel.
+   * This does NOT transmit plans or request a wallet signature.
+   */
+  public squadSnapshot():{plans:FighterPlan[],formation:number}{
+    if(!this.active||this.busy||this.finished||this.watchingVerifiedDuel)
+      throw Error('Enter active local practice to configure your complete squad.');
+    return {
+      plans:this.squadPlans.map(p=>({
+        base:p.base as 0|1|2,trigger:p.trigger as 0|1|2,
+        response:p.response as 0|1|2
+      })),
+      formation:this.formation
+    };
   }
 
   private syncMobileDeck(){
@@ -485,6 +504,68 @@ class GambitArena extends Phaser.Scene {
   }
 
   /**
+   * Authenticated v2 onchain presentation. This renderer ONLY displays
+   * contract-finalized aggregate reactor totals. Per-role strategies,
+   * formations and lane wins remain hidden by the actual FHE protocol.
+   */
+  private showVerifiedSquad(receipt:SquadResult){
+    if(!receipt||receipt.authenticated!==true||
+       typeof receipt.squadId!=='bigint'||receipt.squadId<=0n||
+       typeof receipt.duelId!=='bigint'||receipt.duelId<=0n||
+       !Number.isInteger(receipt.pointsChallenger)||receipt.pointsChallenger<0||receipt.pointsChallenger>5||
+       !Number.isInteger(receipt.pointsDefender)||receipt.pointsDefender<0||receipt.pointsDefender>5||
+       ![0,1,2].includes(receipt.outcome)||
+       (receipt.outcome!==(
+         receipt.pointsChallenger===receipt.pointsDefender?0:
+         receipt.pointsChallenger>receipt.pointsDefender?1:2
+       ))||
+       !/^https:\/\/sepolia\.etherscan\.io\/(tx|address)\/0x[0-9a-fA-F]+$/.test(receipt.explorerUrl))return;
+    if(this.watchingVerifiedDuel)return;
+    this.watchingVerifiedDuel=true;
+    this.active=false;
+    this.busy=true;
+    this.lastDebrief=null;
+    this.battleReport?.setVisible(false);
+    const status=document.getElementById('status');
+    if(status)status.textContent='SEPOLIA · FHE SQUAD TOTALS VERIFIED';
+    const phase=document.getElementById('game-state');
+    if(phase){
+      phase.dataset.phase='chain-verified-squad';
+      phase.dataset.squadId=String(receipt.squadId);
+      phase.dataset.duelId=String(receipt.duelId);
+      phase.dataset.scoreA=String(receipt.pointsChallenger);
+      phase.dataset.scoreB=String(receipt.pointsDefender);
+      delete phase.dataset.reportRound;
+      phase.textContent='Authenticated encrypted squad duel '+receipt.duelId;
+    }
+    this.round.setText('ENCRYPTED SQUAD #'+receipt.squadId);
+    this.scoreboard.setText(receipt.pointsChallenger+' : '+receipt.pointsDefender);
+    this.notice.setText('KMS-SIGNED SQUAD RESULT · VERIFIED ON SEPOLIA');
+    this.hint.setText('Individual fighter outcomes and formations remain encrypted.');
+    // No per-fighter winner animation: those details are NOT public.
+    this.actors.forEach(actor=>actor.shell.setAlpha(.20));
+    const score=receipt.pointsChallenger+'  :  '+receipt.pointsDefender;
+    const winner=receipt.outcome===1?'CYAN REACTOR ADVANTAGE':
+      receipt.outcome===2?'VIOLET REACTOR ADVANTAGE':'REACTOR STALEMATE';
+    const tint=receipt.outcome===1?C.cyan:receipt.outcome===2?C.pink:C.gold;
+    const veil=this.add.rectangle(W/2,H/2,W,H,0x050c17,.81);
+    const panel=this.add.rectangle(W/2,H/2,845,365,0x102238,.99).setStrokeStyle(3,tint,.92);
+    const top=this.text(W/2,279,'ZAMA · ENCRYPTED SQUAD PROOF',20,'#bce4f2',true).setOrigin(.5);
+    const total=this.text(W/2,356,score,70,C.white,true).setOrigin(.5);
+    const verdict=this.text(W/2,415,winner,18,'#d5ebfa',true).setOrigin(.5);
+    const foot=this.text(W/2,456,'THREE PRIVATE ORDERS PER SIDE · SCORES VERIFIED ONCHAIN',
+      13,'#b4c9d9',true).setOrigin(.5);
+    const evidence=this.add.rectangle(W/2-159,521,285,52,0x184e63).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
+    const practice=this.add.rectangle(W/2+159,521,285,52,0x2b3b54).setStrokeStyle(2,0x7999b4).setInteractive({useHandCursor:true});
+    const view=this.text(W/2-159,521,'VIEW PUBLIC EVIDENCE',16,C.white,true).setOrigin(.5);
+    const restart=this.text(W/2+159,521,'RETURN TO PRACTICE',16,C.white,true).setOrigin(.5);
+    this.add.container(0,0,[veil,panel,top,total,verdict,foot,evidence,practice,view,restart]).setDepth(9000);
+    evidence.on('pointerdown',()=>window.open(receipt.explorerUrl,'_blank','noopener,noreferrer'));
+    practice.on('pointerdown',()=>this.scene.restart());
+    this.syncMobileDeck();
+  }
+
+  /**
    * Single onchain duel presentation. There is intentionally NO simulated
    * five-round scoreboard and NO animation before verified final contract
    * state is returned by the wallet client. Do not infer unrevealed plans.
@@ -576,6 +657,23 @@ if(typeof configuredAddress==='string'&&/^0x[a-fA-F0-9]{40}$/.test(configuredAdd
   }).catch(error=>{
     const e=document.getElementById('error');
     if(e){e.textContent='Unable to initialize Sepolia wallet controls: '+String(error);e.style.display='block';}
+  });
+}
+
+// Squad v2 remains invisible until a REAL Sepolia deployment is configured
+// together with its independently verified runtime code hash. Never reuse
+// the old one-fighter contract address for a confidential 3v3 session.
+const squadAddress=import.meta.env.VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS;
+const squadHash=import.meta.env.VITE_GAMBIT_SQUAD_RUNTIME_HASH;
+if(typeof squadAddress==='string'&&/^0x[a-fA-F0-9]{40}$/.test(squadAddress)
+  &&typeof squadHash==='string'&&/^0x[a-fA-F0-9]{64}$/.test(squadHash)){
+  void import('./chain/squad-panel').then(({mountSquadSepoliaPanel})=>{
+    mountSquadSepoliaPanel(squadAddress,squadHash,
+      ()=>((game.scene.getScene('GambitArena') as GambitArena).squadSnapshot()),
+      receipt=>game.events.emit('gambit:verified-squad',receipt));
+  }).catch(error=>{
+    const alert=document.getElementById('error');
+    if(alert){alert.style.display='block';alert.textContent='Encrypted squad panel unavailable: '+String(error);}
   });
 }
 
