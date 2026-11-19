@@ -100,6 +100,7 @@ describe('SquadGambit — EXPERIMENTAL encrypted three-role engine',function(){
   });
 
   it('matches an independent cleartext oracle for all NINE encrypted formation pairings',async function(){
+    this.timeout(180000); // Nine FHE proofs, many more operations than a unit test
     const {c,defender,challenger}=await fixture();
     const roles=[
       [0,1,2],
