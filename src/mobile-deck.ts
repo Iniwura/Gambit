@@ -6,6 +6,8 @@
 export type MobileField='base'|'trigger'|'response';
 export type MobilePlan={base:number,trigger:number,response:number};
 export type MobilePhase='intro'|'ready'|'resolving'|'finished'|'chain';
+export type MobileReport={round:number,heading:string,scoreline:string,note:string,
+  lanes:{leftRole:string,rightRole:string,verdict:string,outcome:number}[]};
 
 const NAMES=['STRIKE','GUARD','FLANK'] as const;
 const ROLE_LABELS=['SCOUT','GUARDIAN','STRIKER'] as const;
@@ -43,6 +45,21 @@ export function createMobileDeck(){
   const intro=button('ENTER ARENA',()=>publish('start'));
   intro.id='gambit-mobile-enter';
   intro.className='gambit-mobile-primary';
+
+  const reportPanel=document.createElement('section');
+  reportPanel.id='gambit-mobile-report';
+  reportPanel.setAttribute('aria-label','Last public practice round');
+  reportPanel.setAttribute('aria-live','polite');
+  reportPanel.hidden=true;
+  const reportTitle=document.createElement('strong');
+  reportTitle.className='gambit-mobile-report-heading';
+  const reportScores=document.createElement('span');
+  reportScores.className='gambit-mobile-report-scores';
+  const reportLanes=document.createElement('div');
+  reportLanes.className='gambit-mobile-report-lanes';
+  const reportNote=document.createElement('small');
+  reportNote.className='gambit-mobile-report-note';
+  reportPanel.append(reportTitle,reportScores,reportLanes,reportNote);
 
   const roleGroup=document.createElement('div');
   roleGroup.className='gambit-mobile-role-group';
@@ -113,10 +130,24 @@ export function createMobileDeck(){
   footer.className='gambit-mobile-footnote';
   footer.textContent='Local practice only. Encrypted online squad battles are still in development.';
 
-  deck.append(head,intro,roleGroup,roleInfo,formationHeading,formationGroup,commands,lock,retry,footer);
+  deck.append(head,intro,reportPanel,roleGroup,roleInfo,formationHeading,formationGroup,commands,lock,retry,footer);
   document.body.append(deck);
-  function sync(state:{selectedRole:number,formation:number,plan:MobilePlan,phase:MobilePhase}){
-    const {selectedRole,formation,plan,phase:stage}=state;
+  function sync(state:{selectedRole:number,formation:number,plan:MobilePlan,phase:MobilePhase,
+    report:MobileReport|null}){
+    const {selectedRole,formation,plan,phase:stage,report}=state;
+    reportPanel.hidden=!report||stage==='intro'||stage==='chain'||stage==='resolving';
+    if(report&&!reportPanel.hidden){
+      reportTitle.textContent=report.heading;
+      reportScores.textContent=report.scoreline;
+      reportLanes.replaceChildren(...report.lanes.map(lane=>{
+        const entry=document.createElement('span');
+        entry.className='gambit-mobile-report-lane';
+        entry.dataset.outcome=String(lane.outcome);
+        entry.textContent=lane.leftRole+' / '+lane.rightRole+'  '+lane.verdict;
+        return entry;
+      }));
+      reportNote.textContent=report.note;
+    }
     const ready=stage==='ready';
     deck.dataset.phase=stage;
     phase.textContent=stage==='resolving'?'RESOLVING ALL THREE':stage==='finished'?'MATCH COMPLETE':

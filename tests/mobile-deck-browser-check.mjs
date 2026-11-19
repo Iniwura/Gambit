@@ -39,6 +39,10 @@ try {
     const phase=document.getElementById('game-state')?.dataset.phase;
     return phase==='ready'||phase==='finished';
   },null,{timeout:25000});
+  const report=page.locator('#gambit-mobile-report');
+  assert.equal(await report.isVisible(),true,'after-action public round report must be visible');
+  assert.match(await report.textContent(),/ROUND 1/);
+  assert.equal(await report.locator('.gambit-mobile-report-lane').count(),3);
   assert.deepEqual(errors,[],'mobile command deck should have no uncaught JS errors');
   console.log('PASS mobile: enter arena, choose a role, edit its independent plan and lock 3 duels');
 } finally {await ctx.close();await browser.close();}

@@ -51,6 +51,8 @@ async function run(viewport){
     const phase=document.getElementById('game-state')?.dataset.phase;
     return phase==='ready'||phase==='finished';
   },null,{timeout:25000});
+  assert.equal(await state.getAttribute('data-report-round'),'1',
+    'post-round Phaser debrief must be created from actual resolution');
   assert.equal(errors.length,0,'no browser errors: '+errors.join('; '));
   await ctx.close();
   console.log('PASS independent 3-role squad controls and 3-lane resolution at '+viewport.width+'px');

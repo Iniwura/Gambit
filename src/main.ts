@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES,FORMATIONS} from './squad.mjs';
 import {createMobileDeck} from './mobile-deck';
+import {buildPracticeDebrief} from './tactical-report.mjs';
 import {renderReactorDeck} from './visual/arena';
 import {makeFighter} from './visual/characters';
 
@@ -16,6 +17,7 @@ const C={cyan:0x58e4f3,pink:0xfa69ae,gold:0xffcb62,white:'#eff8ff'};
 const SPAWN_POSITIONS=[{x:288,y:299},{x:244,y:407},{x:303,y:515},{x:1138,y:299},{x:1181,y:407},{x:1120,y:515}];
 type Field='base'|'trigger'|'response';
 type Plan={base:number,trigger:number,response:number};
+type PracticeReport={round:number,heading:string,scoreline:string,note:string,lanes:Array<{lane:number,leftRole:string,rightRole:string,verdict:string,outcome:number}>};
 type VerifiedDuel={challengeId:bigint,outcome:0|1|2,explorerUrl:string,authenticated:true};
 let lastSelectedPlan:Plan={...startingSquadPlans()[0]};
 let practiceSessionCount=0;
@@ -40,6 +42,8 @@ class GambitArena extends Phaser.Scene {
   private roleButtons:Phaser.GameObjects.Rectangle[]=[];
   private roleHint!:Phaser.GameObjects.Text;
   private formationButtons:Phaser.GameObjects.Rectangle[]=[];
+  private battleReport?:Phaser.GameObjects.Container;
+  private lastDebrief:PracticeReport|null=null;
   private buttons:Phaser.GameObjects.Container[]=[];
   private keyboardListener?: (e:KeyboardEvent)=>void;
   private watchingVerifiedDuel=false;
@@ -68,6 +72,8 @@ class GambitArena extends Phaser.Scene {
     this.choices={base:[],trigger:[],response:[]};
     this.roleButtons=[];
     this.formationButtons=[];
+    this.battleReport=undefined;
+    this.lastDebrief=null;
     this.cameras.main.setBackgroundColor('#060b16');
     this.drawWorld();
     this.drawFighters();
@@ -111,7 +117,7 @@ class GambitArena extends Phaser.Scene {
   private syncMobileDeck(){
     const phase=this.watchingVerifiedDuel?'chain':this.finished?'finished':
       this.busy?'resolving':this.active?'ready':'intro';
-    mobileDeck.sync({selectedRole:this.selectedRole,formation:this.formation,plan:this.plan,phase});
+    mobileDeck.sync({selectedRole:this.selectedRole,formation:this.formation,plan:this.plan,phase,report:this.lastDebrief});
   }
 
   private writeState(phase:string){
@@ -124,6 +130,8 @@ class GambitArena extends Phaser.Scene {
     el.dataset.scoreB=String(this.match.scoreB);
     el.dataset.practiceMode='three-role-squad';
     el.dataset.practiceSeed=String(this.match.seed);
+    if(this.lastDebrief)el.dataset.reportRound=String(this.lastDebrief.round);
+    else delete el.dataset.reportRound;
     el.dataset.fighterPlans=String(this.squadPlans.length);
     el.dataset.selectedRole=SQUAD_ROLES[this.selectedRole];
     el.dataset.formation=FORMATIONS[this.formation].name;
@@ -288,6 +296,28 @@ class GambitArena extends Phaser.Scene {
    * ONLY the public lane outcome, never an opponent's private tactic.
    * It must not be reused to reconstruct secret onchain actions.
    */
+  /**
+   * Persistent after-action intelligence, drawn with Phaser in SOLO PRACTICE.
+   * Only observed role matchups and points are shown. This is deliberately
+   * never called by the authenticated onchain single-duel rendering path.
+   */
+  private showBattleReport(report:PracticeReport){
+    this.battleReport?.destroy(true);
+    const band=this.add.container(720,213).setDepth(2090);
+    band.add(this.add.rectangle(0,0,665,84,0x09172b,.94).setStrokeStyle(2,0x53728a,.8));
+    band.add(this.text(-317,-32,report.heading,13,'#b2cfdf',true).setOrigin(0,.5));
+    band.add(this.text(317,-32,report.scoreline,13,'#ffe3ac',true).setOrigin(1,.5));
+    report.lanes.forEach((lane,i)=>{
+      const x=(i-1)*211;
+      const accent=lane.outcome===1?C.cyan:lane.outcome===2?C.pink:C.gold;
+      band.add(this.add.rectangle(x,0,202,28,0x15263a,.96).setStrokeStyle(1,accent,.88));
+      band.add(this.text(x,0,
+        lane.leftRole+' / '+lane.rightRole+'  '+lane.verdict,11,C.white,true).setOrigin(.5));
+    });
+    band.add(this.text(0,31,report.note,11,'#b9d3dd',true).setOrigin(.5));
+    this.battleReport=band;
+  }
+
   private playRoleEffect(challengerIndex:number,defenderIndex:number,outcome:number,y:number){
     const index=outcome===2?defenderIndex:challengerIndex;
     const tint=outcome===1?C.cyan:outcome===2?C.pink:C.gold;
@@ -383,6 +413,8 @@ class GambitArena extends Phaser.Scene {
     this.busy=true;
     this.match=resolved.match;
     const event=resolved.event;
+    this.lastDebrief=null;
+    this.battleReport?.setVisible(false);
     this.writeState('resolving');
     const stateEl=document.getElementById('game-state');
     if(stateEl){
@@ -430,6 +462,8 @@ class GambitArena extends Phaser.Scene {
     this.time.delayedCall(1950,()=>{
       if(this.watchingVerifiedDuel)return;
       this.busy=false;
+      this.lastDebrief=buildPracticeDebrief(event);
+      this.showBattleReport(this.lastDebrief);
       this.refresh();
       if(this.match.finished)this.gameOver();
       else{

@@ -35,6 +35,16 @@ button{font:inherit}a{color:#8bedf9}
   .gambit-mobile-head span{font-size:10px;color:#88a9c8;font-weight:750}
   .gambit-mobile-role-group,.gambit-mobile-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
   #gambit-mobile-role-info{margin:0;color:#b9d2e4;font:500 12px/1.35 Inter,system-ui,sans-serif;min-height:17px}
+  #gambit-mobile-report{display:flex;flex-direction:column;gap:8px;
+    border:1px solid #45637d;border-radius:12px;padding:12px;background:#101f32}
+  .gambit-mobile-report-heading{font-size:12px;letter-spacing:.04em;color:#dceeff}
+  .gambit-mobile-report-scores{font-size:13px;font-weight:800;color:#ffe1a5}
+  .gambit-mobile-report-lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .gambit-mobile-report-lane{border:1px solid #4c6982;border-radius:7px;
+    padding:8px 5px;text-align:center;font-size:9px;font-weight:700;line-height:1.4}
+  .gambit-mobile-report-lane[data-outcome="1"]{border-color:#58e4f3}
+  .gambit-mobile-report-lane[data-outcome="2"]{border-color:#fa69ae}
+  .gambit-mobile-report-note{font-size:10px;line-height:1.4;color:#b8d2e3}
   .gambit-mobile-commands{display:flex;flex-direction:column;gap:10px}
   .gambit-mobile-action-group{display:flex;flex-direction:column;gap:6px}
   .gambit-mobile-action-label{font:750 10px Inter,system-ui,sans-serif;letter-spacing:.12em;color:#9ab9d7}
