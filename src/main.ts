@@ -91,6 +91,12 @@ class GambitArena extends Phaser.Scene {
     el.dataset.finished=String(this.finished);
     el.dataset.scoreA=String(this.match.scoreA);
     el.dataset.scoreB=String(this.match.scoreB);
+    el.dataset.practiceMode='three-role-squad';
+    el.dataset.fighterPlans=String(this.squadPlans.length);
+    el.dataset.selectedRole=SQUAD_ROLES[this.selectedRole];
+    el.dataset.selectedBase=String(this.plan.base);
+    el.dataset.selectedTrigger=String(this.plan.trigger);
+    el.dataset.selectedResponse=String(this.plan.response);
     el.textContent=phase==='finished'
       ? 'Match complete. '+(this.match.winner===1?'Victory':this.match.winner===2?'Defeat':'Draw')
       : 'GAMBIT '+phase+', round '+(this.match.round+1);
@@ -241,6 +247,13 @@ class GambitArena extends Phaser.Scene {
       'STRIKER: bonus reactor pressure'
     ];
     this.roleHint.setText(roleDescriptions[this.selectedRole]);
+    const stateEl=document.getElementById('game-state');
+    if(stateEl){
+      stateEl.dataset.selectedRole=SQUAD_ROLES[this.selectedRole];
+      stateEl.dataset.selectedBase=String(this.plan.base);
+      stateEl.dataset.selectedTrigger=String(this.plan.trigger);
+      stateEl.dataset.selectedResponse=String(this.plan.response);
+    }
     this.roleButtons.forEach((rect,i)=>{
       const active=i===this.selectedRole;
       rect.setFillStyle(active?0x155b6e:0x17263f,1);
@@ -289,6 +302,8 @@ class GambitArena extends Phaser.Scene {
     this.match=resolved.match;
     const event=resolved.event;
     this.writeState('resolving');
+    const stateEl=document.getElementById('game-state');
+    if(stateEl)stateEl.dataset.lastLaneCount=String(event.lanes.length);
     this.notice.setText('Resolving all three tactical duels…');
     this.hint.setText('Every fighter executes its own independent conditional plan.');
     const lanesY=[286,414,543];
