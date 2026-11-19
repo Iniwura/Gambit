@@ -16,7 +16,7 @@ export function makeFighter(scene:Phaser.Scene,index:number,x:number,y:number){
   const group=scene.add.container(x,y).setDepth(1200);
   const shadow=scene.add.ellipse(0,42,86,19,0x000000,.55);
   const ground=scene.add.ellipse(0,41,88,26,palette.edge,.035)
-    .setStrokeStyle(2,palette.edge,.48);
+    .setStrokeStyle(2,palette.edge,.65).setName('selection-ring');
   const g=scene.add.graphics();
 
   // Boots, legs and shadow edges: silhouette reads at gameplay scale.
@@ -95,6 +95,9 @@ export function makeFighter(scene:Phaser.Scene,index:number,x:number,y:number){
     stroke:'#04101c',strokeThickness:3
   }).setOrigin(.5);
   group.add([shadow,ground,g,light,tag]);
+  // Idle light breathes without conflicting with combat movement tweens.
+  scene.tweens.add({targets:light,alpha:.2,duration:950+role*170,
+    yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
   group.setSize(96,134);
   if(!enemy)group.setInteractive(new Phaser.Geom.Rectangle(-48,-70,96,134),Phaser.Geom.Rectangle.Contains);
   return group;

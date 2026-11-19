@@ -141,9 +141,8 @@ class GambitArena extends Phaser.Scene {
         if(this.active&&!this.busy&&!this.finished)this.selectRole(i);
       });
       this.actors.push({shell:unit,origin:{...pos}});
-      // Low-amplitude suit idle motion, rather than rotating the whole sprite.
-      this.tweens.add({targets:unit,y:pos.y-3,duration:1000+i*91,
-        ease:'Sine.easeInOut',yoyo:true,repeat:-1});
+      // Characters do not idle-tween x/y: their combat approach uses those
+      // coordinates and must never fight another overlapping tween.
     }
   }
 
@@ -233,7 +232,11 @@ class GambitArena extends Phaser.Scene {
     });
     this.actors.forEach((actor,i)=>{
       // Highlight the selected allied fighter; enemy portraits stay separate.
-      if(i<3)actor.shell.setAlpha(i===this.selectedRole?1:.64);
+      if(i<3){
+        actor.shell.setAlpha(i===this.selectedRole?1:.77);
+        const selector=actor.shell.getByName('selection-ring');
+        if(selector)selector.setAlpha(i===this.selectedRole?1:.30);
+      }
     });
     const fields:Field[]=['base','trigger','response'];
     fields.forEach((field,i)=>this.choices[field].forEach((rect,j)=>{
