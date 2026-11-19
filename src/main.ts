@@ -234,7 +234,7 @@ class GambitArena extends Phaser.Scene {
       // Highlight the selected allied fighter; enemy portraits stay separate.
       if(i<3){
         actor.shell.setAlpha(i===this.selectedRole?1:.77);
-        const selector=actor.shell.getByName('selection-ring');
+        const selector=actor.shell.getByName('selection-ring') as Phaser.GameObjects.Ellipse | null;
         if(selector)selector.setAlpha(i===this.selectedRole?1:.30);
       }
     });
