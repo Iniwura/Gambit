@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import fs from 'node:fs/promises';
+await fs.mkdir('browser-evidence',{recursive:true});
 
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const ctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
@@ -21,6 +23,7 @@ try {
   await deck.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(0).click();
   assert.equal(await page.locator('#game-state').getAttribute('data-selected-base'),'0');
   await role.nth(0).click();
+  await page.screenshot({path:'browser-evidence/mobile-command-deck.png'});
   assert.equal(await page.locator('#game-state').getAttribute('data-selected-role'),'SCOUT');
   assert.equal(await page.locator('#game-state').getAttribute('data-selected-base'),'2');
   await page.locator('#gambit-mobile-lock').click();

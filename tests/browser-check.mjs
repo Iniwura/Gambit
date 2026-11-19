@@ -32,6 +32,9 @@ async function runCase(label,viewport){
     }));
     throw error;
   }
+  // Capture the actual playable frame, without intro or result overlays.
+  // A green CI run does not establish art quality; reviewers need this image.
+  await page.screenshot({path:'browser-evidence/'+label+'-arena-ready.png'});
   for(let turn=0;turn<5;turn++){
     const phase=await page.locator('#game-state').getAttribute('data-phase');
     if(phase==='finished')break;
@@ -60,6 +63,7 @@ async function runCase(label,viewport){
       await page.screenshot({path:'browser-evidence/'+label+'-stalled-round-'+turn+'.png'});
       throw error;
     }
+    if(turn===0)await page.screenshot({path:'browser-evidence/'+label+'-after-first-round.png'});
   }
   const phase=await page.locator('#game-state').getAttribute('data-phase');
   assert.equal(phase,'finished','match should complete within 5 rounds');
