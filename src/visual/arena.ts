@@ -22,9 +22,11 @@ const DECK={
 };
 
 export function renderReactorDeck(scene:Phaser.Scene){
-  const g=scene.add.graphics().setDepth(0);
   const W=1440,H=810;
   const CY=[282,414,546];
+  const textureKey='gambit-orbital-deck-v2';
+  if(!scene.textures.exists(textureKey)){
+    const g=scene.add.graphics().setDepth(0);
 
   // Negative space at the edges makes the continuous deck read as a place,
   // rather than disconnected neon boxes or an HTML dashboard.
@@ -138,6 +140,12 @@ export function renderReactorDeck(scene:Phaser.Scene){
   g.fillStyle(0xbd742e,.94).fillCircle(720,414,43);
   g.fillStyle(0xffd182,.86).fillCircle(720,414,26);
   g.fillStyle(0xfff6d6,.90).fillCircle(720,414,11);
+    // Draw once. Phaser's static Graphics meshes are expensive to
+    // re-tessellate every frame; the immutable deck is one WebGL texture.
+    g.generateTexture(textureKey,W,H);
+    g.destroy();
+  }
+  scene.add.image(0,0,textureKey).setOrigin(0,0).setDepth(0);
   const reactorGlow=scene.add.circle(720,414,50,DECK.amber,.17).setDepth(3);
   const rim=scene.add.circle(720,414,87,DECK.amber,.001)
     .setStrokeStyle(4,DECK.amber,.56).setDepth(3);

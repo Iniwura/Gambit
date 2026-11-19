@@ -78,3 +78,7 @@ Browser QA asserts all three role animations trigger during a real local round. 
 ## Replayable solo practice and fair bot adaptation
 
 Local practice chooses a different deterministic seed at each rematch. Each round, the bot changes its per-role strategy repertoire based **only on the public lane result from the previous round**. It cannot read or infer the player's sealed onchain tactic and is not represented as a live human opponent. Test coverage ensures deterministic reproducibility, no private-plan dependency, and a different rematch seed in the browser. This is a basic adaptive bot rather than a finished matchmaking or difficulty system.
+
+## Performance safeguard
+
+The detailed static reactor deck is generated as a cached Phaser texture once per game instance, rather than keeping hundreds of vector Graphics elements live every frame. Dynamic glow, role effects and fighter meshes remain real-time GameObjects. This is a rendering optimization only; no gameplay, cryptography or contract logic changes. Verify desktop/mobile screenshots and rematch after any texture-cache change.
