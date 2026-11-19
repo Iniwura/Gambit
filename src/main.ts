@@ -13,7 +13,7 @@ import {makeFighter} from './visual/characters';
  */
 const W=1440,H=810;
 const C={cyan:0x58e4f3,pink:0xfa69ae,gold:0xffcb62,white:'#eff8ff'};
-const FORMATIONS=[{x:288,y:299},{x:244,y:407},{x:303,y:515},{x:1138,y:299},{x:1181,y:407},{x:1120,y:515}];
+const SPAWN_POSITIONS=[{x:288,y:299},{x:244,y:407},{x:303,y:515},{x:1138,y:299},{x:1181,y:407},{x:1120,y:515}];
 type Field='base'|'trigger'|'response';
 type Plan={base:number,trigger:number,response:number};
 type VerifiedDuel={challengeId:bigint,outcome:0|1|2,explorerUrl:string,authenticated:true};
@@ -147,7 +147,7 @@ class GambitArena extends Phaser.Scene {
 
   private drawFighters(){
     for(let i=0;i<6;i++){
-      const pos=FORMATIONS[i];
+      const pos=SPAWN_POSITIONS[i];
       const unit=makeFighter(this,i,pos.x,pos.y);
       if(i<3)unit.on('pointerdown',()=>{
         if(this.active&&!this.busy&&!this.finished)this.selectRole(i);
