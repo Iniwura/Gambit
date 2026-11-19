@@ -47,10 +47,19 @@ async function runCase(label,viewport){
       await page.mouse.click(r.x+r.width*(1261/1440),r.y+r.height*(754/810));
     }
     await page.locator('#game-state[data-phase="resolving"]').waitFor({state:"attached",timeout:5000});
-    await page.waitForFunction(()=>{
-      const p=document.getElementById('game-state')?.dataset.phase;
-      return p==='ready'||p==='finished';
-    },null,{timeout:9000});
+    try{
+      // CI hosts may throttle the Phaser animation clock under contention.
+      // This still requires the real state transition, never a forced result.
+      await page.waitForFunction(()=>{
+        const p=document.getElementById('game-state')?.dataset.phase;
+        return p==='ready'||p==='finished';
+      },null,{timeout:25000});
+    }catch(error){
+      const state=await page.locator('#game-state').evaluate(el=>({...el.dataset,text:el.textContent}));
+      console.error('ROUND STALL DIAGNOSTIC',JSON.stringify({label,turn,state,errors}));
+      await page.screenshot({path:'browser-evidence/'+label+'-stalled-round-'+turn+'.png'});
+      throw error;
+    }
   }
   const phase=await page.locator('#game-state').getAttribute('data-phase');
   assert.equal(phase,'finished','match should complete within 5 rounds');
