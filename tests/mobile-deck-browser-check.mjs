@@ -26,6 +26,11 @@ try {
   await page.screenshot({path:'browser-evidence/mobile-command-deck.png'});
   assert.equal(await page.locator('#game-state').getAttribute('data-selected-role'),'SCOUT');
   assert.equal(await page.locator('#game-state').getAttribute('data-selected-base'),'2');
+  const formations=deck.locator('.gambit-mobile-formation');
+  assert.equal(await formations.count(),3);
+  await formations.nth(2).click();
+  assert.equal(await page.locator('#game-state').getAttribute('data-formation'),'FEINT');
+  assert.equal(await formations.nth(2).getAttribute('aria-pressed'),'true');
   await page.locator('#gambit-mobile-lock').click();
   await page.locator('#game-state[data-phase="resolving"]').waitFor({timeout:6000});
   assert.equal(await page.locator('#game-state').getAttribute('data-last-lane-count'),'3');

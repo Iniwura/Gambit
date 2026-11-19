@@ -40,6 +40,8 @@ async function run(viewport){
   assert.equal(await state.getAttribute('data-selected-base'),'2');
   await selectCanvas(page,470,653);
   assert.equal(await state.getAttribute('data-selected-base'),'0');
+  await selectCanvas(page,1165,653);
+  assert.equal(await state.getAttribute('data-formation'),'PIVOT');
   await selectCanvas(page,1261,754);
   await page.locator('#game-state[data-phase="resolving"]').waitFor({timeout:7000});
   assert.equal(await state.getAttribute('data-last-lane-count'),'3','all three fighters resolved');

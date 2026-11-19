@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES} from './squad.mjs';
+import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES,FORMATIONS} from './squad.mjs';
 import {createMobileDeck} from './mobile-deck';
 import {renderReactorDeck} from './visual/arena';
 import {makeFighter} from './visual/characters';
@@ -26,6 +26,7 @@ class GambitArena extends Phaser.Scene {
   private match=makeSquadMatch(1102);
   private squadPlans:Plan[]=startingSquadPlans();
   private selectedRole=0;
+  private formation=0;
   private plan:Plan=this.squadPlans[0];
   private busy=false;
   private finished=false;
@@ -38,6 +39,7 @@ class GambitArena extends Phaser.Scene {
   private choices:Record<Field,Phaser.GameObjects.Rectangle[]>={base:[],trigger:[],response:[]};
   private roleButtons:Phaser.GameObjects.Rectangle[]=[];
   private roleHint!:Phaser.GameObjects.Text;
+  private formationButtons:Phaser.GameObjects.Rectangle[]=[];
   private buttons:Phaser.GameObjects.Container[]=[];
   private keyboardListener?: (e:KeyboardEvent)=>void;
   private watchingVerifiedDuel=false;
@@ -52,6 +54,7 @@ class GambitArena extends Phaser.Scene {
     this.match=makeSquadMatch(practiceSeed);
     this.squadPlans=startingSquadPlans();
     this.selectedRole=0;
+    this.formation=0;
     this.plan=this.squadPlans[0];
     lastSelectedPlan={...this.plan};
     this.busy=false;
@@ -64,6 +67,7 @@ class GambitArena extends Phaser.Scene {
     this.buttons=[];
     this.choices={base:[],trigger:[],response:[]};
     this.roleButtons=[];
+    this.formationButtons=[];
     this.cameras.main.setBackgroundColor('#060b16');
     this.drawWorld();
     this.drawFighters();
@@ -77,6 +81,7 @@ class GambitArena extends Phaser.Scene {
       if(!this.active||this.busy||this.finished)return;
       const key=e.key.toLowerCase();
       if(['4','5','6'].includes(key)){this.selectRole(Number(key)-4);return;}
+      if(['7','8','9'].includes(key)){this.selectFormation(Number(key)-7);return;}
       const groups:Record<Field,string[]>={base:['1','2','3'],trigger:['q','w','e'],response:['a','s','d']};
       for(const f of Object.keys(groups) as Field[]){const n=groups[f].indexOf(key);if(n>=0)this.choose(f,n);}
       if(key==='enter'||key===' '){e.preventDefault();this.lockPlan();}
@@ -88,9 +93,10 @@ class GambitArena extends Phaser.Scene {
     });
     this.game.events.on('gambit:verified-duel',this.showVerifiedDuel,this);
     const touchCommand=(e:Event)=>{
-      const command=(e as CustomEvent<{action:string,role?:number,field?:Field,value?:number}>).detail;
+      const command=(e as CustomEvent<{action:string,role?:number,formation?:number,field?:Field,value?:number}>).detail;
       if(!command)return;
       if(command.action==='role'&&typeof command.role==='number')this.selectRole(command.role);
+      else if(command.action==='formation'&&typeof command.formation==='number')this.selectFormation(command.formation);
       else if(command.action==='choose'&&command.field&&typeof command.value==='number')
         this.choose(command.field,command.value);
       else if(command.action==='lock')this.lockPlan();
@@ -105,7 +111,7 @@ class GambitArena extends Phaser.Scene {
   private syncMobileDeck(){
     const phase=this.watchingVerifiedDuel?'chain':this.finished?'finished':
       this.busy?'resolving':this.active?'ready':'intro';
-    mobileDeck.sync({selectedRole:this.selectedRole,plan:this.plan,phase});
+    mobileDeck.sync({selectedRole:this.selectedRole,formation:this.formation,plan:this.plan,phase});
   }
 
   private writeState(phase:string){
@@ -120,6 +126,7 @@ class GambitArena extends Phaser.Scene {
     el.dataset.practiceSeed=String(this.match.seed);
     el.dataset.fighterPlans=String(this.squadPlans.length);
     el.dataset.selectedRole=SQUAD_ROLES[this.selectedRole];
+    el.dataset.formation=FORMATIONS[this.formation].name;
     el.dataset.selectedBase=String(this.plan.base);
     el.dataset.selectedTrigger=String(this.plan.trigger);
     el.dataset.selectedResponse=String(this.plan.response);
@@ -182,7 +189,12 @@ class GambitArena extends Phaser.Scene {
       const rect=this.button(165+i*305,653,276,44,roles[i],()=>this.selectRole(i),C.gold);
       this.roleButtons.push(rect);
     }
-    this.roleHint=this.text(1035,622,'',15,'#ffe1a7',true).setDepth(2600);
+    this.roleHint=this.text(55,620,'',15,'#ffe1a7',true).setDepth(2600);
+    this.text(984,598,'SQUAD DEPLOYMENT · 7 / 8 / 9',14,'#a9e9f4',true).setDepth(2600);
+    for(let i=0;i<FORMATIONS.length;i++){
+      const rect=this.button(1025+i*140,653,130,44,FORMATIONS[i].name,()=>this.selectFormation(i),C.gold);
+      this.formationButtons.push(rect);
+    }
     const b=this.add.graphics().setDepth(2300);
     b.fillStyle(0x071021,.97).fillRoundedRect(17,681,W-34,117,17);
     b.lineStyle(2,0x536d92,.65).strokeRoundedRect(17,681,W-34,117,17);
@@ -206,6 +218,17 @@ class GambitArena extends Phaser.Scene {
     this.selectedRole=index;
     this.plan=this.squadPlans[index];
     lastSelectedPlan={...this.plan};
+    this.refresh();
+  }
+  private selectFormation(index:number){
+    if(!this.active||this.busy||this.finished||!Number.isInteger(index)||index<0||index>=FORMATIONS.length)return;
+    this.formation=index;
+    const homeY=[299,407,515];
+    for(let role=0;role<3;role++){
+      const lane=FORMATIONS[index].slots.indexOf(role);
+      this.tweens.killTweensOf(this.actors[role].shell);
+      this.tweens.add({targets:this.actors[role].shell,y:homeY[lane],duration:270,ease:'Sine.easeInOut'});
+    }
     this.refresh();
   }
   private choose(field:Field,index:number){
@@ -235,6 +258,13 @@ class GambitArena extends Phaser.Scene {
       rect.setFillStyle(active?0x155b6e:0x17263f,1);
       rect.setStrokeStyle(active?3:1,active?C.gold:0x53698b,active?1:.7);
     });
+    this.formationButtons.forEach((rect,i)=>{
+      const active=i===this.formation;
+      rect.setFillStyle(active?0x5d4027:0x17263f,1);
+      rect.setStrokeStyle(active?3:1,active?C.gold:0x53698b,active?1:.7);
+    });
+    const stateEl2=document.getElementById('game-state');
+    if(stateEl2)stateEl2.dataset.formation=FORMATIONS[this.formation].name;
     this.actors.forEach((actor,i)=>{
       // Highlight the selected allied fighter; enemy portraits stay separate.
       if(i<3){
@@ -258,7 +288,8 @@ class GambitArena extends Phaser.Scene {
    * ONLY the public lane outcome, never an opponent's private tactic.
    * It must not be reused to reconstruct secret onchain actions.
    */
-  private playRoleEffect(index:number,outcome:number,y:number){
+  private playRoleEffect(challengerIndex:number,defenderIndex:number,outcome:number,y:number){
+    const index=outcome===2?defenderIndex:challengerIndex;
     const tint=outcome===1?C.cyan:outcome===2?C.pink:C.gold;
     const winnerX=outcome===1?640:outcome===2?800:720;
     const effectDepth=1850;
@@ -302,7 +333,7 @@ class GambitArena extends Phaser.Scene {
 
     if(outcome!==0){
       // The winning fighter reacts; a draw cannot imply a victor.
-      const actor=this.actors[index+(outcome===2?3:0)].shell;
+      const actor=this.actors[outcome===2?defenderIndex+3:challengerIndex].shell;
       this.tweens.add({targets:actor,scaleX:1.13,scaleY:1.13,duration:155,
         yoyo:true,hold:90,ease:'Sine.easeOut'});
     }
@@ -316,7 +347,7 @@ class GambitArena extends Phaser.Scene {
     overlay.add(panel);
     overlay.add(this.text(W/2,270,'GAMBIT',63,C.white,true).setOrigin(.5));
     overlay.add(this.text(W/2,345,'THREE FIGHTERS. THREE SECRET STRATEGIES.',20,'#9feefc',true).setOrigin(.5));
-    overlay.add(this.text(W/2,393,'Select Scout, Guardian, Striker. Program each counter. Win the reactor.',16,C.white).setOrigin(.5));
+    overlay.add(this.text(W/2,393,'Program your fighters. Choose a formation. Outsmart their deployment.',16,C.white).setOrigin(.5));
     overlay.add(this.text(W/2,427,'LOCAL PRACTICE ONLY  •  NO WALLET OR ENCRYPTION',13,'#a9b8d7',true).setOrigin(.5));
     const bg=this.add.rectangle(W/2,496,280,57,0x0d6179).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
     overlay.add([bg,this.text(W/2,496,'ENTER ARENA',20,C.white,true).setOrigin(.5)]);
@@ -344,7 +375,7 @@ class GambitArena extends Phaser.Scene {
   private lockPlan(){
     if(!this.active||this.busy||this.finished||this.watchingVerifiedDuel)return;
     let resolved;
-    try{resolved=commitSquadTurn(this.match,this.squadPlans);}
+    try{resolved=commitSquadTurn(this.match,this.squadPlans,this.formation);}
     catch{
       this.notice.setText('Check all three fighter plans before locking.');
       return;
@@ -354,22 +385,26 @@ class GambitArena extends Phaser.Scene {
     const event=resolved.event;
     this.writeState('resolving');
     const stateEl=document.getElementById('game-state');
-    if(stateEl)stateEl.dataset.lastLaneCount=String(event.lanes.length);
+    if(stateEl){
+      stateEl.dataset.lastLaneCount=String(event.lanes.length);
+      stateEl.dataset.enemyFormation=FORMATIONS[event.formationB].name;
+    }
     this.notice.setText('Resolving all three tactical duels…');
     this.hint.setText('Every fighter executes its own independent conditional plan.');
     const lanesY=[286,414,543];
     for(let i=0;i<3;i++){
-      const ally=this.actors[i],enemy=this.actors[i+3],y=lanesY[i];
+      const lane=event.lanes[i];
+      const ally=this.actors[lane.challengerIndex],enemy=this.actors[lane.defenderIndex+3],y=lanesY[i];
       this.tweens.add({targets:ally.shell,x:640,y,duration:390+i*75,ease:'Sine.easeOut'});
       this.tweens.add({targets:enemy.shell,x:800,y,duration:390+i*75,ease:'Sine.easeOut'});
     }
     this.time.delayedCall(640,()=>{
       if(this.watchingVerifiedDuel)return;
       for(let i=0;i<3;i++){
-        const outcome=event.lanes[i].outcome;
-        this.playRoleEffect(i,outcome,lanesY[i]);
+        const lane=event.lanes[i],outcome=lane.outcome;
+        this.playRoleEffect(lane.challengerIndex,lane.defenderIndex,outcome,lanesY[i]);
         const verdict=this.text(720,lanesY[i]-58,
-          SQUAD_ROLES[i]+' '+(outcome===1?'WINS':outcome===2?'LOST':'DRAW'),15,C.white,true)
+          lane.role+' vs '+lane.enemyRole+' · '+(outcome===1?'CYAN':outcome===2?'VIOLET':'DRAW'),14,C.white,true)
           .setOrigin(.5).setDepth(2000);
         this.tweens.add({targets:verdict,alpha:0,y:lanesY[i]-83,duration:1100,onComplete:()=>verdict.destroy()});
       }
@@ -385,8 +420,12 @@ class GambitArena extends Phaser.Scene {
     });
     this.time.delayedCall(1400,()=>{
       if(this.watchingVerifiedDuel)return;
-      for(const unit of this.actors)
-        this.tweens.add({targets:unit.shell,x:unit.origin.x,y:unit.origin.y,duration:400});
+      for(let i=0;i<this.actors.length;i++){
+        const unit=this.actors[i];
+        const assignedLane=i<3?FORMATIONS[this.formation].slots.indexOf(i):-1;
+        const y=assignedLane<0?unit.origin.y:[299,407,515][assignedLane];
+        this.tweens.add({targets:unit.shell,x:unit.origin.x,y,duration:400});
+      }
     });
     this.time.delayedCall(1950,()=>{
       if(this.watchingVerifiedDuel)return;

@@ -82,3 +82,9 @@ Local practice chooses a different deterministic seed at each rematch. Each roun
 ## Performance safeguard
 
 The detailed static reactor deck is generated as a cached Phaser texture once per game instance, rather than keeping hundreds of vector Graphics elements live every frame. Dynamic glow, role effects and fighter meshes remain real-time GameObjects. This is a rendering optimization only; no gameplay, cryptography or contract logic changes. Verify desktop/mobile screenshots and rematch after any texture-cache change.
+
+## Tactical deployment: the formation layer (19 November)
+
+Solo practice now has three real formation presets: HOLD (Scout/Guardian/Striker), PIVOT (Guardian/Striker/Scout) and FEINT (Striker/Scout/Guardian), applied to the three reactor lanes. Both teams select an independent deployment and match up by lane. Scout mark, Guardian block and Striker breach track the fighter role, not a fixed lane. A locally deterministic bot selects its deployment based on seed, round and the previously revealed player deployment, never by reading the current player orders. Opponent placement and matchups are revealed only when the practice round resolves. Desktop keys 7/8/9 and corresponding on-canvas buttons; native touch deck has the same choices.
+
+**This is a meaningful matchup decision.** It expands the choice space beyond three disconnected rock-paper-scissors battles, but does not pretend to implement spatial collisions or realtime locomotion. It is currently **LOCAL PRACTICE ONLY**. The encrypted `SquadGambit` v2 research contract has not yet adopted formation inputs, so public claims of full FHE parity are prohibited until a contract revision has been compiled, mock-tested, and ultimately verified on Sepolia. CI includes exhaustive formation-symmetry and transcript-tamper tests.

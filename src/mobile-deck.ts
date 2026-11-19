@@ -9,6 +9,7 @@ export type MobilePhase='intro'|'ready'|'resolving'|'finished'|'chain';
 
 const NAMES=['STRIKE','GUARD','FLANK'] as const;
 const ROLE_LABELS=['SCOUT','GUARDIAN','STRIKER'] as const;
+const FORMATION_NAMES=['HOLD','PIVOT','FEINT'] as const;
 const ROLE_HINTS=[
   'Scout marks a winning Striker for +1 pressure.',
   'Guardian blocks one enemy breach bonus.',
@@ -58,6 +59,20 @@ export function createMobileDeck(){
   const roleInfo=document.createElement('p');
   roleInfo.id='gambit-mobile-role-info';
 
+  const formationHeading=document.createElement('div');
+  formationHeading.className='gambit-mobile-action-label';
+  formationHeading.textContent='SQUAD DEPLOYMENT';
+  const formationGroup=document.createElement('div');
+  formationGroup.className='gambit-mobile-choices';
+  formationGroup.setAttribute('role','group');
+  formationGroup.setAttribute('aria-label','Choose squad deployment');
+  const formationButtons=FORMATION_NAMES.map((name,i)=>{
+    const b=button(name,()=>publish('formation',{formation:i}));
+    b.className='gambit-mobile-formation';
+    b.setAttribute('aria-pressed','false');
+    formationGroup.append(b);
+    return b;
+  });
   const actionButtons:{field:MobileField,buttons:HTMLButtonElement[]}[]=[];
   const commands=document.createElement('div');
   commands.className='gambit-mobile-commands';
@@ -98,10 +113,10 @@ export function createMobileDeck(){
   footer.className='gambit-mobile-footnote';
   footer.textContent='Local practice only. Encrypted online squad battles are still in development.';
 
-  deck.append(head,intro,roleGroup,roleInfo,commands,lock,retry,footer);
+  deck.append(head,intro,roleGroup,roleInfo,formationHeading,formationGroup,commands,lock,retry,footer);
   document.body.append(deck);
-  function sync(state:{selectedRole:number,plan:MobilePlan,phase:MobilePhase}){
-    const {selectedRole,plan,phase:stage}=state;
+  function sync(state:{selectedRole:number,formation:number,plan:MobilePlan,phase:MobilePhase}){
+    const {selectedRole,formation,plan,phase:stage}=state;
     const ready=stage==='ready';
     deck.dataset.phase=stage;
     phase.textContent=stage==='resolving'?'RESOLVING ALL THREE':stage==='finished'?'MATCH COMPLETE':
@@ -109,6 +124,8 @@ export function createMobileDeck(){
     intro.hidden=stage!=='intro';
     retry.hidden=stage!=='finished';
     lock.hidden=stage==='intro'||stage==='finished'||stage==='chain';
+    formationHeading.hidden=stage==='intro'||stage==='finished'||stage==='chain';
+    formationGroup.hidden=stage==='intro'||stage==='finished'||stage==='chain';
     lock.disabled=!ready;
     for(let i=0;i<roleButtons.length;i++){
       const b=roleButtons[i];
@@ -116,6 +133,10 @@ export function createMobileDeck(){
       b.setAttribute('aria-pressed',String(i===selectedRole));
     }
     roleInfo.textContent=ROLE_HINTS[selectedRole]??ROLE_HINTS[0];
+    formationButtons.forEach((b,i)=>{
+      b.disabled=!ready;
+      b.setAttribute('aria-pressed',String(formation===i));
+    });
     for(const group of actionButtons){
       for(let i=0;i<group.buttons.length;i++){
         const b=group.buttons[i];
