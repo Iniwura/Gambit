@@ -154,6 +154,56 @@ describe('SquadGambit — EXPERIMENTAL encrypted three-role engine',function(){
     }
   });
 
+  it('rejects replaying a correct signed decryption proof across two different duels',async function(){
+    const {c,defender,challenger}=await fixture();
+    for(let i=1n;i<=2n;i++){
+      await (await sealed(c,defender,challenger,[L,L,L],Number(i-1n))).wait();
+      await (await c.connect(challenger).openDuel(i)).wait();
+      await (await submitted(c,challenger,i,[W,W,W],Number(i-1n))).wait();
+      await (await c.resolveDuel(i)).wait();
+    }
+    const h1=await c.publicResultHandle(1n);
+    const h2=await c.publicResultHandle(2n);
+    expect(h1).not.to.equal(h2,'each FHE result must have a fresh handle');
+    const p1=await fhevm.publicDecrypt([h1]);
+    const p2=await fhevm.publicDecrypt([h2]);
+    const packed2=Number(p2.clearValues[h2]);
+    await expect(c.finalizeDuel(2n,packed2,p1.decryptionProof))
+      .to.be.reverted;
+    expect((await c.duelStatus(2n)).finalized).to.equal(false);
+    await expect(c.finalizeDuel(2n,packed2,p2.decryptionProof))
+      .to.emit(c,'DuelFinalized');
+    expect((await c.duelStatus(2n)).finalized).to.equal(true);
+  });
+
+  it('records a complete LOCAL MOCK EVM gas baseline without claiming Sepolia HCU equivalence',async function(){
+    const {c,defender,challenger}=await fixture();
+    const d=await c.deploymentTransaction();
+    const deployed=await d.wait();
+    const ciphertext=await encrypt(c,defender,[L,L,L],1);
+    const proofBytes=(ciphertext.inputProof.length-2)/2;
+    const rec=async (tx:any)=>{
+      const mined=await (await tx).wait();
+      return Number(mined.gasUsed);
+    };
+    const sealGas=await rec(c.connect(defender).sealSquad(
+      await challenger.getAddress(),ciphertext.handles,ciphertext.inputProof));
+    const openGas=await rec(c.connect(challenger).openDuel(1n));
+    const input=await encrypt(c,challenger,[W,W,W],2);
+    const submitGas=await rec(c.connect(challenger).submitDuel(1n,input.handles,input.inputProof));
+    const resolveGas=await rec(c.resolveDuel(1n));
+    const handle=await c.publicResultHandle(1n);
+    const plain=await fhevm.publicDecrypt([handle]);
+    const finalizeGas=await rec(c.finalizeDuel(1n,Number(plain.clearValues[handle]),plain.decryptionProof));
+    const stats={network:'Hardhat FHE mock only',HCU:'NOT MEASURED',
+      runtimeBytes:(await ethers.provider.getCode(await c.getAddress())).length/2-1,
+      inputProofBytes:proofBytes,deployGas:Number(deployed.gasUsed),
+      sealGas,openGas,submitGas,resolveGas,finalizeGas};
+    for(const name of ['deployGas','sealGas','openGas','submitGas','resolveGas','finalizeGas'])
+      expect((stats as any)[name]).to.be.greaterThan(0);
+    console.log('GAMBIT_FHE_LOCAL_MOCK_METRICS '+JSON.stringify(stats));
+  });
+
   it('expires unused private challenge and never resets policy to re-query',async function(){
     const {c,defender,challenger}=await fixture();
     await (await sealed(c,defender,challenger,[L,L,L])).wait();
