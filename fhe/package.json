@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "deploy:sepolia": "hardhat run --network sepolia scripts/deploy-sepolia.ts",
     "check:sepolia": "hardhat run --network sepolia scripts/check-signer.ts",
-    "seal:sepolia": "hardhat run --network sepolia scripts/seal-policy-sepolia.ts"
+    "seal:sepolia": "hardhat run --network sepolia scripts/seal-policy-sepolia.ts",
+    "deploy:squad:sepolia": "hardhat run --network sepolia scripts/deploy-squad-sepolia.ts",
+    "check:squad:sepolia": "hardhat run --network sepolia scripts/deploy-squad-sepolia.ts"
   },
   "dependencies": {
     "@fhevm/solidity": "^0.11.1",
