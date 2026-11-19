@@ -19,7 +19,12 @@
     "receiptContractAddressMatches": true,
     "receiptSuccess": true,
     "nonemptyRuntimeCode": true,
-    "compiledRuntimeBytecodeComparison": "pending"
+    "compiledRuntimeBytecodeComparison": "executable 7647-byte prefix matches exactly; Solidity CBOR metadata tail differs",
+    "compiledExecutableBytecodeSHA256": "f535d5927038fb58fdb7ca3c6976fee67ac63b47c25646b77384f62d795af684",
+    "compiledRuntimeBytecodeSize": 7700,
+    "compilerMetadataBytes": 53,
+    "compiledFullBytecodeExactMatch": false,
+    "reason": "Only the compiler metadata hash differs; deployed executable logic matches independent recompile."
   },
   "lifecycle": {
     "policySealed": false,
