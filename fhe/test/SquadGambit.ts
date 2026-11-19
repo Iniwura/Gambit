@@ -99,6 +99,58 @@ describe('SquadGambit — EXPERIMENTAL encrypted three-role engine',function(){
     expect('formation' in Object.fromEntries(Object.entries(status))).to.equal(false);
   });
 
+  it('matches an independent cleartext oracle for all NINE encrypted formation pairings',async function(){
+    const {c,defender,challenger}=await fixture();
+    const roles=[
+      [0,1,2],
+      [1,2,0],
+      [2,0,1]
+    ];
+    const a:Plan[]=[
+      {base:0,trigger:1,response:2},
+      {base:1,trigger:2,response:0},
+      {base:2,trigger:0,response:1}
+    ];
+    const b:Plan[]=[
+      {base:2,trigger:1,response:0},
+      {base:0,trigger:2,response:1},
+      {base:1,trigger:0,response:2}
+    ];
+    const oracle=(formationA:number,formationB:number)=>{
+      const winsA=[false,false,false],winsB=[false,false,false];
+      for(let lane=0;lane<3;lane++){
+        const ai=roles[formationA][lane],bi=roles[formationB][lane];
+        const pa=a[ai],pb=b[bi];
+        const am=pa.trigger===pb.base?pa.response:pa.base;
+        const bm=pb.trigger===pa.base?pb.response:pb.base;
+        if(am===bm)continue;
+        const leftWins=(am===0&&bm===2)||(am===1&&bm===0)||(am===2&&bm===1);
+        winsA[ai]=leftWins;
+        winsB[bi]=!leftWins;
+      }
+      const total=(w:boolean[],opp:boolean[])=>{
+        const base=w.filter(Boolean).length;
+        const bonus=(w[2]?1:0)+(w[2]&&w[0]?1:0)-(w[2]&&opp[1]?1:0);
+        return base+Math.max(0,bonus);
+      };
+      return total(winsA,winsB)*8+total(winsB,winsA);
+    };
+    let duel=0n;
+    for(let af=0;af<3;af++)for(let bf=0;bf<3;bf++){
+      duel++;
+      await (await sealed(c,defender,challenger,b,bf)).wait();
+      await (await c.connect(challenger).openDuel(duel)).wait();
+      await (await submitted(c,challenger,duel,a,af)).wait();
+      await (await c.resolveDuel(duel)).wait();
+      const handle=await c.publicResultHandle(duel);
+      const decrypted=await fhevm.publicDecrypt([handle]);
+      const actual=Number(decrypted.clearValues[handle]);
+      expect(actual,'formation '+af+'/'+bf+' FHE parity').to.equal(oracle(af,bf));
+      // An unrelated caller can independently finalize with the signed proof.
+      await (await c.finalizeDuel(duel,actual,decrypted.decryptionProof)).wait();
+    }
+  });
+
   it('expires unused private challenge and never resets policy to re-query',async function(){
     const {c,defender,challenger}=await fixture();
     await (await sealed(c,defender,challenger,[L,L,L])).wait();
