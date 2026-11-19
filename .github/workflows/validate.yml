@@ -92,6 +92,11 @@ jobs:
           node tests/mobile-deck-browser-check.mjs
           node tests/deploy-browser-check.mjs
           node tests/sepolia-browser-safety-check.mjs
+          # Deliberately fake v2 config is used for NEGATIVE browser cases only.
+          # The client must reject wallet-less and WRONG-network attempts before a signature.
+          VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS=0x3333333333333333333333333333333333333333 VITE_GAMBIT_SQUAD_RUNTIME_HASH=0x$(printf 'a%.0s' {1..64}) VITE_GAMBIT_CONTRACT_ADDRESS=0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0 npm run dev -- --host 127.0.0.1 --port 4175 >/tmp/gambit-v2-negative.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4175 >/dev/null && break; sleep 1; done
+          node tests/squad-v2-browser-safety-check.mjs
       - name: Upload real game screenshots
         if: always()
         uses: actions/upload-artifact@v4
