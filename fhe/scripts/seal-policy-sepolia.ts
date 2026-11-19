@@ -71,7 +71,7 @@ async function main() {
   console.log("Encrypting synthetic test policy using Zama SDK node transport...");
   const encrypted = await sdk.encrypt({
     contractAddress: CONTRACT_ADDRESS,
-    userAddress: owner,
+    userAddress: owner as `0x${string}`,
     values: [
       { type: "euint8", value: DEMO_POLICY.base },
       { type: "euint8", value: DEMO_POLICY.trigger },
