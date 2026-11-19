@@ -12,7 +12,7 @@ Browser-first, short-attention-span-friendly, strategic yet understandable to ne
 3. **Skill over lottery**: actions, route, counters and composition produce real, testable choices; do not insert arbitrary random damage.
 
 ## Current reference engine — explicitly limited
-- One base tactic, one contingency trigger and one response per commander.
+- One base combat move, one contingency trigger and one response per commander. The base is STRIKE/GUARD/FLANK, **not** a physical engagement lane. Local practice and SealedGambit use the same encoding.
 - Three actions: strike, guard, flank; rock-paper-scissors style resolution.
 - Deterministic local bot and reactor control/score.
 - This is NOT a fully implemented 3v3 tactical game; the three fighters have mostly visual representations in the reference prototype.

@@ -6,6 +6,8 @@ import {BrowserProvider,Contract,getAddress,ZeroAddress} from 'ethers';
 import {challengeStep} from './lifecycle.mjs';
 
 const CHAIN_ID=11155111n;
+const VERIFIED_DEPLOYMENT=getAddress('0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0');
+const VERIFIED_CODE_BYTES=7700;
 export const SEPOLIA_ID=11155111;
 
 export type Plan={base:0|1|2,trigger:0|1|2,response:0|1|2};
@@ -48,6 +50,9 @@ export function assertPlan(plan:Plan){
 
 export async function createGambitSepoliaClient(rawAddress:string){
   const address=getAddress(rawAddress);
+  if(address!==VERIFIED_DEPLOYMENT){
+    throw Error('Refusing unverified GAMBIT contract address. Recheck the Sepolia deployment.');
+  }
   const ethereum=requireWallet();
   const ethAccounts=await ethereum.request({method:'eth_requestAccounts'});
   if(!Array.isArray(ethAccounts)||!ethAccounts[0])throw Error('Wallet connection was cancelled.');
@@ -55,6 +60,10 @@ export async function createGambitSepoliaClient(rawAddress:string){
   const network=await browserProvider.getNetwork();
   if(network.chainId!==CHAIN_ID){
     throw Error('GAMBIT requires Ethereum Sepolia. Please switch your wallet and reconnect.');
+  }
+  const runtime=await browserProvider.getCode(address);
+  if(runtime==='0x'||(runtime.length-2)/2!==VERIFIED_CODE_BYTES){
+    throw Error('The verified SealedGambit runtime was not found at the expected Sepolia address.');
   }
   const signer=await browserProvider.getSigner();
   const userAddress=getAddress(await signer.getAddress());

@@ -37,3 +37,14 @@ Updated 2026-11-19. Engineering work is on **draft PR #5** (`build/verified-firs
 5. **Original art and QA:** full approved art assets absent from the production repo, browser wallet not validated and beginner playtesting not complete.
 
 **Quality verdict:** deployment gate PASSED. Actual encrypted game and first-place-quality release NOT YET VERIFIED. No fake receipts, no mainnet transactions, no unapproved signing.
+
+## 19 November: challenge-recovery and verified-duel UI hardening
+
+- Recovery controller is now driven by actual `challengeStatus` and recognizes `submit`, `resolve`, `finalize`, and `verified` stages. Unknown/expired challenges and wrong challenger accounts fail closed.
+- Browser wallet address and Sepolia network are rechecked before transactions; changes require reconnecting. The client refuses an unexpected contract address or missing/mismatched deployed runtime length.
+- The Phaser intro now labels its primary choice as a **combat move** (STRIKE/GUARD/FLANK), consistent with the FHE contract and deterministic reference engine; it was previously incorrectly labeled as a route.
+- Only authenticated finalized onchain outcomes may enter the verified-duel renderer. No opponent's hidden choice is reconstructed; onchain UI is a **single duel**, not a claimed five-round match.
+- `tests/chain-lifecycle.test.mjs` exercises the failure and recovery paths. The GitHub quality gates (rules, TypeScript + Vite build, Hardhat FHE tests, desktop/mobile browser practice) passed at `e20ea5ba`: https://github.com/Iniwura/Gambit/actions/runs/44518557488
+- Preview build `e20ea5ba` was reported READY by Vercel; this does **not** demonstrate an actual browser wallet signature: https://gambit-arena-bc7jyc4wg-iniwura-akurus-projects.vercel.app
+
+**Still P0:** No real Sepolia encrypted strategy seal has been authorized or executed; no second-wallet challenge, KMS-verified game receipt, or complete onchain round exists. The first test strategy is publicly known. Do not present the current game as fully confidential multiplayer or finished 3v3.
