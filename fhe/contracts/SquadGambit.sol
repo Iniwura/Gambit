@@ -48,6 +48,9 @@ contract SquadGambit is ZamaEthereumConfig {
     uint256 public nextDuelId;
     mapping(uint256 => Squad) private squads;
     mapping(uint256 => Duel) private duels;
+    // Recovery index for a consumed policy, including after a lost receipt.
+    // A policy still permits exactly one duel. This mapping never resets.
+    mapping(uint256 => uint256) public duelForSquad;
 
     event SquadSealed(uint256 indexed squadId, address indexed owner, address indexed allowedOpponent);
     event SquadClosed(uint256 indexed squadId);
@@ -100,6 +103,7 @@ contract SquadGambit is ZamaEthereumConfig {
         d.squadId=squadId;
         d.challenger=msg.sender;
         d.openedAt=uint64(block.timestamp);
+        duelForSquad[squadId]=duelId;
         emit DuelOpened(duelId,squadId,msg.sender);
     }
 
@@ -219,10 +223,10 @@ contract SquadGambit is ZamaEthereumConfig {
 
     function duelStatus(uint256 id) external view returns(
         uint256 squadId,address challenger,bool submitted,bool resolved,
-        bool finalized,bool expired,uint8 packedScore
+        bool finalized,bool expired,uint8 packedScore,uint64 openedAt
     ){
         Duel storage d=duels[id];
-        return(d.squadId,d.challenger,d.submitted,d.resolved,d.finalized,d.expired,d.packedScore);
+        return(d.squadId,d.challenger,d.submitted,d.resolved,d.finalized,d.expired,d.packedScore,d.openedAt);
     }
 
     function publicResultHandle(uint256 duelId) external view returns(bytes32){

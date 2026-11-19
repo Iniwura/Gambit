@@ -38,6 +38,8 @@ describe('SquadGambit — EXPERIMENTAL encrypted three-role engine',function(){
     await expect(c.connect(defender).openDuel(1n)).to.be.revertedWith('Not invited challenger');
     await expect(c.connect(outsider).openDuel(1n)).to.be.revertedWith('Not invited challenger');
     await expect(c.connect(challenger).openDuel(1n)).to.emit(c,'DuelOpened');
+    expect(await c.duelForSquad(1n)).to.equal(1n);
+    expect((await c.duelStatus(1n)).openedAt).to.be.greaterThan(0n);
     await expect(c.connect(challenger).openDuel(1n)).to.be.revertedWith('Unavailable squad');
     await expect(submitted(c,outsider,1n,[W,W,W])).to.be.revertedWith('Not challenger');
     await (await submitted(c,challenger,1n,[W,W,W])).wait();
@@ -161,6 +163,10 @@ describe('SquadGambit — EXPERIMENTAL encrypted three-role engine',function(){
     await network.provider.send('evm_mine');
     await expect(c.expireUnsubmitted(1n)).to.emit(c,'DuelExpired');
     expect((await c.squadStatus(1n)).claimed).to.equal(true);
+    expect(await c.duelForSquad(1n)).to.equal(1n);
+    const expired=await c.duelStatus(1n);
+    expect(expired.expired).to.equal(true);
+    expect(expired.openedAt).to.be.greaterThan(0n);
     await expect(c.connect(challenger).openDuel(1n)).to.be.revertedWith('Unavailable squad');
     await expect(c.resolveDuel(1n)).to.be.revertedWith('Not resolvable');
   });
