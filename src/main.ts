@@ -294,6 +294,62 @@ class GambitArena extends Phaser.Scene {
     this.syncMobileDeck();
   }
 
+
+  /**
+   * Role-specific Phaser choreography in LOCAL PRACTICE. Animation reads
+   * ONLY the public lane outcome, never an opponent's private tactic.
+   * It must not be reused to reconstruct secret onchain actions.
+   */
+  private playRoleEffect(index:number,outcome:number,y:number){
+    const tint=outcome===1?C.cyan:outcome===2?C.pink:C.gold;
+    const winnerX=outcome===1?640:outcome===2?800:720;
+    const effectDepth=1850;
+
+    // Outcome halo: a consistent visual language for all fighter classes.
+    const halo=this.add.circle(winnerX,y,20,tint,.07).setDepth(effectDepth);
+    halo.setStrokeStyle(5,tint,.95);
+    this.tweens.add({targets:halo,scale:3.9,alpha:0,duration:730,ease:'Sine.easeOut',
+      onComplete:()=>halo.destroy()});
+
+    if(index===0){
+      // SCOUT: radar acquisition and marked vulnerability.
+      for(let ring=0;ring<3;ring++){
+        const scan=this.add.circle(winnerX,y,18+ring*11,tint,.015).setDepth(effectDepth);
+        scan.setStrokeStyle(2.5,tint,.85);
+        scan.setAlpha(.82);
+        this.tweens.add({targets:scan,scale:2.3,alpha:0,delay:ring*125,duration:650,
+          onComplete:()=>scan.destroy()});
+      }
+      const marker=this.add.circle(winnerX,y,7,C.gold,.9).setDepth(effectDepth+1);
+      this.tweens.add({targets:marker,scale:0,alpha:0,delay:250,duration:400,
+        onComplete:()=>marker.destroy()});
+    }else if(index===1){
+      // GUARDIAN: defensive barrier and a brief impact ripple.
+      const barrier=this.add.ellipse(winnerX,y-6,98,127,tint,.08).setDepth(effectDepth);
+      barrier.setStrokeStyle(5,tint,.96);
+      const core=this.add.ellipse(winnerX,y-6,70,102,0xffffff,.035).setDepth(effectDepth);
+      core.setStrokeStyle(2,0xffffff,.4);
+      this.tweens.add({targets:[barrier,core],scaleX:1.36,scaleY:1.13,alpha:0,
+        duration:800,ease:'Sine.easeOut',onComplete:()=>{barrier.destroy();core.destroy();}});
+    }else{
+      // STRIKER: three staggered energy slashes across the clash point.
+      for(let slash=0;slash<3;slash++){
+        const blade=this.add.rectangle(700+slash*20,y-20+slash*19,120,8,tint,.9)
+          .setDepth(effectDepth+1).setRotation(-.60);
+        this.tweens.add({targets:blade,x:blade.x+74,alpha:0,scaleX:1.35,
+          delay:slash*83,duration:480,ease:'Sine.easeOut',
+          onComplete:()=>blade.destroy()});
+      }
+    }
+
+    if(outcome!==0){
+      // The winning fighter reacts; a draw cannot imply a victor.
+      const actor=this.actors[index+(outcome===2?3:0)].shell;
+      this.tweens.add({targets:actor,scaleX:1.13,scaleY:1.13,duration:155,
+        yoyo:true,hold:90,ease:'Sine.easeOut'});
+    }
+  }
+
   private intro(){
     this.active=false;
     const overlay=this.add.container(0,0).setDepth(7000);
@@ -353,20 +409,21 @@ class GambitArena extends Phaser.Scene {
       if(this.watchingVerifiedDuel)return;
       for(let i=0;i<3;i++){
         const outcome=event.lanes[i].outcome;
-        const color=outcome===1?C.cyan:outcome===2?C.pink:C.gold;
-        const spark=this.add.circle(720,lanesY[i],23,color,.30).setStrokeStyle(4,color).setDepth(1900);
-        this.tweens.add({targets:spark,alpha:0,scale:3.5,duration:650,onComplete:()=>spark.destroy()});
+        this.playRoleEffect(i,outcome,lanesY[i]);
         const verdict=this.text(720,lanesY[i]-58,
           SQUAD_ROLES[i]+' '+(outcome===1?'WINS':outcome===2?'LOST':'DRAW'),15,C.white,true)
           .setOrigin(.5).setDepth(2000);
         this.tweens.add({targets:verdict,alpha:0,y:lanesY[i]-83,duration:1100,onComplete:()=>verdict.destroy()});
       }
+      const stateEl=document.getElementById('game-state');
+      if(stateEl)stateEl.dataset.lastRoleEffects='3';
       this.cameras.main.shake(140,.0015);
       this.notice.setText(event.pointsA>event.pointsB?'REACTOR ADVANTAGE · '+event.pointsA+' POINTS':
         event.pointsB>event.pointsA?'ENEMY PRESSURE · REPROGRAM YOUR SQUAD':'STALEMATE · ADAPT YOUR SQUAD');
-      const mark=event.bonusesA.mark?'SCOUT MARK +1 · ':'';
-      const block=event.bonusesA.blocked?'ENEMY SHIELD BLOCKED BREACH · ':'';
-      this.hint.setText(mark+block+'ROUND '+event.round+' · ALL THREE LANES RESOLVED');
+      const marked=event.bonusesA.mark?'SCOUT MARK +1 · ':'';
+      const blocked=event.bonusesA.blocked?'SHIELD -1 BONUS · ':'';
+      const breach=event.bonusesA.breach?'STRIKER BREACH +1 · ':'';
+      this.hint.setText((marked+breach+blocked)||'THREE FIGHTERS ENGAGED · '+event.pointsA+' : '+event.pointsB);
     });
     this.time.delayedCall(1400,()=>{
       if(this.watchingVerifiedDuel)return;

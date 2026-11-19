@@ -61,3 +61,9 @@ Track match start-to-complete, input-to-outcome time, aborted/failed transaction
 - Mobile starts the arena via a native ENTER ARENA button, with rematch controls after completion. The fixed 16:9 Phaser world remains above the controls so it is not shrunk into the central part of a tall screen.
 - Commands dispatch to the SAME Phaser state and `src/squad.mjs` rules as desktop. They do not emit transactions or reveal onchain secrets.
 - Browser QA: `tests/mobile-deck-browser-check.mjs`, which verifies the mobile workflow, independent plan persistence and three-lane resolution.
+
+## Role-specific 2D combat feedback
+
+The practice scene uses Phaser, not HTML gameplay, for staged three-role encounters. Scout generates radar pulses/mark VFX, Guardian projects a transient energy shield, and Striker generates staggered energy slashes. Winner color follows public lane outcome (cyan, violet, draw gold). The winning actor gets a brief impact emphasis; draws do not show a winner. These short-lived GameObjects are destroyed after the tween to avoid buildup and do **not** reconstruct encrypted opponent tactics.
+
+Browser QA asserts all three role animations trigger during a real local round. This is interim procedural art, not a replacement for approved original character sheets or the rejected arena environment.
