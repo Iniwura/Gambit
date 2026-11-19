@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES} from './squad.mjs';
+import {createMobileDeck} from './mobile-deck';
 
 /**
  * GAMBIT's actual Phaser gameplay entrypoint.
@@ -18,6 +19,7 @@ type VerifiedDuel={challengeId:bigint,outcome:0|1|2,explorerUrl:string,authentic
 let lastSelectedPlan:Plan={...startingSquadPlans()[0]};
 type Actor={shell:Phaser.GameObjects.Container,origin:{x:number,y:number}};
 const names=['STRIKE','GUARD','FLANK'];
+const mobileDeck=createMobileDeck();
 class GambitArena extends Phaser.Scene {
   private match=makeSquadMatch(1102);
   private squadPlans:Plan[]=startingSquadPlans();
@@ -81,6 +83,25 @@ class GambitArena extends Phaser.Scene {
       this.game.events.off('gambit:verified-duel',this.showVerifiedDuel,this);
     });
     this.game.events.on('gambit:verified-duel',this.showVerifiedDuel,this);
+    const touchCommand=(e:Event)=>{
+      const command=(e as CustomEvent<{action:string,role?:number,field?:Field,value?:number}>).detail;
+      if(!command)return;
+      if(command.action==='role'&&typeof command.role==='number')this.selectRole(command.role);
+      else if(command.action==='choose'&&command.field&&typeof command.value==='number')
+        this.choose(command.field,command.value);
+      else if(command.action==='lock')this.lockPlan();
+      else if(command.action==='rematch'&&this.finished)this.scene.restart();
+    };
+    window.addEventListener('gambit:mobile-control',touchCommand);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>
+      window.removeEventListener('gambit:mobile-control',touchCommand));
+    this.syncMobileDeck();
+  }
+
+  private syncMobileDeck(){
+    const phase=this.watchingVerifiedDuel?'chain':this.finished?'finished':
+      this.busy?'resolving':this.active?'ready':'intro';
+    mobileDeck.sync({selectedRole:this.selectedRole,plan:this.plan,phase});
   }
 
   private writeState(phase:string){
@@ -100,6 +121,7 @@ class GambitArena extends Phaser.Scene {
     el.textContent=phase==='finished'
       ? 'Match complete. '+(this.match.winner===1?'Victory':this.match.winner===2?'Defeat':'Draw')
       : 'GAMBIT '+phase+', round '+(this.match.round+1);
+    this.syncMobileDeck();
   }
 
   private text(x:number,y:number,s:string,px=16,color=C.white,bold=false) {
@@ -269,6 +291,7 @@ class GambitArena extends Phaser.Scene {
       rect.setFillStyle(active?i===0?0x20687a:i===1?0x665128:0x69355b:0x17263f);
       rect.setStrokeStyle(active?3:1,active?i===0?C.cyan:i===1?C.gold:C.pink:0x53698b,active?1:.65);
     }));
+    this.syncMobileDeck();
   }
 
   private intro(){
@@ -283,11 +306,25 @@ class GambitArena extends Phaser.Scene {
     overlay.add(this.text(W/2,427,'LOCAL PRACTICE ONLY  •  NO WALLET OR ENCRYPTION',13,'#a9b8d7',true).setOrigin(.5));
     const bg=this.add.rectangle(W/2,496,280,57,0x0d6179).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
     overlay.add([bg,this.text(W/2,496,'ENTER ARENA',20,C.white,true).setOrigin(.5)]);
-    const begin=()=>{overlay.destroy(true);this.active=true;this.writeState('ready');window.removeEventListener('keydown',enterKey);};
+    const begin=()=>{
+      if(this.active)return;
+      overlay.destroy(true);
+      this.active=true;
+      this.writeState('ready');
+      window.removeEventListener('keydown',enterKey);
+      window.removeEventListener('gambit:mobile-control',touchStart);
+    };
+    const touchStart=(e:Event)=>{
+      if((e as CustomEvent<{action?:string}>).detail?.action==='start')begin();
+    };
+    window.addEventListener('gambit:mobile-control',touchStart);
     const enterKey=(e:KeyboardEvent)=>{if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();begin();}};
     bg.on('pointerdown',begin);
     window.addEventListener('keydown',enterKey);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>window.removeEventListener('keydown',enterKey));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{
+      window.removeEventListener('keydown',enterKey);
+      window.removeEventListener('gambit:mobile-control',touchStart);
+    });
   }
 
   private lockPlan(){
@@ -346,6 +383,7 @@ class GambitArena extends Phaser.Scene {
         this.hint.setText('Scout marks. Guardian shields. Striker breaches. Predict their counters.');
         this.writeState('ready');
       }
+      this.syncMobileDeck();
     });
   }
 
@@ -363,6 +401,7 @@ class GambitArena extends Phaser.Scene {
     this.watchingVerifiedDuel=true;
     this.active=false;
     this.busy=true;
+    this.syncMobileDeck();
     const mode=document.getElementById('status');
     if(mode)mode.textContent='SEPOLIA · AUTHENTICATED RESULT';
     const phase=document.getElementById('game-state');

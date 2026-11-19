@@ -54,3 +54,10 @@ Each lane victory gives +1 reactor pressure. A winning Striker receives +1 breac
 
 ## Instrumentation
 Track match start-to-complete, input-to-outcome time, aborted/failed transaction counts, rematch requests, first-click delay, network error recovery, and practice-to-chain conversion. Collect no private decrypted opponent plan.
+
+## Mobile command deck
+
+- Touch-specific DOM controls for 390px screens: large fighter selectors, three accessible move groups and a single LOCK ALL THREE TACTICS primary action.
+- Mobile starts the arena via a native ENTER ARENA button, with rematch controls after completion. The fixed 16:9 Phaser world remains above the controls so it is not shrunk into the central part of a tall screen.
+- Commands dispatch to the SAME Phaser state and `src/squad.mjs` rules as desktop. They do not emit transactions or reveal onchain secrets.
+- Browser QA: `tests/mobile-deck-browser-check.mjs`, which verifies the mobile workflow, independent plan persistence and three-lane resolution.
