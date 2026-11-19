@@ -59,6 +59,10 @@ jobs:
         run: npm run compile
       - name: Execute mock contract tests
         run: npm test
+      - name: Public Sepolia squad deployment estimate (READ ONLY, non-gating)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run preflight:squad:public
       - name: Export compiled SealedGambit ABI and bytecode
         uses: actions/upload-artifact@v4
         with:

@@ -11,7 +11,8 @@
     "check:sepolia": "hardhat run --network sepolia scripts/check-signer.ts",
     "seal:sepolia": "hardhat run --network sepolia scripts/seal-policy-sepolia.ts",
     "deploy:squad:sepolia": "hardhat run --network sepolia scripts/deploy-squad-sepolia.ts",
-    "check:squad:sepolia": "hardhat run --network sepolia scripts/deploy-squad-sepolia.ts"
+    "check:squad:sepolia": "hardhat run --network sepolia scripts/deploy-squad-sepolia.ts",
+    "preflight:squad:public": "hardhat run --network sepolia scripts/preflight-squad-sepolia.ts"
   },
   "dependencies": {
     "@fhevm/solidity": "^0.11.1",
