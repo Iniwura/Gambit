@@ -36,7 +36,12 @@ export function enemySquadFor(match) {
   // Deterministic and match-specific; not a secret-bearing contract opponent.
   return SQUAD_ROLES.map((_,index)=>{
     const mix=nextRandom((s ^ Math.imul(index+1,0x85ebca6b))>>>0);
-    return {...STRATEGIES[mix%STRATEGIES.length]};
+    // Adapt only to the PUBLIC previous lane result; the bot never reads
+    // the player's private conditional order. Losing a lane causes a larger
+    // repertoire shift. This isn't ML or an unbeatable expert opponent.
+    const lastLane=match.history.at(-1)?.lanes?.[index]?.outcome;
+    const shift=lastLane===1?3:lastLane===2?1:0;
+    return {...STRATEGIES[(mix+shift)%STRATEGIES.length]};
   });
 }
 

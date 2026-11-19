@@ -66,9 +66,12 @@ async function runCase(label,viewport){
   const rounds=Number(await page.locator('#game-state').getAttribute('data-round'));
   assert.ok(rounds>=3&&rounds<=5,'round count must be bounded');
   await page.screenshot({path:'browser-evidence/'+label+'-finished.png'});
+  const seedBefore=await page.locator('#game-state').getAttribute('data-practice-seed');
   const r=await canvas.boundingBox();
   await page.mouse.click(r.x+r.width/2,r.y+r.height*(498/810));
   await page.locator('#game-state[data-phase="intro"][data-round="0"]').waitFor({state:"attached",timeout:5000});
+  const seedAfter=await page.locator('#game-state').getAttribute('data-practice-seed');
+  assert.notEqual(seedAfter,seedBefore,'rematch loads a different local bot scenario');
   assert.equal(errors.length,0,'no uncaught browser errors: '+errors.join(' / '));
   console.log('PASS '+label+' · complete match in '+rounds+' rounds, rematch reset, no errors');
   passed++;

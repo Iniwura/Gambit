@@ -110,3 +110,19 @@ test('same seed and round return the same bot plans with no public plaintext lea
   assert.equal(JSON.stringify(result.event).includes('response'),false);
   assert.equal(JSON.stringify(result.event).includes('enemyPlan'),false);
 });
+
+test('practice AI adapts to public lane results without accessing player orders',()=>{
+  const original=makeSquadMatch(919),round=1;
+  const baseline={...original,round,history:[{lanes:[
+    {role:'SCOUT',outcome:0},{role:'GUARDIAN',outcome:0},{role:'STRIKER',outcome:0}
+  ]}]};
+  const sawLoss={...original,round,history:[{lanes:[
+    {role:'SCOUT',outcome:1},{role:'GUARDIAN',outcome:0},{role:'STRIKER',outcome:0}
+  ]}]};
+  const prev=enemySquadFor(baseline);
+  const adapted=enemySquadFor(sawLoss);
+  assert.notDeepEqual(adapted[0],prev[0],'losing Scout lane changes Scout bot plan');
+  assert.deepEqual(adapted[1],prev[1],'Guardian bot sees identical public result');
+  assert.deepEqual(adapted[2],prev[2],'Striker bot sees identical public result');
+  assert.deepEqual(adapted,enemySquadFor(sawLoss),'adaptation is deterministic');
+});

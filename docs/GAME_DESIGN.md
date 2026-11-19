@@ -74,3 +74,7 @@ Browser QA asserts all three role animations trigger during a real local round. 
 - Replaced placeholder oval-headed fighters with role-specific original vector suit silhouettes: Scout antenna and compact chassis, Guardian heavy shoulder armor, Striker assault plates. No Among Us art or third-party sprite assets are copied.
 - All scenery and characters are native Phaser objects in `src/visual/`. Rule evaluation, wallet flow, and FHE contract remain untouched. Existing practice role selection tests must still pass.
 - This remains procedural placeholder art, not final production sprite art. Do not represent it as approved artist-quality character animation. The remaining art gate is custom high-resolution sprite sheets and full animation states after beginner UX validation.
+
+## Replayable solo practice and fair bot adaptation
+
+Local practice chooses a different deterministic seed at each rematch. Each round, the bot changes its per-role strategy repertoire based **only on the public lane result from the previous round**. It cannot read or infer the player's sealed onchain tactic and is not represented as a live human opponent. Test coverage ensures deterministic reproducibility, no private-plan dependency, and a different rematch seed in the browser. This is a basic adaptive bot rather than a finished matchmaking or difficulty system.

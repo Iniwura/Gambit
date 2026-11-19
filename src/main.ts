@@ -18,6 +18,7 @@ type Field='base'|'trigger'|'response';
 type Plan={base:number,trigger:number,response:number};
 type VerifiedDuel={challengeId:bigint,outcome:0|1|2,explorerUrl:string,authenticated:true};
 let lastSelectedPlan:Plan={...startingSquadPlans()[0]};
+let practiceSessionCount=0;
 type Actor={shell:Phaser.GameObjects.Container,origin:{x:number,y:number}};
 const names=['STRIKE','GUARD','FLANK'];
 const mobileDeck=createMobileDeck();
@@ -45,7 +46,10 @@ class GambitArena extends Phaser.Scene {
   create(){
     // Phaser Scene.restart() reuses this class instance. All mutable gameplay
     // state and GameObject references MUST be reset on every create().
-    this.match=makeSquadMatch(1102);
+    // A fresh local opponent scenario on rematch: no wallet, signing,
+    // nondeterministic onchain behavior or fake opponent session.
+    const practiceSeed=(1102+Math.imul(practiceSessionCount++,0x9e3779b1))>>>0;
+    this.match=makeSquadMatch(practiceSeed);
     this.squadPlans=startingSquadPlans();
     this.selectedRole=0;
     this.plan=this.squadPlans[0];
@@ -113,6 +117,7 @@ class GambitArena extends Phaser.Scene {
     el.dataset.scoreA=String(this.match.scoreA);
     el.dataset.scoreB=String(this.match.scoreB);
     el.dataset.practiceMode='three-role-squad';
+    el.dataset.practiceSeed=String(this.match.seed);
     el.dataset.fighterPlans=String(this.squadPlans.length);
     el.dataset.selectedRole=SQUAD_ROLES[this.selectedRole];
     el.dataset.selectedBase=String(this.plan.base);
@@ -390,7 +395,7 @@ class GambitArena extends Phaser.Scene {
       if(this.match.finished)this.gameOver();
       else{
         this.notice.setText('ROUND '+(this.match.round+1)+' · EDIT EACH FIGHTER BEFORE LOCKING');
-        this.hint.setText('Scout marks. Guardian shields. Striker breaches. Predict their counters.');
+        this.hint.setText('Enemy adjusts to recent lane losses. Predict the next counter.');
         this.writeState('ready');
       }
       this.syncMobileDeck();
@@ -459,7 +464,7 @@ class GambitArena extends Phaser.Scene {
     overlay.add(this.add.rectangle(W/2,H/2,650,328,0x16213a).setStrokeStyle(3,this.match.winner===1?C.cyan:C.pink,.85));
     overlay.add(this.text(W/2,310,result,59,this.match.winner===1?'#88f7fb':'#ffc3df',true).setOrigin(.5));
     overlay.add(this.text(W/2,385,this.match.scoreA+' — '+this.match.scoreB,31,'#ffe6ba',true).setOrigin(.5));
-    overlay.add(this.text(W/2,426,'Rewrite all three fighter plans and challenge again.',17,C.white).setOrigin(.5));
+    overlay.add(this.text(W/2,426,'New opponent pattern. Reprogram your squad.',17,C.white).setOrigin(.5));
     const retry=this.add.rectangle(W/2,498,275,56,0x19677b).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
     overlay.add([retry,this.text(W/2,498,'REMATCH ↻',20,C.white,true).setOrigin(.5)]);
     retry.on('pointerdown',()=>this.scene.restart());
