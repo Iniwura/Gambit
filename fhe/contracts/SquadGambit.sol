@@ -22,6 +22,7 @@ contract SquadGambit is ZamaEthereumConfig {
         address opponent;
         bool active;
         bool claimed;
+        euint8 formation; // 0 HOLD, 1 PIVOT, 2 FEINT; kept encrypted
         euint8[3] base;
         euint8[3] trigger;
         euint8[3] response;
@@ -35,6 +36,7 @@ contract SquadGambit is ZamaEthereumConfig {
         bool resolved;
         bool finalized;
         bool expired;
+        euint8 formation;
         euint8[3] base;
         euint8[3] trigger;
         euint8[3] response;
@@ -57,7 +59,7 @@ contract SquadGambit is ZamaEthereumConfig {
 
     function sealSquad(
         address allowedOpponent,
-        externalEuint8[9] calldata encryptedPlans,
+        externalEuint8[10] calldata encryptedPlans,
         bytes calldata inputProof
     ) external returns (uint256 squadId) {
         require(allowedOpponent != address(0) && allowedOpponent != msg.sender, "Invalid opponent");
@@ -66,6 +68,8 @@ contract SquadGambit is ZamaEthereumConfig {
         s.owner=msg.sender;
         s.opponent=allowedOpponent;
         s.active=true;
+        s.formation=_normalize(FHE.fromExternal(encryptedPlans[9],inputProof));
+        FHE.allowThis(s.formation);
         for(uint8 i=0;i<3;i++) {
             s.base[i]=_normalize(FHE.fromExternal(encryptedPlans[uint256(i)*3],inputProof));
             s.trigger[i]=_normalize(FHE.fromExternal(encryptedPlans[uint256(i)*3+1],inputProof));
@@ -101,13 +105,15 @@ contract SquadGambit is ZamaEthereumConfig {
 
     function submitDuel(
         uint256 duelId,
-        externalEuint8[9] calldata encryptedPlans,
+        externalEuint8[10] calldata encryptedPlans,
         bytes calldata inputProof
     ) external {
         Duel storage d=duels[duelId];
         require(d.challenger==msg.sender,"Not challenger");
         require(!d.submitted && !d.resolved && !d.finalized && !d.expired,"Already submitted");
         require(block.timestamp<=uint256(d.openedAt)+1 days,"Submission expired");
+        d.formation=_normalize(FHE.fromExternal(encryptedPlans[9],inputProof));
+        FHE.allowThis(d.formation);
         for(uint8 i=0;i<3;i++) {
             d.base[i]=_normalize(FHE.fromExternal(encryptedPlans[uint256(i)*3],inputProof));
             d.trigger[i]=_normalize(FHE.fromExternal(encryptedPlans[uint256(i)*3+1],inputProof));
@@ -124,12 +130,38 @@ contract SquadGambit is ZamaEthereumConfig {
         Duel storage d=duels[duelId];
         require(d.submitted && !d.resolved && !d.finalized && !d.expired,"Not resolvable");
         Squad storage defender=squads[d.squadId];
+
+        // Role at visual lane n = (role + formation) mod 3.
+        // For challenger role i, opposing defender role is
+        // (i + defenderFormation - challengerFormation) mod 3.
+        // This encrypted permutation routes BOTH sides without revealing
+        // either team's formation on chain.
+        ebool same=FHE.eq(d.formation,defender.formation);
+        ebool shiftOne=FHE.or(
+            FHE.or(
+                FHE.and(FHE.eq(d.formation,FHE.asEuint8(0)),FHE.eq(defender.formation,FHE.asEuint8(1))),
+                FHE.and(FHE.eq(d.formation,FHE.asEuint8(1)),FHE.eq(defender.formation,FHE.asEuint8(2)))
+            ),
+            FHE.and(FHE.eq(d.formation,FHE.asEuint8(2)),FHE.eq(defender.formation,FHE.asEuint8(0)))
+        );
+
+        // A wins are ordered by challenger role. Temporary B wins here are
+        // also ordered by challenger role, then rotated to DEFENDER roles.
         ebool[3] memory challengerWins;
+        ebool[3] memory defenderWinsByChallengerRole;
+        for(uint8 i=0;i<3;i++){
+            (challengerWins[i],defenderWinsByChallengerRole[i])=
+                _lane(d,defender,i,same,shiftOne);
+        }
         ebool[3] memory defenderWins;
+        for(uint8 j=0;j<3;j++) {
+            defenderWins[j]=FHE.select(same,defenderWinsByChallengerRole[j],
+                FHE.select(shiftOne,defenderWinsByChallengerRole[(j+2)%3],
+                    defenderWinsByChallengerRole[(j+1)%3]));
+        }
         euint8 pointsA=FHE.asEuint8(0);
         euint8 pointsB=FHE.asEuint8(0);
         for(uint8 i=0;i<3;i++){
-            (challengerWins[i],defenderWins[i])=_lane(d,defender,i);
             pointsA=FHE.add(pointsA,FHE.select(challengerWins[i],FHE.asEuint8(1),FHE.asEuint8(0)));
             pointsB=FHE.add(pointsB,FHE.select(defenderWins[i],FHE.asEuint8(1),FHE.asEuint8(0)));
         }
@@ -199,9 +231,21 @@ contract SquadGambit is ZamaEthereumConfig {
         return FHE.toBytes32(d.encryptedPackedScore);
     }
 
-    function _lane(Duel storage d,Squad storage defender,uint8 i) private returns(ebool,ebool){
-        euint8 challengerAction=FHE.select(FHE.eq(d.trigger[i],defender.base[i]),d.response[i],d.base[i]);
-        euint8 defenderAction=FHE.select(FHE.eq(defender.trigger[i],d.base[i]),defender.response[i],defender.base[i]);
+    function _rotate(euint8[3] storage data,uint8 role,ebool same,ebool shiftOne)
+        private returns(euint8)
+    {
+        return FHE.select(same,data[role],FHE.select(shiftOne,
+            data[(uint256(role)+1)%3],data[(uint256(role)+2)%3]));
+    }
+
+    function _lane(Duel storage d,Squad storage defender,uint8 i,ebool same,ebool shiftOne)
+        private returns(ebool,ebool)
+    {
+        euint8 opponentBase=_rotate(defender.base,i,same,shiftOne);
+        euint8 opponentTrigger=_rotate(defender.trigger,i,same,shiftOne);
+        euint8 opponentResponse=_rotate(defender.response,i,same,shiftOne);
+        euint8 challengerAction=FHE.select(FHE.eq(d.trigger[i],opponentBase),d.response[i],d.base[i]);
+        euint8 defenderAction=FHE.select(FHE.eq(opponentTrigger,d.base[i]),opponentResponse,opponentBase);
         ebool draw=FHE.eq(challengerAction,defenderAction);
         ebool challengerWins=FHE.or(
             FHE.or(
