@@ -42,7 +42,7 @@ async function main() {
   if ((await ethers.provider.getCode(CONTRACT_ADDRESS)) === "0x") {
     throw new Error("SealedGambit has no code on Sepolia");
   }
-  const contract = await ethers.getContractAt("SealedGambit", CONTRACT_ADDRESS, signer);
+  const contract: any = await ethers.getContractAt("SealedGambit", CONTRACT_ADDRESS, signer);
   const balance = await ethers.provider.getBalance(owner);
   const before = await contract.nextPolicyId();
 
