@@ -3,7 +3,8 @@ import test from 'node:test';
 import {
   SQUAD_ROLES,startingSquadPlans,validateSquadPlans,makeSquadMatch,
   enemySquadFor,scoreSquadOutcomes,resolveSquadTurn,
-  commitSquadTurn,verifySquadTranscript
+  commitSquadTurn,verifySquadTranscript,FORMATIONS,validateFormation,
+  resolvePositionedSquadTurn,enemyFormationFor
 } from '../src/squad.mjs';
 
 test('three independent mutable role plans with validated actions',()=>{
@@ -85,7 +86,8 @@ test('a full five-round game is deterministic with bounded control and scores',(
       const out=commitSquadTurn(state,p);
       plans.push(p);
       events.push(out.event);
-      assert.ok(out.event.lanes.every(l=>Object.keys(l).sort().join(',')==='outcome,role'));
+      assert.ok(out.event.lanes.every(l=>['role','enemyRole','challengerIndex','defenderIndex','outcome']
+        .every(key=>Object.hasOwn(l,key))));
       assert.equal(out.event.lanes.length,3);
       assert.ok(out.match.round>state.round&&out.match.round<=5);
       assert.ok(Math.abs(out.match.control)<=3);
@@ -125,4 +127,56 @@ test('practice AI adapts to public lane results without accessing player orders'
   assert.deepEqual(adapted[1],prev[1],'Guardian bot sees identical public result');
   assert.deepEqual(adapted[2],prev[2],'Striker bot sees identical public result');
   assert.deepEqual(adapted,enemySquadFor(sawLoss),'adaptation is deterministic');
+});
+
+test('formations are valid permutations; all sides have same tactical choices',()=>{
+  assert.deepEqual(FORMATIONS.map(x=>x.name),['HOLD','PIVOT','FEINT']);
+  for(const f of FORMATIONS)assert.deepEqual([...f.slots].sort(),[0,1,2]);
+  for(const invalid of [-1,3,1.1,NaN,'1',undefined])
+    assert.throws(()=>validateFormation(invalid),/Invalid squad formation/);
+});
+
+test('repositioning truly changes opponent matchup and reactor outcome',()=>{
+  const always=base=>({base,trigger:0,response:base});
+  const a=[always(0),always(1),always(2)];
+  const b=[always(2),always(0),always(1)];
+  const hold=resolvePositionedSquadTurn(a,b,0,0);
+  const pivot=resolvePositionedSquadTurn(a,b,1,0);
+  assert.equal(hold.pointsA,5);
+  assert.equal(hold.pointsB,0);
+  assert.ok(pivot.pointsA<hold.pointsA,'position changes actual combat score');
+  assert.ok(pivot.lanes.some(l=>l.role!==l.enemyRole),'different roles face each other');
+  assert.equal(pivot.lanes[0].role,'GUARDIAN');
+  assert.equal(pivot.lanes[0].enemyRole,'SCOUT');
+});
+
+test('all 9 formation pairings preserve score symmetry across 729 tactical matchups',()=>{
+  const strategies=[];
+  for(let a=0;a<3;a++)for(let t=0;t<3;t++)for(let r=0;r<3;r++)
+    strategies.push({base:a,trigger:t,response:r});
+  for(let af=0;af<3;af++)for(let bf=0;bf<3;bf++){
+    for(const a of strategies)for(const b of strategies){
+      const lhs=resolvePositionedSquadTurn([a,a,a],[b,b,b],af,bf);
+      const rhs=resolvePositionedSquadTurn([b,b,b],[a,a,a],bf,af);
+      assert.equal(lhs.pointsA,rhs.pointsB);
+      assert.equal(lhs.pointsB,rhs.pointsA);
+      assert.ok(lhs.pointsA<=5 && lhs.pointsB<=5);
+    }
+  }
+});
+
+test('formation replay validates source and rejects tampered formation or score',()=>{
+  let match=makeSquadMatch(1447),plans=[],events=[];
+  for(let round=0;round<5&&!match.finished;round++){
+    const formation=round%3,selected=startingSquadPlans();
+    const next=commitSquadTurn(match,selected,formation);
+    plans.push({plans:selected,formation});
+    events.push(next.event);
+    match=next.match;
+  }
+  assert.ok(verifySquadTranscript(1447,plans,events));
+  const edited=plans.map(x=>({...x}));
+  edited[0]={...edited[0],formation:(edited[0].formation+1)%3};
+  assert.equal(verifySquadTranscript(1447,edited,events),false);
+  assert.deepEqual(enemyFormationFor(makeSquadMatch(100)),enemyFormationFor(makeSquadMatch(100)));
 });
