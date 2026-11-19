@@ -5,7 +5,7 @@ import {
   decodePackedSquadScore,validateSquadStatus,canOpenSquad,squadDuelStep
 } from '../src/chain/squad-lifecycle.mjs';
 const a='0x1111111111111111111111111111111111111111';
-const b='0x2222222222222222222222222222222222222';
+const b='0x'+'2'.repeat(40);
 const c='0x3333333333333333333333333333333333333333';
 const open={squadId:1n,challenger:b,openedAt:100n,
   submitted:false,resolved:false,finalized:false,expired:false,packedScore:0n};
@@ -48,6 +48,7 @@ test('only invited challenger can open an unclaimed squad',()=>{
   assert.equal(canOpenSquad({...s,claimed:true},b),false);
   assert.equal(validateSquadStatus({...s,active:false}),'closed');
   assert.throws(()=>validateSquadStatus({...s,owner:b}),/Invalid or unknown/);
+  assert.throws(()=>validateSquadStatus({...s,allowedOpponent:'0x2222222'}),/Invalid or unknown/);
 });
 
 test('state driven recovery and chain-timestamp expiry, with no fabricated completion',()=>{
