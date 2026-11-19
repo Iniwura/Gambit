@@ -60,14 +60,15 @@ export async function createSquadSepoliaClient(
     throw Error('Refusing legacy or empty address for encrypted squad v2.');
   const ethereum=wallet??(window as unknown as {ethereum?:WalletProvider}).ethereum;
   if(!ethereum)throw Error('A browser Ethereum wallet is required.');
-  const chainRaw=await ethereum.request({method:'eth_chainId'});
+  const eth:WalletProvider=ethereum;
+  const chainRaw=await eth.request({method:'eth_chainId'});
   if(typeof chainRaw!=='string'||BigInt(chainRaw)!==CHAIN_ID)
     throw Error('Switch your wallet to Ethereum Sepolia (11155111).');
-  const rawAccounts=await ethereum.request({method:'eth_requestAccounts'});
+  const rawAccounts=await eth.request({method:'eth_requestAccounts'});
   if(!Array.isArray(rawAccounts)||typeof rawAccounts[0]!=='string')
     throw Error('Wallet connection cancelled.');
   const userAddress=getAddress(rawAccounts[0]);
-  const provider=new BrowserProvider(ethereum as any);
+  const provider=new BrowserProvider(eth as any);
   const network=await provider.getNetwork();
   if(network.chainId!==CHAIN_ID)throw Error('Wrong wallet network.');
   const code=await provider.getCode(contractAddress);
@@ -78,14 +79,14 @@ export async function createSquadSepoliaClient(
     throw Error('Wallet signer and selected account disagree.');
   const contract=new Contract(contractAddress,abi,signer);
   const sdk=new ZamaSDK(createConfig({
-    chains:[sepolia],ethereum:ethereum as any,relayers:{[sepolia.id]:web()}
+    chains:[sepolia],ethereum:eth as any,relayers:{[sepolia.id]:web()}
   }));
 
   async function assertWalletStable(){
-    const id=await ethereum.request({method:'eth_chainId'});
+    const id=await eth.request({method:'eth_chainId'});
     if(typeof id!=='string'||BigInt(id)!==CHAIN_ID)
       throw Error('Wallet network switched. Reconnect on Sepolia.');
-    const accounts=await ethereum.request({method:'eth_accounts'});
+    const accounts=await eth.request({method:'eth_accounts'});
     if(!Array.isArray(accounts)||typeof accounts[0]!=='string'
       ||getAddress(accounts[0])!==userAddress)
       throw Error('Selected wallet account changed. Reconnect.');
@@ -227,17 +228,17 @@ export async function createSquadSepoliaClient(
     if(step==='verified')return verifiedResult(duelId);
     if(step==='expired'||step==='submit')
       throw Error('Duel has not been submitted and cannot be resolved.');
-    let handle:string;
+    let handle:`0x${string}`;
     let resolutionTx='';
     if(step==='resolve'){
       await assertWalletStable();
       const tx=await txSucceeded(contract.resolveDuel(duelId));
       const event=eventIn(tx.receipt,'DuelReady');
       if(BigInt(event.args.duelId)!==duelId)throw Error('Resolution event ID mismatch.');
-      handle=event.args.resultHandle as string;
+      handle=event.args.resultHandle as `0x${string}`;
       resolutionTx=tx.hash;
     }else{
-      handle=await contract.publicResultHandle(duelId) as string;
+      handle=await contract.publicResultHandle(duelId) as `0x${string}`;
     }
     if(!/^0x[a-fA-F0-9]{64}$/.test(handle))throw Error('Invalid encrypted result handle.');
     const onchainHandle=await contract.publicResultHandle(duelId) as string;
