@@ -8,6 +8,20 @@
 import {STRATEGIES, validatePlan, resolveEncounter, nextRandom} from './engine.mjs';
 
 export const SQUAD_ROLES = Object.freeze(['SCOUT','GUARDIAN','STRIKER']);
+
+// Tactical deployment is a permutation of ROLE indices on three lanes.
+// Choices are symmetric: both teams may use the same presets.
+export const FORMATIONS=Object.freeze([
+  Object.freeze({name:'HOLD',slots:Object.freeze([0,1,2])}),
+  Object.freeze({name:'PIVOT',slots:Object.freeze([1,2,0])}),
+  Object.freeze({name:'FEINT',slots:Object.freeze([2,0,1])})
+]);
+export function validateFormation(index){
+  if(!Number.isInteger(index)||index<0||index>=FORMATIONS.length)
+    throw Error('Invalid squad formation');
+  return index;
+}
+
 const STARTING_PLANS = Object.freeze([
   Object.freeze({base:2,trigger:0,response:1}), // Scout: flank, shield vs strike
   Object.freeze({base:1,trigger:2,response:0}), // Guardian: guard, punish flank
@@ -43,6 +57,18 @@ export function enemySquadFor(match) {
     const shift=lastLane===1?3:lastLane===2?1:0;
     return {...STRATEGIES[(mix+shift)%STRATEGIES.length]};
   });
+}
+
+/**
+ * Practice opponent's formation depends ONLY on match seed, round and a
+ * previously revealed formation. It must not inspect current private plans.
+ */
+export function enemyFormationFor(match){
+  if(!match||match.mode!=='local-squad'||!Number.isInteger(match.round))
+    throw Error('Invalid squad match');
+  const previous=match.history.at(-1)?.formationA ?? 0;
+  const mix=nextRandom((match.seed ^ Math.imul(match.round+1,0x7f4a7c15))>>>0);
+  return (mix%3+previous+1)%3;
 }
 
 /**
@@ -83,12 +109,43 @@ export function resolveSquadTurn(challengerPlans,defenderPlans) {
     bonusesB:{breach:scored.defender.breach,mark:scored.defender.mark,blocked:scored.defender.blocked}};
 }
 
-export function commitSquadTurn(match,challengerPlans) {
+/** Compare team-specific roles in each lane after independent repositioning.
+ * Role bonuses follow the FIGHTER, not a permanently assigned lane.
+ * Everything here is local cleartext practice; not deployed FHE logic.
+ */
+export function resolvePositionedSquadTurn(challengerPlans,defenderPlans,formationA=0,formationB=0){
+  const a=validateSquadPlans(challengerPlans),b=validateSquadPlans(defenderPlans);
+  const slotA=FORMATIONS[validateFormation(formationA)].slots;
+  const slotB=FORMATIONS[validateFormation(formationB)].slots;
+  const winsA=[false,false,false],winsB=[false,false,false];
+  const lanes=slotA.map((roleA,lane)=>{
+    const roleB=slotB[lane];
+    const outcome=resolveEncounter(a[roleA],b[roleB]).outcome;
+    winsA[roleA]=outcome===1;
+    winsB[roleB]=outcome===2;
+    return {role:SQUAD_ROLES[roleA],enemyRole:SQUAD_ROLES[roleB],
+      challengerIndex:roleA,defenderIndex:roleB,outcome};
+  });
+  const pressure=(wins,opposite)=>{
+    const base=wins.filter(Boolean).length;
+    const breach=wins[2]?1:0;
+    const mark=wins[0]&&wins[2]?1:0;
+    const blocked=wins[2]&&opposite[1]?1:0;
+    return {total:base+Math.max(0,breach+mark-blocked),breach,mark,blocked};
+  };
+  const aPoints=pressure(winsA,winsB),bPoints=pressure(winsB,winsA);
+  return {lanes,pointsA:aPoints.total,pointsB:bPoints.total,
+    bonusesA:{breach:aPoints.breach,mark:aPoints.mark,blocked:aPoints.blocked},
+    bonusesB:{breach:bPoints.breach,mark:bPoints.mark,blocked:bPoints.blocked},
+    formationA,formationB};
+}
+
+export function commitSquadTurn(match,challengerPlans,formation=0) {
   if(!match||match.mode!=='local-squad'||match.finished||!Number.isInteger(match.round)||
      match.round<0||match.round>=5) throw Error('Squad match is not active.');
   const plans=validateSquadPlans(challengerPlans);
   const opponent=enemySquadFor(match);
-  const results=resolveSquadTurn(plans,opponent);
+  const results=resolvePositionedSquadTurn(plans,opponent,validateFormation(formation),enemyFormationFor(match));
   const delta=Math.sign(results.pointsA-results.pointsB);
   const control=Math.max(-3,Math.min(3,match.control+delta));
   const next={
@@ -110,7 +167,10 @@ export function verifySquadTranscript(seed,plansByTurn,publicEvents) {
   try {
     let state=makeSquadMatch(seed);
     for(let i=0;i<plansByTurn.length;i++){
-      const turn=commitSquadTurn(state,plansByTurn[i]);
+      const selected=plansByTurn[i];
+      const turn=Array.isArray(selected)
+        ? commitSquadTurn(state,selected,0)
+        : commitSquadTurn(state,selected?.plans,selected?.formation);
       if(JSON.stringify(turn.event)!==JSON.stringify(publicEvents[i]))return false;
       state=turn.match;
     }
