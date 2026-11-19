@@ -9,7 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit",
-    "build:contract-artifact": "npm --prefix fhe install --no-audit --no-fund && npm --prefix fhe run compile && node scripts/export-contract.mjs"
+    "build:contract-artifact": "npm --prefix fhe install --no-audit --no-fund && npm --prefix fhe run compile && node scripts/check-squad-client.mjs && node scripts/export-contract.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1",
