@@ -48,3 +48,7 @@ Updated 2026-11-19. Engineering work is on **draft PR #5** (`build/verified-firs
 - Preview build `e20ea5ba` was reported READY by Vercel; this does **not** demonstrate an actual browser wallet signature: https://gambit-arena-bc7jyc4wg-iniwura-akurus-projects.vercel.app
 
 **Still P0:** No real Sepolia encrypted strategy seal has been authorized or executed; no second-wallet challenge, KMS-verified game receipt, or complete onchain round exists. The first test strategy is publicly known. Do not present the current game as fully confidential multiplayer or finished 3v3.
+
+## Nov 19 — formation tactics research candidate
+
+Local practice added **HOLD, PIVOT, FEINT** squad formations and role-versus-role matchups. The undeployed `SquadGambit.sol` candidate now takes ten encrypted `euint8` inputs per squad (nine tactics plus private formation), selects opponent ciphertext by encrypted relative deployment, and computes role-specific bonuses without decrypting either squad formation. This change does not modify `SealedGambit` or any deployed contract. Compilation, Hardhat mock tests, performance/HCU benchmarking and independent replay proof verification are required before this candidate can be treated as validated.

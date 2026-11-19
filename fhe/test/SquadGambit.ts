@@ -4,19 +4,20 @@ import {ethers,fhevm,network} from 'hardhat';
 type Plan={base:number,trigger:number,response:number};
 const W:Plan={base:0,trigger:1,response:0};
 const L:Plan={base:2,trigger:1,response:2};
-async function encrypt(contract:any,signer:any,plans:Plan[]){
+async function encrypt(contract:any,signer:any,plans:Plan[],formation=0){
   const input=fhevm.createEncryptedInput(await contract.getAddress(),await signer.getAddress());
   for(const p of plans){input.add8(p.base);input.add8(p.trigger);input.add8(p.response);}
+  input.add8(formation);
   const c=await input.encrypt();
-  expect(c.handles.length).to.equal(9);
+  expect(c.handles.length).to.equal(10);
   return c;
 }
-async function sealed(contract:any,owner:any,allowed:any,plans:Plan[]){
-  const c=await encrypt(contract,owner,plans);
+async function sealed(contract:any,owner:any,allowed:any,plans:Plan[],formation=0){
+  const c=await encrypt(contract,owner,plans,formation);
   return contract.connect(owner).sealSquad(await allowed.getAddress(),c.handles,c.inputProof);
 }
-async function submitted(contract:any,challenger:any,duelId:bigint,plans:Plan[]){
-  const c=await encrypt(contract,challenger,plans);
+async function submitted(contract:any,challenger:any,duelId:bigint,plans:Plan[],formation=0){
+  const c=await encrypt(contract,challenger,plans,formation);
   return contract.connect(challenger).submitDuel(duelId,c.handles,c.inputProof);
 }
 describe('SquadGambit — EXPERIMENTAL encrypted three-role engine',function(){
@@ -72,6 +73,30 @@ describe('SquadGambit — EXPERIMENTAL encrypted three-role engine',function(){
     // Challenger 2 base wins + (breach 1 + mark 1 - guardian block 1) = 3
     // Defender one guardian lane win = 1
     expect(Number(decrypted.clearValues[h])).to.equal(25); // 3*8+1
+  });
+
+  it('actually changes encrypted matchups when challenger repositions, without exposing formation',async function(){
+    const {c,defender,challenger}=await fixture();
+    const always=(base:number):Plan=>({base,trigger:0,response:base});
+    const challengerPlans=[always(0),always(1),always(2)];
+    const defenderPlans=[always(2),always(0),always(1)];
+    // HOLD vs HOLD: challenger wins every role (5-0). The exact same tactics
+    // with challenger PIVOT vs defender HOLD lose all roles (0-5).
+    await (await sealed(c,defender,challenger,defenderPlans,0)).wait();
+    await (await c.connect(challenger).openDuel(1n)).wait();
+    await (await submitted(c,challenger,1n,challengerPlans,1)).wait();
+    await (await c.resolveDuel(1n)).wait();
+    const resultHandle=await c.publicResultHandle(1n);
+    const receipt=await fhevm.publicDecrypt([resultHandle]);
+    const packed=Number(receipt.clearValues[resultHandle]);
+    expect(packed).to.equal(5);
+    await expect(c.finalizeDuel(1n,40,receipt.decryptionProof)).to.be.reverted;
+    await expect(c.finalizeDuel(1n,packed,receipt.decryptionProof))
+      .to.emit(c,'DuelFinalized').withArgs(1n,0,5,2);
+    const status=await c.duelStatus(1n);
+    expect(status.finalized).to.equal(true);
+    // Formation ciphertext remains private. Only the aggregate score is decrypted.
+    expect('formation' in Object.fromEntries(Object.entries(status))).to.equal(false);
   });
 
   it('expires unused private challenge and never resets policy to re-query',async function(){

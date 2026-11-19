@@ -3,12 +3,12 @@
 ## Compatibility boundary
 
 - **Deployed:** `SealedGambit` at `0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0` on Sepolia. One plan per side, current browser preview.
-- **Undeployed candidate:** `fhe/contracts/SquadGambit.sol`. Three conditional plans per squad, one per Scout/Guardian/Striker, accepting a single Zama input proof for nine encrypted `euint8` values per party.
+- **Undeployed candidate:** `fhe/contracts/SquadGambit.sol`. Three conditional plans per squad, one per Scout/Guardian/Striker, accepting a single Zama input proof for **ten encrypted `euint8` values** per party: nine tactics plus one hidden formation.
 - **No new signing, no Sepolia deployment, no web wallet config change.**
 
 ## Rules parity
 
-Scout, Guardian and Striker each resolve their own conditional (base, trigger, response) against the corresponding opposing role. Independent base wins score one. Striker bonus +1 for a win, Scout bonus +1 if both Scout and Striker win, and an opposing Guardian lane victory subtracts one Striker bonus. The only decrypted public output is an aggregate 3-bit per-team packed score `8 * pointsA + pointsB`, values 0 to 45. It does NOT publicly reveal individual role results or encrypted strategies.
+Scout, Guardian and Striker each resolve their own conditional (base, trigger, response) against the opposing role **actually assigned to the same lane**. Both sides encrypt an independent formation: HOLD = [Scout, Guardian, Striker], PIVOT = [Guardian, Striker, Scout], FEINT = [Striker, Scout, Guardian]. The encrypted formation offset routes the defender's role ciphertext through `FHE.select` while keeping the formation private. Independent base wins score one. Striker bonus +1 for a win, Scout bonus +1 if both Scout and Striker win, and an opposing Guardian lane victory subtracts one Striker bonus. The only decrypted public output is an aggregate 3-bit per-team packed score `8 * pointsA + pointsB`, values 0 to 45. It does NOT publicly reveal individual role results or encrypted strategies.
 
 A mock reference test should establish identical scores against `src/squad.mjs` and reject tampered KMS plaintext/proofs.
 
@@ -24,7 +24,7 @@ A mock reference test should establish identical scores against `src/squad.mjs` 
 
 1. Hardhat compiles and FHE mock tests pass.
 2. Benchmark code size, gas, input proof size and actual Sepolia relayer compatibility before any deployment.
-3. Validate a real nine-value SDK input and KMS proof in a read-only/simulated environment. Require a separate explicit testnet deployment approval.
+3. Validate a real ten-value SDK input and KMS proof in a read-only/simulated environment. Require a separate explicit testnet deployment approval.
 4. Browser strategy UI, selected opponent invitation, stage recovery and proof verification must use `SquadGambit` ABI, not the currently deployed one-plan ABI.
 5. Public privacy and fairness review, repeated-query stress tests, user playtests and accessibility review before production claims.
 
