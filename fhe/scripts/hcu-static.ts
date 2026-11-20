@@ -5,6 +5,25 @@
  * script intentionally fails closed if the modeled resolve total exceeds the
  * documented devnet limits; unknown protocol overhead is reported separately.
  */
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {resolve} from 'node:path';
+
+// The operation inventory below is hand-reviewed, not compiler-derived.
+// Refuse a stale HCU approval if the Solidity source is modified in ANY way.
+// A contract change requires a new manual FHE-op audit and a revised approved
+// Git blob SHA. Keep this assertion in the CI gate before approving deployment.
+const REVIEWED_SQUAD_CONTRACT_GIT_BLOB_SHA='b5c7e307595a4b0259431daa92016d1887795b8d';
+const squadSource=readFileSync(resolve(process.cwd(),'contracts/SquadGambit.sol'));
+const actualBlobSha=createHash('sha1')
+  .update('blob '+squadSource.length+'\\0'.replace('\\0','\0'))
+  .update(squadSource)
+  .digest('hex');
+if(actualBlobSha!==REVIEWED_SQUAD_CONTRACT_GIT_BLOB_SHA){
+  console.error('HCU SOURCE DRIFT: SquadGambit.sol has changed; static FHE operation counts must be independently re-audited before updating the reviewed Git blob SHA. Expected '+REVIEWED_SQUAD_CONTRACT_GIT_BLOB_SHA+'; got '+actualBlobSha);
+  process.exit(1);
+}
+
 const LIMIT_TOTAL=20_000_000;
 const LIMIT_DEPTH=5_000_000;
 const cost={
@@ -27,6 +46,8 @@ const normalizeHcu=weighted(normalize);
 const modeledDepthHcu=1_100_000;
 const result={
   source:'SquadGambit.sol static source inventory',
+  reviewedContractGitBlobSha:REVIEWED_SQUAD_CONTRACT_GIT_BLOB_SHA,
+  sourceDriftGuard:'PASS; any change to SquadGambit.sol requires manual re-review',
   table:'Zama HCU guide published non-scalar euint8/ebool costs',
   limits:{totalHcu:LIMIT_TOTAL,sequentialDepthHcu:LIMIT_DEPTH},
   counts:{resolve,sealOrSubmitNormalization:normalize},

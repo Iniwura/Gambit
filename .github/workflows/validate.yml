@@ -64,6 +64,8 @@ jobs:
         run: npm run typecheck
       - name: Compile encrypted encounter
         run: npm run compile
+      - name: Enforce HCU inventory against reviewed SquadGambit source (READ ONLY)
+        run: npm run hcu:static
       - name: Execute mock contract tests
         run: npm test
       - name: Public Sepolia squad deployment estimate (READ ONLY, non-gating)
