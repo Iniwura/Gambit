@@ -91,9 +91,12 @@ export async function createSquadSepoliaClient(
       ||getAddress(accounts[0])!==userAddress)
       throw Error('Selected wallet account changed. Reconnect.');
   }
-  async function txSucceeded(promise:Promise<any>){
+  async function txSucceeded(submit:()=>Promise<any>){
+    // A pending Promise would initiate eth_sendTransaction BEFORE this guard.
+    // Pass a deferred submitter so wallet identity is checked immediately
+    // before the provider can display a signing prompt.
     await assertWalletStable();
-    const transaction=await promise;
+    const transaction=await submit();
     const receipt=await transaction.wait(1);
     if(!receipt||Number(receipt.status)!==1)throw Error('Sepolia transaction did not succeed.');
     return {hash:transaction.hash as string,receipt};
@@ -151,7 +154,7 @@ export async function createSquadSepoliaClient(
       throw Error('Invite a different nonempty challenger wallet.');
     const encrypted=await encryptedSquad(plans,formation);
     await assertWalletStable();
-    const tx=await txSucceeded(contract.sealSquad(allowedOpponent,
+    const tx=await txSucceeded(()=>contract.sealSquad(allowedOpponent,
       encrypted.encryptedValues,encrypted.inputProof));
     const evt=eventIn(tx.receipt,'SquadSealed');
     const squadId=BigInt(evt.args.squadId);
@@ -169,7 +172,7 @@ export async function createSquadSepoliaClient(
     if(state.owner!==userAddress||!state.active||state.claimed)
       throw Error('Only the owner may close an unused active squad.');
     await assertWalletStable();
-    const tx=await txSucceeded(contract.closeSquad(squadId));
+    const tx=await txSucceeded(()=>contract.closeSquad(squadId));
     if((await readSquad(squadId)).active)throw Error('Squad was not closed onchain.');
     return {transactionHash:tx.hash};
   }
@@ -178,7 +181,7 @@ export async function createSquadSepoliaClient(
     if(!canOpenSquad(squad,userAddress))
       throw Error('This squad is not available to the invited challenger.');
     await assertWalletStable();
-    const tx=await txSucceeded(contract.openDuel(squadId));
+    const tx=await txSucceeded(()=>contract.openDuel(squadId));
     const evt=eventIn(tx.receipt,'DuelOpened');
     const duelId=BigInt(evt.args.duelId);
     if(BigInt(evt.args.squadId)!==squadId||
@@ -205,7 +208,7 @@ export async function createSquadSepoliaClient(
     if((await nextDuelStep(duelId)).step!=='submit')
       throw Error('Onchain duel changed or expired during encryption.');
     await assertWalletStable();
-    const tx=await txSucceeded(contract.submitDuel(duelId,input.encryptedValues,input.inputProof));
+    const tx=await txSucceeded(()=>contract.submitDuel(duelId,input.encryptedValues,input.inputProof));
     const e=eventIn(tx.receipt,'DuelSubmitted');
     if(BigInt(e.args.duelId)!==duelId)throw Error('Submission event ID mismatch.');
     const d=await readDuel(duelId);
@@ -231,7 +234,7 @@ export async function createSquadSepoliaClient(
     const {step}=await nextDuelStep(duelId);
     if(step!=='resolve')throw Error('Duel is not awaiting encrypted resolution.');
     await assertWalletStable();
-    const tx=await txSucceeded(contract.resolveDuel(duelId));
+    const tx=await txSucceeded(()=>contract.resolveDuel(duelId));
     const evt=eventIn(tx.receipt,'DuelReady');
     if(BigInt(evt.args.duelId)!==duelId)
       throw Error('Resolution event references another duel.');
@@ -269,7 +272,7 @@ export async function createSquadSepoliaClient(
     if((await nextDuelStep(duelId)).step!=='finalize')
       throw Error('Duel changed during KMS decryption; refusing to finalize.');
     await assertWalletStable();
-    const tx=await txSucceeded(contract.finalizeDuel(duelId,parsed.packed,proof.decryptionProof));
+    const tx=await txSucceeded(()=>contract.finalizeDuel(duelId,parsed.packed,proof.decryptionProof));
     const evt=eventIn(tx.receipt,'DuelFinalized');
     if(BigInt(evt.args.duelId)!==duelId||
        Number(evt.args.pointsChallenger)!==parsed.challenger||
