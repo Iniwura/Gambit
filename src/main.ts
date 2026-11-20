@@ -202,7 +202,7 @@ class GambitArena extends Phaser.Scene {
     this.text(31,60,'3V3 SQUAD PRACTICE  ·  NOT ENCRYPTED',13,'#a2cce2',true).setDepth(2000);
     this.round=this.text(720,19,'ROUND 1 / 5',23,C.white,true).setOrigin(.5,0).setDepth(2000);
     this.scoreboard=this.text(720,51,'0 : 0',24,'#ffe3a7',true).setOrigin(.5,0).setDepth(2000);
-    this.text(1240,34,'VIOLET SQUAD',19,'#ffa1d8',true).setDepth(2000);
+    // Arena already labels the defending team. Avoid overlapping the two wallet-lab controls.
     const shadow=this.add.rectangle(720,121,690,47,0x090d1a,.8).setStrokeStyle(1,0x49678f,.55).setDepth(1900);
     this.notice=this.text(720,107,'Command three fighters. Win the reactor.',20,'#fff0b5',true).setOrigin(.5,0).setDepth(2000);
     this.hint=this.text(720,154,'Select each fighter. Give them a move and a conditional counter.',15,'#d7e7ff').setOrigin(.5,0).setDepth(2000);
@@ -226,7 +226,9 @@ class GambitArena extends Phaser.Scene {
       const rect=this.button(165+i*305,653,276,44,roles[i],()=>this.selectRole(i),C.gold);
       this.roleButtons.push(rect);
     }
-    this.roleHint=this.text(55,620,'',15,'#ffe1a7',true).setDepth(2600);
+    // Role abilities are already named on the three large buttons. Keep this
+    // text object for state refresh without duplicating/cropping a second label.
+    this.roleHint=this.text(55,620,'',15,'#ffe1a7',true).setVisible(false);
     this.text(984,598,'SQUAD DEPLOYMENT · 7 / 8 / 9',14,'#a9e9f4',true).setDepth(2600);
     for(let i=0;i<FORMATIONS.length;i++){
       const rect=this.button(1025+i*140,653,130,44,FORMATIONS[i].name,()=>this.selectFormation(i),C.gold);
@@ -354,7 +356,7 @@ class GambitArena extends Phaser.Scene {
     );
     const index=outcome===2?defenderIndex:challengerIndex;
     const tint=outcome===1?C.cyan:outcome===2?C.pink:C.gold;
-    const winnerX=outcome===1?640:outcome===2?800:720;
+    const winnerX=outcome===1?585:outcome===2?855:720;
     const effectDepth=1850;
 
     // Outcome halo: a consistent visual language for all fighter classes.
@@ -456,12 +458,14 @@ class GambitArena extends Phaser.Scene {
     }
     this.notice.setText('Resolving all three tactical duels…');
     this.hint.setText('Every fighter executes its own independent conditional plan.');
-    const lanesY=[286,414,543];
+    // Readable three-lane staging: keep the bottom fighter name above controls,
+    // and give both teams sufficient space away from the reactor center.
+    const lanesY=[280,406,526];
     for(let i=0;i<3;i++){
       const lane=event.lanes[i];
       const ally=this.actors[lane.challengerIndex],enemy=this.actors[lane.defenderIndex+3],y=lanesY[i];
-      this.tweens.add({targets:ally.shell,x:640,y,duration:390+i*75,ease:'Sine.easeOut'});
-      this.tweens.add({targets:enemy.shell,x:800,y,duration:390+i*75,ease:'Sine.easeOut'});
+      this.tweens.add({targets:ally.shell,x:585,y,scale:0.82,duration:390+i*75,ease:'Sine.easeOut'});
+      this.tweens.add({targets:enemy.shell,x:855,y,scale:0.82,duration:390+i*75,ease:'Sine.easeOut'});
     }
     this.time.delayedCall(640,()=>{
       if(this.watchingVerifiedDuel)return;
@@ -489,7 +493,7 @@ class GambitArena extends Phaser.Scene {
         const unit=this.actors[i];
         const assignedLane=i<3?FORMATIONS[this.formation].slots.indexOf(i):-1;
         const y=assignedLane<0?unit.origin.y:[299,407,515][assignedLane];
-        this.tweens.add({targets:unit.shell,x:unit.origin.x,y,duration:400});
+        this.tweens.add({targets:unit.shell,x:unit.origin.x,y,scale:1,duration:400});
       }
     });
     this.time.delayedCall(1950,()=>{
