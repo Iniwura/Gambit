@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES,FORMATIONS,PRACTICE_STYLES,enemySquadFor,enemyFormationFor} from './squad.mjs';
 import {buildPracticeInsight} from './practice-insight.mjs';
+import {buildPracticeMatchDebrief} from './practice-match-debrief.mjs';
 import {createMobileDeck} from './mobile-deck';
 import {buildPracticeDebrief} from './tactical-report.mjs';
 import {renderReactorDeck} from './visual/arena';
@@ -154,7 +155,7 @@ class GambitArena extends Phaser.Scene {
   private syncMobileDeck(){
     const phase=this.watchingVerifiedDuel?'chain':this.finished?'finished':
       this.busy?'resolving':this.active?'ready':'intro';
-    mobileDeck.sync({selectedRole:this.selectedRole,formation:this.formation,plan:this.plan,plans:this.squadPlans,phase,report:this.lastDebrief,style:this.match.style});
+    mobileDeck.sync({selectedRole:this.selectedRole,formation:this.formation,plan:this.plan,plans:this.squadPlans,phase,report:this.lastDebrief,style:this.match.style,summary:this.finished?buildPracticeMatchDebrief(this.match):null});
   }
 
   private writeState(phase:string){
@@ -700,14 +701,19 @@ class GambitArena extends Phaser.Scene {
   private gameOver(){
     this.finished=true;this.active=false;this.writeState('finished');
     const result=this.match.winner===0?'DRAW':this.match.winner===1?'VICTORY':'DEFEAT';
+    const summary=buildPracticeMatchDebrief(this.match);
     const overlay=this.add.container(0,0).setDepth(7200);
-    overlay.add(this.add.rectangle(W/2,H/2,W,H,0x070b17,.77));
-    overlay.add(this.add.rectangle(W/2,H/2,650,328,0x16213a).setStrokeStyle(3,this.match.winner===1?C.cyan:C.pink,.85));
-    overlay.add(this.text(W/2,310,result,59,this.match.winner===1?'#88f7fb':'#ffc3df',true).setOrigin(.5));
-    overlay.add(this.text(W/2,385,this.match.scoreA+' — '+this.match.scoreB,31,'#ffe6ba',true).setOrigin(.5));
-    overlay.add(this.text(W/2,426,'New opponent pattern. Reprogram your squad.',17,C.white).setOrigin(.5));
-    const retry=this.add.rectangle(W/2,498,275,56,0x19677b).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
-    overlay.add([retry,this.text(W/2,498,'REMATCH ↻',20,C.white,true).setOrigin(.5)]);
+    overlay.add(this.add.rectangle(W/2,H/2,W,H,0x070b17,.79));
+    overlay.add(this.add.rectangle(W/2,H/2,780,392,0x16213a)
+      .setStrokeStyle(3,this.match.winner===1?C.cyan:this.match.winner===2?C.pink:C.gold,.87));
+    overlay.add(this.text(W/2,274,result,55,
+      this.match.winner===1?'#88f7fb':this.match.winner===2?'#ffc3df':'#ffe1a5',true).setOrigin(.5));
+    overlay.add(this.text(W/2,343,summary.scoreline,36,'#ffe6ba',true).setOrigin(.5));
+    overlay.add(this.text(W/2,406,summary.highlight,18,'#d7f0ff',true).setOrigin(.5));
+    overlay.add(this.text(W/2,444,summary.adjustment,15,'#a9cddd').setOrigin(.5));
+    const retry=this.add.rectangle(W/2,518,285,58,0x19677b)
+      .setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
+    overlay.add([retry,this.text(W/2,518,'PLAY REMATCH ↻',20,C.white,true).setOrigin(.5)]);
     retry.on('pointerdown',()=>this.scene.restart());
   }
 }
