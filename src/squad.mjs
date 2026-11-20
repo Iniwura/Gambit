@@ -5,12 +5,35 @@
  * protocol. Every unit gets its OWN conditional order. The public event
  * contains only role outcomes and objective pressure, not either plan.
  */
-import {STRATEGIES, validatePlan, resolveEncounter, nextRandom} from './engine.mjs';
+import {validatePlan, resolveEncounter, nextRandom} from './engine.mjs';
 
 export const SQUAD_ROLES = Object.freeze(['SCOUT','GUARDIAN','STRIKER']);
 // Three genuinely different LOCAL PRACTICE policies. They do not change
 // the deployed FHE contract or pretend that a bot is a human opponent.
 export const PRACTICE_STYLES=Object.freeze(['steady','reactive','volatile']);
+
+/**
+ * Uniformly select from these nine slots for a balanced LOCAL PRACTICE bot.
+ * Six distinct counter policies (some repeated) form a minimax mixture for
+ * one isolated conditional RPS duel, checked against every one of the 27
+ * legal opposing tactics in tests/practice-balance.test.mjs.
+ *
+ * An opponent cannot improve its one-lane expected result by repeatedly
+ * choosing any fixed tactic against this *uniform* mixture. A seeded bot with
+ * role bonuses, formations, adaptive shifts, or multiple rounds is NOT a
+ * human opponent and is NOT guaranteed globally unexploitable.
+ */
+export const BALANCED_OPPONENT_PLANS=Object.freeze([
+  Object.freeze({base:0,trigger:1,response:2}),
+  Object.freeze({base:0,trigger:1,response:2}),
+  Object.freeze({base:0,trigger:2,response:2}),
+  Object.freeze({base:1,trigger:0,response:0}),
+  Object.freeze({base:1,trigger:2,response:0}),
+  Object.freeze({base:1,trigger:2,response:0}),
+  Object.freeze({base:2,trigger:0,response:1}),
+  Object.freeze({base:2,trigger:0,response:1}),
+  Object.freeze({base:2,trigger:1,response:1})
+]);
 export function validatePracticeStyle(style){
   if(!PRACTICE_STYLES.includes(style))throw Error('Invalid practice opponent style');
   return style;
@@ -74,7 +97,7 @@ export function enemySquadFor(match) {
       style==='volatile'
         ? lastOutcome===1?5:lastOutcome===2?2:0
         : lastOutcome===1?3:lastOutcome===2?1:0;
-    return {...STRATEGIES[(mix+shift)%STRATEGIES.length]};
+    return {...BALANCED_OPPONENT_PLANS[(mix+shift)%BALANCED_OPPONENT_PLANS.length]};
   });
 }
 
