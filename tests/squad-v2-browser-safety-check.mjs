@@ -24,6 +24,14 @@ try{
   assert.equal(await noWallet.locator('#game-state').getAttribute('data-phase'),'intro');
   await noWallet.locator('#gambit-squad-launch').click();
   assert.equal(await noWallet.locator('#gambit-squad-dialog').isVisible(),true);
+  assert.equal(await noWallet.locator('#gambit-squad-public-inspect').count(),1,
+    'judges must be able to inspect finalized scores without a wallet');
+  await noWallet.locator('#gambit-duel-id').fill('not-a-valid-id');
+  await noWallet.locator('#gambit-squad-public-inspect').click();
+  await noWallet.locator('#gambit-squad-status')
+    .filter({hasText:/Duel ID must be a positive integer/}).waitFor({timeout:6000});
+  assert.equal(await noWallet.locator('#gambit-squad-watch').isDisabled(),true,
+    'invalid spectator ID cannot fabricate an authenticated result');
   assert.equal(await noWallet.locator('#gambit-squad-resolve').count(),1,
     'encrypted resolution must be one independent transaction action');
   assert.equal(await noWallet.locator('#gambit-squad-finalize').count(),1,
