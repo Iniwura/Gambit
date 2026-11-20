@@ -8,6 +8,13 @@
 import {STRATEGIES, validatePlan, resolveEncounter, nextRandom} from './engine.mjs';
 
 export const SQUAD_ROLES = Object.freeze(['SCOUT','GUARDIAN','STRIKER']);
+// Three genuinely different LOCAL PRACTICE policies. They do not change
+// the deployed FHE contract or pretend that a bot is a human opponent.
+export const PRACTICE_STYLES=Object.freeze(['steady','reactive','volatile']);
+export function validatePracticeStyle(style){
+  if(!PRACTICE_STYLES.includes(style))throw Error('Invalid practice opponent style');
+  return style;
+}
 
 // Tactical deployment is a permutation of ROLE indices on three lanes.
 // Choices are symmetric: both teams may use the same presets.
@@ -37,16 +44,19 @@ export function validateSquadPlans(plans) {
   return plans.map(validatePlan);
 }
 
-export function makeSquadMatch(seed=0x16fa31) {
+export function makeSquadMatch(seed=0x16fa31,style='reactive') {
   if(!Number.isInteger(seed)||seed<0||seed>0xffffffff)throw Error('Invalid practice seed');
-  return {mode:'local-squad',seed:seed>>>0,round:0,scoreA:0,scoreB:0,control:0,
+  validatePracticeStyle(style);
+  return {mode:'local-squad',seed:seed>>>0,style,round:0,scoreA:0,scoreB:0,control:0,
     history:[],finished:false,winner:null};
 }
 
 export function enemySquadFor(match) {
   if(!match||match.mode!=='local-squad'||!Number.isInteger(match.round))
     throw Error('Invalid squad match');
-  const s=nextRandom((match.seed ^ Math.imul(match.round+1,0x9e3779b1))>>>0);
+  const style=validatePracticeStyle(match.style??'reactive');
+  const round=style==='steady'?0:match.round;
+  const s=nextRandom((match.seed ^ Math.imul(round+1,0x9e3779b1))>>>0);
   // Deterministic and match-specific; not a secret-bearing contract opponent.
   return SQUAD_ROLES.map((_,index)=>{
     const mix=nextRandom((s ^ Math.imul(index+1,0x85ebca6b))>>>0);
@@ -60,7 +70,10 @@ export function enemySquadFor(match) {
     const defenderResult=lanes?.find(l=>l.defenderIndex===index)
       ?? (lanes?.every(l=>l.defenderIndex===undefined)?lanes?.[index]:undefined);
     const lastOutcome=defenderResult?.outcome;
-    const shift=lastOutcome===1?3:lastOutcome===2?1:0;
+    const shift=style==='steady'?0:
+      style==='volatile'
+        ? lastOutcome===1?5:lastOutcome===2?2:0
+        : lastOutcome===1?3:lastOutcome===2?1:0;
     return {...STRATEGIES[(mix+shift)%STRATEGIES.length]};
   });
 }
@@ -72,9 +85,11 @@ export function enemySquadFor(match) {
 export function enemyFormationFor(match){
   if(!match||match.mode!=='local-squad'||!Number.isInteger(match.round))
     throw Error('Invalid squad match');
+  const style=validatePracticeStyle(match.style??'reactive');
+  if(style==='steady')return 0;
   const previous=match.history.at(-1)?.formationA ?? 0;
   const mix=nextRandom((match.seed ^ Math.imul(match.round+1,0x7f4a7c15))>>>0);
-  return (mix%3+previous+1)%3;
+  return (mix%3+previous+(style==='volatile'?2:1))%3;
 }
 
 /**
@@ -167,11 +182,11 @@ export function commitSquadTurn(match,challengerPlans,formation=0) {
   return {match:next,event};
 }
 
-export function verifySquadTranscript(seed,plansByTurn,publicEvents) {
+export function verifySquadTranscript(seed,plansByTurn,publicEvents,style='reactive') {
   if(!Array.isArray(plansByTurn)||!Array.isArray(publicEvents)||
      plansByTurn.length!==publicEvents.length)return false;
   try {
-    let state=makeSquadMatch(seed);
+    let state=makeSquadMatch(seed,style);
     for(let i=0;i<plansByTurn.length;i++){
       const selected=plansByTurn[i];
       const turn=Array.isArray(selected)
