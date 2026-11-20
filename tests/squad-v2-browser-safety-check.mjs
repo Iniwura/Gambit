@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 
-// Strictly synthetic negative-path QA. No funded wallet, no signing, no
-// genuine v2 deployment and no claims of real onchain match availability.
+// Strictly negative-path QA with either synthetic or real verified v2
+// deployment settings. No funded wallet, no signing, no onchain match claim.
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const baseline='http://127.0.0.1:4173';
-const configured='http://127.0.0.1:4175';
+const configured=process.env.GAMBIT_SQUAD_UI_URL??'http://127.0.0.1:4175';
 try{
   const no=await browser.newPage({viewport:{width:1280,height:800}});
   await no.goto(baseline,{waitUntil:'networkidle',timeout:35000});

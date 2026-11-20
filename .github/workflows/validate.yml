@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install deterministic test dependencies
+        run: npm ci --no-audit --no-fund
       - name: Run deterministic rules and arena tests
         run: node --test tests/*.test.mjs
 
@@ -38,6 +40,10 @@ jobs:
         run: npm run typecheck
       - name: Build browser release
         run: npm run build
+      - name: Independent live SquadGambit public-RPC receipt/runtime verification (READ ONLY)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run check:squad:live:readonly
       - name: Upload complete static browser release (works during Vercel cooldown)
         uses: actions/upload-artifact@v4
         with:
@@ -110,6 +116,10 @@ jobs:
           VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS=0x3333333333333333333333333333333333333333 VITE_GAMBIT_SQUAD_RUNTIME_HASH=0x$(printf 'a%.0s' {1..64}) VITE_GAMBIT_CONTRACT_ADDRESS=0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0 npm run dev -- --host 127.0.0.1 --port 4175 >/tmp/gambit-v2-negative.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4175 >/dev/null && break; sleep 1; done
           node tests/squad-v2-browser-safety-check.mjs
+          # Verified v2 deployment settings: negative wallet tests only; no signer or transaction.
+          VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS=0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134 VITE_GAMBIT_SQUAD_RUNTIME_HASH=0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419 npm run dev -- --host 127.0.0.1 --port 4176 >/tmp/gambit-v2-live-config.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4176 >/dev/null && break; sleep 1; done
+          GAMBIT_SQUAD_UI_URL=http://127.0.0.1:4176 node tests/squad-v2-browser-safety-check.mjs
       - name: Upload real game screenshots
         if: always()
         uses: actions/upload-artifact@v4
