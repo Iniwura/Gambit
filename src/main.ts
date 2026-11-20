@@ -81,6 +81,8 @@ class GambitArena extends Phaser.Scene {
       delete gameplayState.dataset.lastLaneCount;
       delete gameplayState.dataset.roleEffectStarts;
       delete gameplayState.dataset.lastRoleEffects;
+      delete gameplayState.dataset.activeLane;
+      delete gameplayState.dataset.lastLaneOrder;
       delete gameplayState.dataset.enemyFormation;
       delete gameplayState.dataset.reportRound;
       delete gameplayState.dataset.challengeId;
@@ -474,27 +476,50 @@ class GambitArena extends Phaser.Scene {
     for(let i=0;i<3;i++){
       const lane=event.lanes[i];
       const ally=this.actors[lane.challengerIndex],enemy=this.actors[lane.defenderIndex+3],y=lanesY[i];
-      this.tweens.add({targets:ally.shell,x:585,y,scale:0.82,duration:390+i*75,ease:'Sine.easeOut'});
-      this.tweens.add({targets:enemy.shell,x:855,y,scale:0.82,duration:390+i*75,ease:'Sine.easeOut'});
+      this.tweens.add({targets:ally.shell,x:585,y,scale:0.82,delay:i*155,
+        duration:385,ease:'Sine.easeOut'});
+      this.tweens.add({targets:enemy.shell,x:855,y,scale:0.82,delay:i*155,
+        duration:385,ease:'Sine.easeOut'});
     }
-    this.time.delayedCall(640,()=>{
-      if(this.watchingVerifiedDuel)return;
-      for(let i=0;i<3;i++){
-        const lane=event.lanes[i],outcome=lane.outcome;
-        this.playRoleEffect(lane.challengerIndex,lane.defenderIndex,outcome,lanesY[i]);
-        const verdict=this.text(720,lanesY[i]-58,
-          lane.role+' vs '+lane.enemyRole+' · '+(outcome===1?'CYAN':outcome===2?'VIOLET':'DRAW'),14,C.white,true)
-          .setOrigin(.5).setDepth(2000);
-        this.tweens.add({targets:verdict,alpha:0,y:lanesY[i]-83,duration:1100,onComplete:()=>verdict.destroy()});
-      }
-      const stateEl=document.getElementById('game-state');
-      if(stateEl)stateEl.dataset.lastRoleEffects='3';
-      this.cameras.main.shake(140,.0015);
-      this.notice.setText(event.pointsA>event.pointsB?'REACTOR ADVANTAGE · '+event.pointsA+' POINTS':
-        event.pointsB>event.pointsA?'ENEMY PRESSURE · REPROGRAM YOUR SQUAD':'STALEMATE · ADAPT YOUR SQUAD');
-      this.hint.setText(insight.headline);
-    });
-    this.time.delayedCall(1400,()=>{
+    // Stage outcomes one by one. Game logic remains committed atomically;
+    // only public LOCAL PRACTICE results are presented. No lane information
+    // is inferred or animated for Zama onchain verified results.
+    for(let i=0;i<3;i++){
+      this.time.delayedCall(650+i*480,()=>{
+        if(this.watchingVerifiedDuel)return;
+        const lane=event.lanes[i],outcome=lane.outcome,y=lanesY[i];
+        const color=outcome===1?C.cyan:outcome===2?C.pink:C.gold;
+        const line=this.add.rectangle(720,y,532,96,color,.065).setDepth(1100)
+          .setStrokeStyle(2,color,.83);
+        this.tweens.add({targets:line,alpha:0,delay:210,duration:510,
+          onComplete:()=>line.destroy()});
+        this.playRoleEffect(lane.challengerIndex,lane.defenderIndex,outcome,y);
+        const label=outcome===1?'CYAN WINS':outcome===2?'VIOLET WINS':'DRAW';
+        const verdict=this.text(720,y-55,
+          (i+1)+' / 3   '+lane.role+' vs '+lane.enemyRole+'   ·   '+label,
+          13,C.white,true).setOrigin(.5).setDepth(2000);
+        this.tweens.add({targets:verdict,alpha:0,y:y-77,delay:285,duration:730,
+          onComplete:()=>verdict.destroy()});
+        const trace=insight.lanes[i];
+        this.hint.setText('LANE '+(i+1)+' · '+trace.role.toUpperCase()+' '+
+          (trace.ownCounterActivated?'COUNTER ACTIVATED':'OPENING ORDER EXECUTED'));
+        const stateEl=document.getElementById('game-state');
+        if(stateEl){
+          stateEl.dataset.activeLane=String(i+1);
+          stateEl.dataset.lastLaneOrder=(stateEl.dataset.lastLaneOrder||'')+String(i+1);
+          if(i===2)stateEl.dataset.lastRoleEffects='3';
+        }
+        if(i===2){
+          this.cameras.main.shake(115,.0013);
+          this.notice.setText(event.pointsA>event.pointsB?
+            'REACTOR ADVANTAGE · +'+event.pointsA+' PRESSURE':
+            event.pointsB>event.pointsA?
+            'ENEMY PRESSURE · +'+event.pointsB+' AGAINST YOU':
+            'REACTOR STALEMATE · TRY A DIFFERENT DEPLOYMENT');
+        }
+      });
+    }
+    this.time.delayedCall(2000,()=>{
       if(this.watchingVerifiedDuel)return;
       for(let i=0;i<this.actors.length;i++){
         const unit=this.actors[i];
@@ -503,16 +528,18 @@ class GambitArena extends Phaser.Scene {
         this.tweens.add({targets:unit.shell,x:unit.origin.x,y,scale:1,duration:400});
       }
     });
-    this.time.delayedCall(1950,()=>{
+    this.time.delayedCall(2680,()=>{
       if(this.watchingVerifiedDuel)return;
       this.busy=false;
       this.lastDebrief={...buildPracticeDebrief(event),note:insight.headline};
       this.showBattleReport(this.lastDebrief);
+      const laneState=document.getElementById('game-state');
+      if(laneState)delete laneState.dataset.activeLane;
       this.refresh();
       if(this.match.finished)this.gameOver();
       else{
         this.notice.setText('ROUND '+(this.match.round+1)+' · EDIT EACH FIGHTER BEFORE LOCKING');
-        this.hint.setText('Enemy adjusts to recent lane losses. Predict the next counter.');
+        this.hint.setText(insight.tip);
         this.writeState('ready');
       }
       this.syncMobileDeck();
