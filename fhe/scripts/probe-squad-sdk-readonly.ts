@@ -55,8 +55,14 @@ async function main(){
     sdk.terminate();
   }
 }
-main().catch(error=>{
+// Explicitly end this one-off CLI after the result is flushed. The Zama
+// WASM/relayer transport can retain background handles even after terminate(),
+// so process.exitCode alone leaves Hardhat's Node runner alive in CI.
+main().then(()=>{
+  process.stdout.write('',()=>process.exit(0));
+}).catch(error=>{
   // Never print raw RPC errors: they can embed credential-bearing URLs.
-  console.error('GAMBIT_SQUAD_SDK_READONLY_FAILED '+(error instanceof Error?error.name:'UnknownError'));
-  process.exitCode=1;
+  const label='GAMBIT_SQUAD_SDK_READONLY_FAILED '+
+    (error instanceof Error?error.name:'UnknownError')+'\n';
+  process.stderr.write(label,()=>process.exit(1));
 });
