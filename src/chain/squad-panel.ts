@@ -1,0 +1,197 @@
+import {createSquadSepoliaClient,type FighterPlan,type SquadResult} from './squad-sepolia';
+
+type Client=Awaited<ReturnType<typeof createSquadSepoliaClient>>;
+type SquadDraft={plans:FighterPlan[],formation:number};
+type Action=()=>Promise<void>;
+
+/**
+ * Versioned v2 experimental wallet controls. They mount ONLY with BOTH a
+ * Sepolia address and deployed-runtime fingerprint. No mock or fallback
+ * onchain receipts. No automatic wallet connection or signatures.
+ */
+export function mountSquadSepoliaPanel(
+  address:string,hash:string,readDraft:()=>SquadDraft,
+  onVerified?:(result:SquadResult)=>void
+){
+  if(document.getElementById('gambit-squad-launch'))return;
+  if(!/^0x[a-fA-F0-9]{40}$/.test(address)||!/^0x[a-fA-F0-9]{64}$/.test(hash))return;
+  let client:Client|null=null;
+  let busy=false;
+  let lastResult:SquadResult|null=null;
+
+  const button=(label:string,id:string,fn:Action):HTMLButtonElement=>{
+    const node=document.createElement('button');
+    node.type='button';node.id=id;node.textContent=label;
+    node.addEventListener('click',()=>{
+      if(busy)return;
+      setBusy(true);
+      Promise.resolve().then(fn).catch(error=>{
+        setStatus('Cannot continue: '+(error instanceof Error?error.message:String(error)));
+      }).finally(()=>setBusy(false));
+    });
+    node.style.cssText='width:100%;min-height:45px;margin-top:8px;border:1px solid #4f748c;' +
+      'border-radius:9px;background:#193e59;color:#e9f8ff;padding:10px 12px;font:650 13px system-ui';
+    return node;
+  };
+  const textbox=(label:string,id:string,placeholder:string)=>{
+    const wrap=document.createElement('label');
+    wrap.textContent=label;wrap.htmlFor=id;wrap.style.cssText='display:block;margin-top:13px;font:650 12px system-ui';
+    const input=document.createElement('input');
+    input.type='text';input.id=id;input.placeholder=placeholder;input.autocomplete='off';
+    input.style.cssText='width:100%;margin-top:6px;min-height:44px;border:1px solid #52758e;' +
+      'border-radius:9px;background:#0a1425;color:white;padding:10px;font:13px system-ui';
+    return {wrap,input};
+  };
+  const positiveId=(value:string,label:string):bigint=>{
+    if(!/^[1-9][0-9]*$/.test(value.trim()))throw Error(label+' must be a positive integer.');
+    return BigInt(value.trim());
+  };
+  const launch=document.createElement('button');
+  launch.id='gambit-squad-launch';launch.type='button';
+  launch.textContent='ENCRYPTED SQUAD LAB';
+  launch.style.cssText='position:fixed;top:64px;right:12px;z-index:10010;border-radius:10px;' +
+    'border:1px solid #ffbd69;background:#2a3043;color:#fff;padding:10px 14px;font:750 12px system-ui';
+
+  const dialog=document.createElement('section');
+  dialog.id='gambit-squad-dialog';dialog.setAttribute('role','dialog');
+  dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','gambit-squad-title');
+  dialog.hidden=true;
+  dialog.style.cssText='position:fixed;inset:0;z-index:10014;background:#020713ec;' +
+    'display:none;align-items:center;justify-content:center;padding:12px';
+  const card=document.createElement('section');
+  card.style.cssText='width:min(560px,100%);max-height:92dvh;overflow-y:auto;background:#0e1c2e;' +
+    'border:1px solid #6887a7;border-radius:16px;padding:20px;color:#ecf7ff;' +
+    'box-shadow:0 24px 80px #000b;font:14px/1.45 system-ui';
+  const heading=document.createElement('header');
+  heading.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px';
+  const title=document.createElement('h2');
+  title.id='gambit-squad-title';title.textContent='Encrypted Squad · Sepolia';
+  title.style.cssText='margin:0;font-size:22px;letter-spacing:-.02em';
+  const close=document.createElement('button');
+  close.type='button';close.textContent='Close';
+  close.style.cssText='padding:8px 12px;border:1px solid #647a95;border-radius:8px;' +
+    'background:#17253c;color:#fff';
+  heading.append(title,close);
+  const caution=document.createElement('p');
+  caution.textContent='EXPERIMENTAL 3v3 encrypted duel. Ten private inputs per squad. '+
+    'Invite exactly one other Sepolia wallet. Every transaction requires a separate wallet signature. '+
+    'The signed public result reveals ONLY total scores, never individual fighter outcomes.';
+  caution.style.cssText='color:#bbd2e3;font-size:12px';
+  const identity=document.createElement('p');identity.textContent='Wallet not connected';
+  identity.style.cssText='color:#91ecf8;font-size:12px;overflow-wrap:anywhere';
+  const status=document.createElement('p');status.id='gambit-squad-status';status.setAttribute('role','status');
+  status.setAttribute('aria-live','polite');status.textContent='No wallet action has been requested.';
+  status.style.cssText='padding:11px;background:#192e46;border-radius:8px;overflow-wrap:anywhere';
+  const result=document.createElement('p');result.id='gambit-squad-receipt';
+  result.style.cssText='font-size:13px;color:#cfedff;overflow-wrap:anywhere';
+
+  const invited=textbox('Invite this challenger wallet','gambit-squad-invite','0x... different address');
+  const squad=textbox('Squad ID (seal, invite or recovery)','gambit-squad-id','e.g. 1');
+  const duel=textbox('Duel ID (submit, resolve or continue)','gambit-duel-id','e.g. 1');
+
+  function requireClient():Client{if(!client)throw Error('Connect and verify Sepolia wallet first.');return client;}
+  function setStatus(message:string){status.textContent=message;}
+  function setBusy(value:boolean){
+    busy=value;
+    for(const item of allActions)item.disabled=value;
+    close.disabled=value;launch.disabled=value;
+  }
+  const connect=button('1 · Connect + verify deployed contract','gambit-squad-connect',async()=>{
+    client=await createSquadSepoliaClient(address,hash);
+    identity.textContent='Connected '+client.userAddress+' · Ethereum Sepolia';
+    lastResult=null;
+    setStatus('Wallet and immutable SquadGambit bytecode fingerprint verified.');
+  });
+  const seal=button('2 · Encrypt and seal my three fighter plans','gambit-squad-seal',async()=>{
+    const c=requireClient();
+    const draft=readDraft(); // Snapshot at user click, never a stale signed tactic.
+    setStatus('Preparing ten encrypted Zama inputs. Confirm sealing in your wallet.');
+    const x=await c.sealSquad(invited.input.value,draft.plans,draft.formation);
+    squad.input.value=String(x.squadId);
+    setStatus('Squad #'+x.squadId+' sealed. Tx: '+x.transactionHash);
+  });
+  const open=button('3 · Open invitation as challenger','gambit-squad-open',async()=>{
+    const c=requireClient(),s=positiveId(squad.input.value,'Squad ID');
+    const x=await c.openDuel(s);
+    duel.input.value=String(x.duelId);
+    setStatus('Duel #'+x.duelId+' opened by invited wallet. Tx: '+x.transactionHash);
+  });
+  const recover=button('Recover duel from squad ID (read only)','gambit-squad-recover',async()=>{
+    const c=requireClient(),s=positiveId(squad.input.value,'Squad ID');
+    const id=await c.recoverDuelId(s);
+    if(id===null){setStatus('No duel has been opened for squad #'+s+'.');return;}
+    duel.input.value=String(id);
+    setStatus('Recovered duel #'+id+' from canonical squad contract state.');
+  });
+  const inspect=button('Inspect duel stage (read only)','gambit-squad-inspect',async()=>{
+    const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
+    const x=await c.nextDuelStep(id);
+    setStatus('Duel #'+id+' is '+x.step.toUpperCase()+
+      '. State is read from Sepolia, not local memory.');
+    if(x.step==='verified')showResult(await c.verifiedResult(id));
+  });
+  const submit=button('4 · Encrypt and submit my squad','gambit-squad-submit',async()=>{
+    const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
+    const draft=readDraft();
+    setStatus('Encrypting ten inputs. Confirm submission in your wallet.');
+    const x=await c.submitDuel(id,draft.plans,draft.formation);
+    setStatus('Duel #'+id+' submitted onchain. Tx: '+x.transactionHash);
+  });
+  const finalize=button('5 · Resolve + verify signed total scores','gambit-squad-finalize',async()=>{
+    const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
+    setStatus('Reading contract state, computing encrypted result and verifying KMS proof. '+
+      'Further Sepolia signatures may be required.');
+    showResult(await c.resolveAndFinalize(id));
+  });
+  const watch=document.createElement('button');watch.id='gambit-squad-watch';
+  watch.type='button';watch.textContent='VIEW AUTHENTICATED REACTOR RESULT';
+  watch.hidden=!onVerified;watch.disabled=true;
+  watch.style.cssText='width:100%;min-height:46px;margin-top:12px;background:#1e5c6b;' +
+    'color:#fff;border:1px solid #79e9ed;border-radius:9px;font:750 13px system-ui';
+  watch.addEventListener('click',()=>{
+    if(busy||!lastResult||!onVerified)return;
+    dialog.hidden=true;setVisibility();
+    onVerified(lastResult);
+  });
+  const allActions=[connect,seal,open,recover,inspect,submit,finalize];
+  function showResult(proof:SquadResult){
+    if(proof.authenticated!==true)throw Error('Unauthenticated result rejected.');
+    lastResult=proof;
+    watch.disabled=false;
+    setStatus('Signed public result finalized on Sepolia. Only aggregate totals are visible.');
+    result.replaceChildren();
+    const label=document.createElement('strong');
+    label.textContent='CYAN '+proof.pointsChallenger+' : '+proof.pointsDefender+
+      ' VIOLET · '+(proof.outcome===1?'CYAN WINS':proof.outcome===2?'VIOLET WINS':'DRAW');
+    const anchor=document.createElement('a');
+    anchor.href=proof.explorerUrl;anchor.target='_blank';anchor.rel='noopener noreferrer';
+    anchor.textContent='View independently inspectable Sepolia evidence';
+    anchor.style.cssText='display:block;color:#7de7f4;margin-top:8px';
+    result.append(label,anchor);
+  }
+
+  card.append(heading,caution,identity,connect,invited.wrap,invited.input,
+    seal,squad.wrap,squad.input,open,recover,duel.wrap,duel.input,
+    inspect,submit,finalize,status,result,watch);
+  dialog.append(card);document.body.append(launch,dialog);
+  const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
+  launch.addEventListener('click',()=>{dialog.hidden=false;setVisibility();close.focus();});
+  close.addEventListener('click',()=>{if(busy)return;dialog.hidden=true;setVisibility();});
+  window.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&!busy&&dialog.hidden===false){dialog.hidden=true;setVisibility();}
+  });
+  setVisibility();
+
+  // Invalidate account-bound SDK clients on any provider switch. The client
+  // additionally revalidates eth_chainId/eth_accounts before each signature.
+  const provider=(window as unknown as {ethereum?:{
+    on?:(name:string,listener:(value:unknown)=>void)=>void
+  }}).ethereum;
+  const invalidate=()=>{
+    client=null;lastResult=null;watch.disabled=true;
+    identity.textContent='Wallet changed. Reconnect required.';
+    setStatus('Account/network changed. Existing IDs can be safely recovered after reconnecting.');
+  };
+  provider?.on?.('accountsChanged',invalidate);
+  provider?.on?.('chainChanged',invalidate);
+}

@@ -1,12 +1,36 @@
 {
+  "project": "GAMBIT",
+  "environment": "ethereum-sepolia",
   "chainId": 11155111,
-  "contract": "SealedGambit",
-  "address": "0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0",
+  "contractName": "SealedGambit",
+  "contractAddress": "0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0",
   "deployer": "0x7d567Fa1d5fe35737BbF045f47667e13298Ee176",
-  "transactionHash": "0x0d58f80bf197e705c5ef702e4d9de0f4d822813c6b19e31c711123de2c12a95b",
+  "deploymentTransactionHash": "0x0d58f80bf197e705c5ef702e4d9de0f4d822813c6b19e31c711123de2c12a95b",
   "blockNumber": 12167782,
+  "transactionStatus": 1,
+  "gasUsed": "12452573",
+  "effectiveGasPriceWei": "19",
+  "actualFeeWei": "236598887",
+  "runtimeBytecodeSize": 7700,
   "explorerUrl": "https://sepolia.etherscan.io/tx/0x0d58f80bf197e705c5ef702e4d9de0f4d822813c6b19e31c711123de2c12a95b",
-  "deployedAt": "2026-11-19T10:15:13.473Z",
-  "status": "deployed-not-yet-matched",
-  "note": "Deployment alone is NOT proof of an encrypted live match."
+  "verification": {
+    "method": "independent eth_getTransactionByHash, eth_getTransactionReceipt, eth_getCode from public Ethereum Sepolia JSON-RPC",
+    "chainIdConfirmed": true,
+    "receiptContractAddressMatches": true,
+    "receiptSuccess": true,
+    "nonemptyRuntimeCode": true,
+    "compiledRuntimeBytecodeComparison": "executable 7647-byte prefix matches exactly; Solidity CBOR metadata tail differs",
+    "compiledExecutableBytecodeSHA256": "f535d5927038fb58fdb7ca3c6976fee67ac63b47c25646b77384f62d795af684",
+    "compiledRuntimeBytecodeSize": 7700,
+    "compilerMetadataBytes": 53,
+    "compiledFullBytecodeExactMatch": false,
+    "reason": "Only the compiler metadata hash differs; deployed executable logic matches independent recompile."
+  },
+  "lifecycle": {
+    "policySealed": false,
+    "challengeOpened": false,
+    "encryptedInputSubmitted": false,
+    "publicOutcomeVerified": false
+  },
+  "status": "DEPLOYED_ONLY_NOT_GAMEPLAY_VERIFIED"
 }

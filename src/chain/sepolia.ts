@@ -2,9 +2,12 @@ import {ZamaSDK} from '@zama-fhe/sdk';
 import {createConfig} from '@zama-fhe/sdk/ethers';
 import {web} from '@zama-fhe/sdk/web';
 import {sepolia} from '@zama-fhe/sdk/chains';
-import {BrowserProvider,Contract,getAddress} from 'ethers';
+import {BrowserProvider,Contract,getAddress,ZeroAddress} from 'ethers';
+import {challengeStep} from './lifecycle.mjs';
 
 const CHAIN_ID=11155111n;
+const VERIFIED_DEPLOYMENT=getAddress('0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0');
+const VERIFIED_CODE_BYTES=7700;
 export const SEPOLIA_ID=11155111;
 
 export type Plan={base:0|1|2,trigger:0|1|2,response:0|1|2};
@@ -15,6 +18,7 @@ export type MatchReceipt={
   finalizationTx:string;
   explorerUrl:string;
   authenticated:true;
+  evidence:'transaction'|'contract-state';
 };
 
 const ABI=[
@@ -46,6 +50,9 @@ export function assertPlan(plan:Plan){
 
 export async function createGambitSepoliaClient(rawAddress:string){
   const address=getAddress(rawAddress);
+  if(address!==VERIFIED_DEPLOYMENT){
+    throw Error('Refusing unverified GAMBIT contract address. Recheck the Sepolia deployment.');
+  }
   const ethereum=requireWallet();
   const ethAccounts=await ethereum.request({method:'eth_requestAccounts'});
   if(!Array.isArray(ethAccounts)||!ethAccounts[0])throw Error('Wallet connection was cancelled.');
@@ -53,6 +60,10 @@ export async function createGambitSepoliaClient(rawAddress:string){
   const network=await browserProvider.getNetwork();
   if(network.chainId!==CHAIN_ID){
     throw Error('GAMBIT requires Ethereum Sepolia. Please switch your wallet and reconnect.');
+  }
+  const runtime=await browserProvider.getCode(address);
+  if(runtime==='0x'||(runtime.length-2)/2!==VERIFIED_CODE_BYTES){
+    throw Error('The verified SealedGambit runtime was not found at the expected Sepolia address.');
   }
   const signer=await browserProvider.getSigner();
   const userAddress=getAddress(await signer.getAddress());
@@ -67,8 +78,47 @@ export async function createGambitSepoliaClient(rawAddress:string){
   const sdk=new ZamaSDK(config);
   const contract=new Contract(address,ABI,signer);
 
+  // Injected wallets can switch accounts or networks while an FHE
+  // encryption/decryption request is pending. Check again before EVERY write.
+  async function assertWalletStable(){
+    const chain=await browserProvider.getNetwork();
+    if(chain.chainId!==CHAIN_ID)throw Error('Wallet switched networks. Reconnect on Ethereum Sepolia.');
+    const active=await ethereum.request({method:'eth_accounts'});
+    if(!Array.isArray(active)||!active[0]||
+       getAddress(String(active[0]))!==userAddress){
+      throw Error('Wallet account changed or disconnected. Reconnect before signing.');
+    }
+  }
+  async function readChallenge(id:bigint){
+    await assertWalletStable();
+    if(id<=0n)throw Error('Challenge ID must be greater than zero.');
+    const s=await contract.challengeStatus(id);
+    return {
+      policyId:BigInt(s.policyId),
+      challenger:String(s.challenger),
+      submitted:Boolean(s.submitted),
+      resolved:Boolean(s.resolved),
+      finalized:Boolean(s.finalized),
+      expired:Boolean(s.expired),
+      finalOutcome:Number(s.finalOutcome)
+    };
+  }
+  async function verifiedResult(id:bigint):Promise<MatchReceipt>{
+    const s=await readChallenge(id);
+    if(challengeStep(s,userAddress)!=='verified')throw Error('No finalized match exists for this challenge.');
+    if(!Number.isInteger(s.finalOutcome)||s.finalOutcome<0||s.finalOutcome>2)
+      throw Error('Onchain result outside the valid range');
+    return {
+      challengeId:id,outcome:s.finalOutcome as 0|1|2,
+      resolutionTx:'',finalizationTx:'',
+      explorerUrl:'https://sepolia.etherscan.io/address/'+address,
+      evidence:'contract-state',authenticated:true
+    };
+  }
+
   async function encryptedPlan(plan:Plan){
     assertPlan(plan);
+    await assertWalletStable();
     const encrypted=await sdk.encrypt({
       contractAddress:address as `0x${string}`,
       userAddress:userAddress as `0x${string}`,
@@ -100,6 +150,7 @@ export async function createGambitSepoliaClient(rawAddress:string){
   /** The owner submits one encrypted policy, not a public commitment/reveal. */
   async function sealPolicy(plan:Plan){
     const inputs=await encryptedPlan(plan);
+    await assertWalletStable();
     const tx=await committedTransaction(contract.seal(
       ...inputs.encryptedValues,
       inputs.inputProof
@@ -113,6 +164,13 @@ export async function createGambitSepoliaClient(rawAddress:string){
 
   /** Challenger creates a match. Defender is NOT required to reconnect. */
   async function openChallenge(policyId:bigint){
+    await assertWalletStable();
+    if(policyId<=0n)throw Error('Policy ID must be greater than zero.');
+    const policy=await contract.policyStatus(policyId);
+    if(getAddress(policy.owner)===ZeroAddress||!policy.active)
+      throw Error('Policy is not available for challenges.');
+    if(getAddress(policy.owner)===userAddress)
+      throw Error('You cannot challenge your own sealed policy. Connect a second wallet.');
     const tx=await committedTransaction(contract.openChallenge(policyId));
     const event=findEvent(tx.receipt.logs,'ChallengeOpened');
     const id=BigInt(event.args.challengeId);
@@ -124,7 +182,14 @@ export async function createGambitSepoliaClient(rawAddress:string){
 
   /** Caller must be the challenge's wallet; ciphertext is bound to this contract. */
   async function submitChallenge(challengeId:bigint,plan:Plan){
+    const current=await readChallenge(challengeId);
+    if(challengeStep(current,userAddress)!=='submit')
+      throw Error('Challenge has already been submitted or resolved.');
     const inputs=await encryptedPlan(plan);
+    await assertWalletStable();
+    // Prevent a resumed tab from inadvertently replaying a submission.
+    if(challengeStep(await readChallenge(challengeId),userAddress)!=='submit')
+      throw Error('Challenge changed while encrypting. Reload onchain state.');
     const tx=await committedTransaction(contract.submit(
       challengeId,
       ...inputs.encryptedValues,
@@ -140,8 +205,11 @@ export async function createGambitSepoliaClient(rawAddress:string){
    * authenticate the public outcome. NEVER animate until status.finalized.
    */
   async function resolveAndFinalize(challengeId:bigint):Promise<MatchReceipt>{
-    const before=await contract.challengeStatus(challengeId);
-    if(!before.submitted||before.finalized||before.expired)throw Error('Challenge not resolvable');
+    const before=await readChallenge(challengeId);
+    const step=challengeStep(before,userAddress);
+    if(step==='verified')return verifiedResult(challengeId);
+    if(step==='submit')throw Error('Submit your encrypted tactic before resolving.');
+    await assertWalletStable();
     // If a previous browser session already resolved, resume from the stored
     // publicly decryptable outcome handle. Don't resubmit a duplicate resolve.
     let handle:`0x${string}`;
@@ -160,6 +228,8 @@ export async function createGambitSepoliaClient(rawAddress:string){
     const outcome=Number(value);
     if(!Number.isInteger(outcome)||outcome<0||outcome>2)throw Error('Decryption gave illegal outcome');
     if(!proof.decryptionProof||proof.decryptionProof==='0x')throw Error('Missing KMS proof');
+    await assertWalletStable();
+    if((await readChallenge(challengeId)).finalized)return verifiedResult(challengeId);
     const finalized=await committedTransaction(contract.finalize(challengeId,outcome,proof.decryptionProof));
     const after=await contract.challengeStatus(challengeId);
     if(!after.finalized||Number(after.finalOutcome)!==outcome)
@@ -167,8 +237,23 @@ export async function createGambitSepoliaClient(rawAddress:string){
     return {challengeId,outcome:outcome as 0|1|2,
       resolutionTx,finalizationTx:finalized.hash,
       explorerUrl:'https://sepolia.etherscan.io/tx/'+finalized.hash,
-      authenticated:true};
+      evidence:'transaction',authenticated:true};
   }
 
-  return {address,userAddress,sealPolicy,openChallenge,submitChallenge,resolveAndFinalize};
+  async function resumeChallenge(challengeId:bigint,plan:Plan,onStage?:(message:string)=>void):Promise<MatchReceipt>{
+    const current=await readChallenge(challengeId);
+    const step=challengeStep(current,userAddress);
+    if(step==='verified'){
+      onStage?.('Found a completed match. Checking its final onchain state…');
+      return verifiedResult(challengeId);
+    }
+    if(step==='submit'){
+      onStage?.('This challenge was opened but never submitted. Encrypting your selected tactic…');
+      await submitChallenge(challengeId,plan);
+    }
+    onStage?.('Continuing from verified Sepolia state. Resolving or finalizing the result…');
+    return resolveAndFinalize(challengeId);
+  }
+
+  return {address,userAddress,sealPolicy,openChallenge,submitChallenge,resolveAndFinalize,resumeChallenge};
 }

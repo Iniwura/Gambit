@@ -1,30 +1,88 @@
 # GAMBIT
 
-Confidential tactical strategy game for the **Zama Developer Program — Season 5: Confidential Gaming**.
+**A confidential squad tactics game powered by Zama FHE.**
 
-> **Development status:** An offline, cleartext practice game and reference combat engine exist. The Phaser game, Zama FHEVM contract, wallet integration and full Sepolia match have **not** been verified or deployed. Nothing in this repository should be presented as a finished encrypted game.
+Program three fighters, choose a hidden deployment and outthink an opponent. The final reactor score is independently verifiable without publishing either squad's encrypted orders.
 
-## Goal
+> **Release status: pre-alpha.** The 3v3 practice match is playable in Phaser, the experimental FHE 3v3 contract compiles and passes mock tests, and an earlier one-fighter contract is deployed on Sepolia. **A real two-wallet encrypted 3v3 match is NOT yet verified.** Production visuals and external user testing are outstanding.
 
-Create a polished 3v3 squad strategy game with hidden conditional tactics whose authoritative outcomes are computed using Zama FHE on Ethereum Sepolia.
+## Play
 
-## Architecture
+Practice needs no wallet. It is a deterministic **cleartext** match, not a claim of encrypted live multiplayer.
 
-- **Game:** Phaser + TypeScript, original 2D arena and fighter artwork
-- **Rules reference:** deterministic cleartext simulation for testing only
-- **Private combat:** Solidity + Zama FHEVM (research candidate, uncompiled)
-- **Target network:** Ethereum Sepolia
+1. Enter the arena and select **Scout**, **Guardian** or **Striker**.
+2. Give each fighter an opening move, an enemy-move trigger and the response to that trigger.
+3. Select **HOLD**, **PIVOT** or **FEINT** to change which opposing fighter each role faces.
+4. Lock the squad. Watch three encounters, reactor score changes and a post-round explanation.
+5. Reprogram your team across up to five rounds, then rematch with a different opponent pattern.
 
-## Development gates
+**Controls:** 4/5/6 select a fighter, 7/8/9 select formation, 1/2/3 the opening move, Q/W/E the trigger, A/S/D the counter and Enter to lock. Mobile has a separate large-touch command deck.
 
-1. Upload and validate the full production game source and original assets.
-2. Install dependencies, run typechecking, build and browser gameplay tests.
-3. Compile and test the FHE contract, checking permissions, signature verification and replay protection.
-4. Complete a real two-wallet Sepolia confrontation with explorer evidence.
-5. Integrate the encrypted result into the full match flow and audit the finished player experience.
+## Why encryption matters
 
-**No simulated encryption, fabricated receipts, or unverified completion claims.**
+The experimental **SquadGambit** design uses ten independent encrypted `euint8` inputs per player: three conditional actions for each of three fighter roles, plus a hidden formation. Each player can commit their private tactics while the contract calculates the matchup through FHE. A final Zama KMS-signed public decryption reveals **only the aggregate reactor score**, not the three private plans, formations or individual lane outcomes.
 
-## Local files
+A defender invites a specified opponent for a **single-use** challenge. This limits simple repeated-result oracle attacks against the same sealed squad, but cannot eliminate collusion or inference across separately sealed squads. No formal secrecy claim or independent audit has been completed.
 
-The complete prepared working tree is in the `gambit-repository-initial.zip` handoff from this conversation. Code is being imported into this GitHub repository; art and binary assets must also be checked in before the playable build can be claimed ready.
+The playable practice mode reveals each public lane result for learning. **The encrypted mode cannot honestly replay per-lane winners, because those results are not publicly decrypted.** Its authenticated viewer shows the final reactor totals only.
+
+## What actually exists
+
+| Component | Status | Evidence |
+| --- | --- | --- |
+| 3v3 playable practice | Implemented | Phaser browser tests, deterministic transcript verification |
+| Scout / Guardian / Striker tactics | Implemented | Independent plans, role bonuses, formation matchup tests |
+| Desktop / mobile controls | Implemented | Real Chromium actions across both screen sizes |
+| One-fighter `SealedGambit` | **Deployed, NOT live-match-verified** | Sepolia `0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0` |
+| Encrypted 3v3 `SquadGambit` | **Compiled mock candidate, NOT deployed** | Ten encrypted inputs, authenticated aggregate result, negative tests |
+| Versioned encrypted squad browser adapter | Prepared, **gated** | Exact Sepolia address and independently verified runtime code hash required |
+| Real two-wallet 3v3 proof | **Not complete** | Deployment + real signing / decryption / finalization still required |
+| Production-grade character art and audio | **Not complete** | Original procedural stand-ins only |
+| External playtest / security review | **Not complete** | Mandatory before submission-ready claim |
+
+The previous one-fighter deployment transaction is [visible on Etherscan](https://sepolia.etherscan.io/tx/0x0d58f80bf197e705c5ef702e4d9de0f4d822813c6b19e31c711123de2c12a95b). Its deployment alone does not prove a completed match.
+
+## Run locally
+
+Requires Node.js 22 or later.
+
+```bash
+npm install
+npm run typecheck
+npm test
+npm run dev
+```
+
+The browser build also compiles both Solidity contracts and verifies that the versioned TypeScript squad ABI matches the actual compiled `SquadGambit` methods, argument types and events.
+
+```bash
+npm run build
+cd fhe
+npm install
+npm run typecheck
+npm test
+```
+
+The Hardhat FHE suite uses **local mock encryption and decryption**. Green tests are reproducibility evidence, not real Sepolia HCU, latency or signature evidence. See [GitHub Actions](../../actions/workflows/validate.yml) for browser screenshots, deterministic tests and mock contract checks.
+
+## Source map
+
+- `src/main.ts` — Phaser practice game and authenticated-result rendering
+- `src/squad.mjs` — deterministic local reference, role scoring, formation rules and replay verification
+- `src/tactical-report.mjs` — public-only post-round debrief and validation
+- `src/visual/` — original procedural environment and fighter silhouettes
+- `src/chain/sepolia.ts` — deployed **one-fighter** client
+- `src/chain/squad-sepolia.ts` — separate **undeployed** 3v3 encrypted client, verified runtime hash required
+- `fhe/contracts/` — Solidity FHE candidates, including `SealedGambit.sol` and `SquadGambit.sol`
+- `fhe/test/` — adversarial, parity and proof-replay mock tests
+
+Detailed design and constraints: [GAME_DESIGN](docs/GAME_DESIGN.md), [FHE Squad Protocol](docs/CONFIDENTIAL_SQUAD_V2.md), [Visual QA](docs/VISUAL_ACCEPTANCE.md), and [Deployment Gate](docs/SQUAD_DEPLOYMENT_GATE.md).
+
+## What's next
+
+1. Complete the dedicated encrypted 3v3 deployment preflight and evaluate **actual Sepolia HCU / fee feasibility**, not just local EVM gas.
+2. With a fresh explicit transaction approval, deploy the candidate and record the address + runtime fingerprint. **Nothing in this repository auto-deploys it.**
+3. Verify one authentic two-wallet ten-value encrypted duel, canonical signatures, full chain-state recovery, and a Zama signed aggregate result.
+4. Replace provisional fighter graphics with final original sprites and animations, perform beginner playtests, and conduct an independent privacy / gameplay audit.
+
+**Design rule:** no fake signatures, no simulated chain receipts, no unverified onchain victories.

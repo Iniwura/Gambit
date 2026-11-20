@@ -32,6 +32,9 @@ async function runCase(label,viewport){
     }));
     throw error;
   }
+  // Capture the actual playable frame, without intro or result overlays.
+  // A green CI run does not establish art quality; reviewers need this image.
+  await page.screenshot({path:'browser-evidence/'+label+'-arena-ready.png'});
   for(let turn=0;turn<5;turn++){
     const phase=await page.locator('#game-state').getAttribute('data-phase');
     if(phase==='finished')break;
@@ -47,19 +50,38 @@ async function runCase(label,viewport){
       await page.mouse.click(r.x+r.width*(1261/1440),r.y+r.height*(754/810));
     }
     await page.locator('#game-state[data-phase="resolving"]').waitFor({state:"attached",timeout:5000});
-    await page.waitForFunction(()=>{
-      const p=document.getElementById('game-state')?.dataset.phase;
-      return p==='ready'||p==='finished';
-    },null,{timeout:9000});
+    try{
+      // CI hosts may throttle the Phaser animation clock under contention.
+      // This still requires the real state transition, never a forced result.
+      await page.waitForFunction(()=>{
+        const p=document.getElementById('game-state')?.dataset.phase;
+        return p==='ready'||p==='finished';
+      },null,{timeout:25000});
+    }catch(error){
+      const state=await page.locator('#game-state').evaluate(el=>({...el.dataset,text:el.textContent}));
+      console.error('ROUND STALL DIAGNOSTIC',JSON.stringify({label,turn,state,errors}));
+      await page.screenshot({path:'browser-evidence/'+label+'-stalled-round-'+turn+'.png'});
+      throw error;
+    }
+    if(turn===0)await page.screenshot({path:'browser-evidence/'+label+'-after-first-round.png'});
   }
   const phase=await page.locator('#game-state').getAttribute('data-phase');
   assert.equal(phase,'finished','match should complete within 5 rounds');
   const rounds=Number(await page.locator('#game-state').getAttribute('data-round'));
   assert.ok(rounds>=3&&rounds<=5,'round count must be bounded');
   await page.screenshot({path:'browser-evidence/'+label+'-finished.png'});
+  const seedBefore=await page.locator('#game-state').getAttribute('data-practice-seed');
   const r=await canvas.boundingBox();
   await page.mouse.click(r.x+r.width/2,r.y+r.height*(498/810));
   await page.locator('#game-state[data-phase="intro"][data-round="0"]').waitFor({state:"attached",timeout:5000});
+  const seedAfter=await page.locator('#game-state').getAttribute('data-practice-seed');
+  assert.notEqual(seedAfter,seedBefore,'rematch loads a different local bot scenario');
+  assert.equal(await page.locator('#game-state').getAttribute('data-report-round'),null,
+    'rematch must clear previous round report');
+  assert.equal(await page.locator('#game-state').getAttribute('data-last-role-effects'),null,
+    'rematch must clear previous battle VFX evidence');
+  assert.equal(await page.locator('#game-state').getAttribute('data-enemy-formation'),null,
+    'rematch must clear previous opponent formation');
   assert.equal(errors.length,0,'no uncaught browser errors: '+errors.join(' / '));
   console.log('PASS '+label+' · complete match in '+rounds+' rounds, rematch reset, no errors');
   passed++;

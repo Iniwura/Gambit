@@ -1,4 +1,4 @@
-import {createGambitSepoliaClient,type Plan} from './sepolia';
+import {createGambitSepoliaClient,type Plan,type MatchReceipt} from './sepolia';
 
 type Client=Awaited<ReturnType<typeof createGambitSepoliaClient>>;
 type Action=()=>Promise<void>;
@@ -16,13 +16,14 @@ function textNode(tag:'h2'|'p'|'label'|'div',content:string):HTMLElement{
  * Real, opt-in Sepolia controller. It is never mounted without a configured
  * contract address. No fake receipts or simulated wallet interactions.
  */
-export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
+export function mountSepoliaPanel(address:string,getPlan:()=>Plan,onVerified?:(receipt:MatchReceipt)=>void){
   if(document.getElementById('gambit-chain-launch'))return;
   if(!/^0x[a-fA-F0-9]{40}$/.test(address))return;
 
   let client:Client|null=null;
   let busy=false;
   let challengeId:bigint|null=null;
+  let verifiedReceipt:MatchReceipt|null=null;
   function button(text:string,handler:Action,id:string):HTMLButtonElement{
     const b=document.createElement('button');
     b.type='button';b.id=id;b.textContent=text;
@@ -58,7 +59,7 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
   close.style.cssText='border:1px solid #536987;border-radius:8px;background:transparent;color:#e2f3ff;padding:8px 12px';
   close.addEventListener('click',()=>{if(!busy)overlay.hidden=true;});
   header.append(title,close);card.append(header);
-  const caution=textNode('p','Real wallet signatures and testnet transactions. Only authenticated KMS results count. Use local practice before connecting.');
+  const caution=textNode('p','Experimental ONE-FIGHTER encrypted duel, not the full 3v3 practice game. Only your currently selected fighter\'s tactic is sent. Real Sepolia wallet signatures; keep the challenge ID for recovery.');
   caution.style.cssText='color:#bbd1e5;font-size:13px';card.append(caution);
   const account=textNode('p','Not connected');account.style.cssText='font-weight:700;color:#89edf7';card.append(account);
   const connect=button('Connect Sepolia wallet',async()=>{client=await createGambitSepoliaClient(address);account.textContent='Connected: '+client.userAddress;setStatus('Wallet verified on Sepolia.');},'gambit-chain-connect');
@@ -84,29 +85,40 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
     setStatus('Encrypted plan submitted. Calculating FHE outcome and fetching KMS proof…');
     showResult(await c.resolveAndFinalize(challengeId));
   },'gambit-chain-challenge');
-  const challengeLabel=textNode('label','Existing challenge ID (recovery)');
+  const challengeLabel=textNode('label','Continue an existing challenge ID');
   challengeLabel.setAttribute('for','gambit-challenge-id');
   const challengeInput=document.createElement('input');challengeInput.id='gambit-challenge-id';
   challengeInput.type='text';challengeInput.inputMode='numeric';challengeInput.placeholder='Resume after interrupted decryption';
-  const resume=button('Resume KMS finalization',async()=>{
+  const resume=button('Continue challenge',async()=>{
     const c=requireClient();
     challengeId=asPositiveId(challengeInput.value,'Challenge ID');
-    setStatus('Reading onchain challenge state, then resuming KMS verification…');
-    showResult(await c.resolveAndFinalize(challengeId));
+    setStatus('Reading the authoritative Sepolia challenge status…');
+    showResult(await c.resumeChallenge(challengeId,getPlan(),setStatus));
   },'gambit-chain-resume');
   const status=textNode('p','No transactions sent.');status.id='gambit-chain-status';
   status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   status.style.cssText='padding:12px;background:#1b304d;border-radius:10px;overflow-wrap:anywhere;min-height:52px';
   const result=document.createElement('div');result.id='gambit-chain-receipt';
   result.style.cssText='overflow-wrap:anywhere;color:#bdf6ff;font-size:13px';
+  const watch=document.createElement('button');
+  watch.type='button';
+  watch.id='gambit-chain-watch';
+  watch.textContent='WATCH VERIFIED DUEL IN ARENA';
+  watch.disabled=true;
+  watch.hidden=!onVerified;
+  watch.addEventListener('click',()=>{
+    if(busy||!verifiedReceipt||!onVerified)return;
+    overlay.hidden=true;setVisibility();
+    onVerified(verifiedReceipt);
+  });
   const controls=[connect,seal,challenge,resume];
   const styleControls=(el:HTMLElement)=>{
     el.style.cssText='width:100%;margin-top:8px;min-height:40px;padding:9px 12px;border:1px solid #567d9b;border-radius:9px;background:#19415f;color:#e7faff;font-size:14px';
   };
-  for(const e of [...controls,policyInput,challengeInput])styleControls(e);
+  for(const e of [...controls,policyInput,challengeInput,watch])styleControls(e);
   policyLabel.style.display='block';policyLabel.style.marginTop='15px';
   challengeLabel.style.display='block';challengeLabel.style.marginTop='15px';
-  card.append(connect,seal,policyLabel,policyInput,challenge,challengeLabel,challengeInput,resume,status,result);
+  card.append(connect,seal,policyLabel,policyInput,challenge,challengeLabel,challengeInput,resume,status,result,watch);
   overlay.append(card);document.body.append(launch,overlay);
   // A hidden dialog must be truly non-interactive.
   const setVisibility=()=>{overlay.style.display=overlay.hidden?'none':'flex';};
@@ -116,16 +128,32 @@ export function mountSepoliaPanel(address:string,getPlan:()=>Plan){
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!busy){overlay.hidden=true;setVisibility();}});
   setVisibility();
 
+  // Provider changes invalidate the account and every pending write.
+  const wallet=(window as unknown as {ethereum?:{
+    on?:(event:string,listener:(value:unknown)=>void)=>void
+  }}).ethereum;
+  const disconnect=()=>{
+    client=null;
+    account.textContent='Not connected';
+    setStatus('Wallet or network changed. Reconnect to continue safely.');
+  };
+  wallet?.on?.('accountsChanged',disconnect);
+  wallet?.on?.('chainChanged',disconnect);
+
   function requireClient(){
     if(!client)throw Error('Connect a Sepolia wallet first.');
     return client;
   }
   function setStatus(message:string){status.textContent=message;}
-  function showResult(receipt:{outcome:number,challengeId:bigint,explorerUrl:string,authenticated:true}){
+  function showResult(receipt:{outcome:number,challengeId:bigint,explorerUrl:string,authenticated:true,evidence:'transaction'|'contract-state'}){
     if(receipt.authenticated!==true)throw Error('Unauthenticated game result refused.');
     setStatus('VERIFIED ON SEPOLIA · '+(receipt.outcome===1?'Challenger wins':receipt.outcome===2?'Defender wins':'Draw'));
     result.replaceChildren();
-    const link=document.createElement('a');link.textContent='View verified match transaction on Sepolia Etherscan';
+    verifiedReceipt=receipt as MatchReceipt;
+    watch.disabled=false;
+    const link=document.createElement('a');link.textContent=receipt.evidence==='transaction'
+      ?'View verified match transaction on Sepolia Etherscan'
+      :'Inspect finalized game contract on Sepolia Etherscan';
     link.href=receipt.explorerUrl;link.target='_blank';link.rel='noopener noreferrer';
     link.style.color='#7ce7f7';result.append(link);
   }
