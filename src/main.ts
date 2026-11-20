@@ -746,10 +746,18 @@ const game=new Phaser.Game({
 function fail(message:string){const box=document.getElementById('error');if(box){box.style.display='block';box.textContent='GAMBIT could not start: '+message;}}
 window.addEventListener('error',(event)=>fail(event.message));
 window.addEventListener('unhandledrejection',(event)=>fail(String(event.reason)));
+// Prefer the full 3v3 client over the legacy one-fighter lab. If a preview
+// mistakenly configures both, we deliberately mount only v2, avoiding two
+// competing wallet prompts and overlapping buttons. v2 is still versioned
+// and requires both exact deployment coordinates and runtime fingerprint.
+const squadAddress=import.meta.env.VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS;
+const squadHash=import.meta.env.VITE_GAMBIT_SQUAD_RUNTIME_HASH;
+const squadConfigured=typeof squadAddress==='string'&&/^0x[a-fA-F0-9]{40}$/.test(squadAddress)
+  &&typeof squadHash==='string'&&/^0x[a-fA-F0-9]{64}$/.test(squadHash);
 // Onchain controls are mounted only AFTER a real Sepolia contract address is
 // configured. Local practice never creates a pretend wallet or fake receipt.
 const configuredAddress=import.meta.env.VITE_GAMBIT_CONTRACT_ADDRESS;
-if(typeof configuredAddress==='string'&&/^0x[a-fA-F0-9]{40}$/.test(configuredAddress)){
+if(!squadConfigured&&typeof configuredAddress==='string'&&/^0x[a-fA-F0-9]{40}$/.test(configuredAddress)){
   void import('./chain/panel').then(({mountSepoliaPanel})=>{
     mountSepoliaPanel(configuredAddress,()=>({
       base:lastSelectedPlan.base as 0|1|2,
@@ -765,10 +773,7 @@ if(typeof configuredAddress==='string'&&/^0x[a-fA-F0-9]{40}$/.test(configuredAdd
 // Squad v2 remains invisible until a REAL Sepolia deployment is configured
 // together with its independently verified runtime code hash. Never reuse
 // the old one-fighter contract address for a confidential 3v3 session.
-const squadAddress=import.meta.env.VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS;
-const squadHash=import.meta.env.VITE_GAMBIT_SQUAD_RUNTIME_HASH;
-if(typeof squadAddress==='string'&&/^0x[a-fA-F0-9]{40}$/.test(squadAddress)
-  &&typeof squadHash==='string'&&/^0x[a-fA-F0-9]{64}$/.test(squadHash)){
+if(squadConfigured){
   void import('./chain/squad-panel').then(({mountSquadSepoliaPanel})=>{
     mountSquadSepoliaPanel(squadAddress,squadHash,
       ()=>((game.scene.getScene('GambitArena') as GambitArena).squadSnapshot()),
