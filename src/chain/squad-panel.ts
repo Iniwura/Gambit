@@ -54,6 +54,12 @@ export function mountSquadSepoliaPanel(
   launch.textContent='ENCRYPTED SQUAD LAB';
   launch.style.cssText='position:fixed;top:9px;right:12px;z-index:10010;border-radius:10px;' +
     'border:1px solid #ffbd69;background:#2a3043;color:#fff;padding:10px 14px;font:750 12px system-ui';
+  const mobileLaunch=document.createElement('button');
+  mobileLaunch.type='button';mobileLaunch.id='gambit-squad-mobile-launch';
+  mobileLaunch.className='gambit-mobile-chain-launch';
+  mobileLaunch.textContent='ENCRYPTED';
+  mobileLaunch.setAttribute('aria-haspopup','dialog');
+  document.querySelector('#gambit-mobile-deck .gambit-mobile-head')?.append(mobileLaunch);
 
   const dialog=document.createElement('section');
   dialog.id='gambit-squad-dialog';dialog.setAttribute('role','dialog');
@@ -111,7 +117,7 @@ export function mountSquadSepoliaPanel(
   function setBusy(value:boolean){
     busy=value;
     for(const item of allActions)item.disabled=value;
-    close.disabled=value;launch.disabled=value;
+    close.disabled=value;launch.disabled=value;mobileLaunch.disabled=value;
     shareResult.disabled=value||!lastResult;
   }
   const connect=button('1 · Connect + verify deployed contract','gambit-squad-connect',async()=>{
@@ -223,7 +229,9 @@ export function mountSquadSepoliaPanel(
     publicInspect,inspect,submit,resolve,finalize,status,result,shareResult,watch);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
-  launch.addEventListener('click',()=>{dialog.hidden=false;setVisibility();close.focus();});
+  const openDialog=()=>{if(busy)return;dialog.hidden=false;setVisibility();close.focus();};
+  launch.addEventListener('click',openDialog);
+  mobileLaunch.addEventListener('click',openDialog);
   close.addEventListener('click',()=>{if(busy)return;dialog.hidden=true;setVisibility();});
   window.addEventListener('keydown',e=>{
     if(e.key==='Escape'&&!busy&&dialog.hidden===false){dialog.hidden=true;setVisibility();}
