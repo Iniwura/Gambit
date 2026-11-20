@@ -129,7 +129,12 @@ export function mountSquadSepoliaPanel(
     setStatus('Squad #'+x.squadId+' sealed. Tx: '+x.transactionHash);
   });
   const shareInvite=button('Copy squad invitation link','gambit-squad-share-invite',async()=>{
-    const id=positiveId(squad.input.value,'Squad ID');
+    const c=requireClient(),id=positiveId(squad.input.value,'Squad ID');
+    // No unverified invitations: validate actual onchain ownership and
+    // one-use availability before presenting the shareable public ID.
+    const state=await c.readSquad(id);
+    if(state.owner!==c.userAddress||!state.active||state.claimed)
+      throw Error('Only the owner can share an active, unused Sepolia squad.');
     await copyOrDisplay('Squad invitation link',squadInvitationLink(window.location.href,id));
   });
   const open=button('3 · Open invitation as challenger','gambit-squad-open',async()=>{
