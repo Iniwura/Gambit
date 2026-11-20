@@ -12,6 +12,7 @@ export type MobileReport={round:number,heading:string,scoreline:string,note:stri
 const NAMES=['STRIKE','GUARD','FLANK'] as const;
 const ROLE_LABELS=['SCOUT','GUARDIAN','STRIKER'] as const;
 const FORMATION_NAMES=['HOLD','PIVOT','FEINT'] as const;
+const PRACTICE_STYLES=['steady','reactive','volatile'] as const;
 const ROLE_HINTS=[
   'Scout marks a winning Striker for +1 pressure.',
   'Guardian blocks one enemy breach bonus.',
@@ -45,6 +46,21 @@ export function createMobileDeck(){
   const intro=button('ENTER ARENA',()=>publish('start'));
   intro.id='gambit-mobile-enter';
   intro.className='gambit-mobile-primary';
+
+  const styleHeading=document.createElement('div');
+  styleHeading.className='gambit-mobile-action-label';
+  styleHeading.textContent='CHOOSE YOUR OPPONENT';
+  const styleGroup=document.createElement('div');
+  styleGroup.className='gambit-mobile-choices';
+  styleGroup.setAttribute('role','group');
+  styleGroup.setAttribute('aria-label','Practice opponent style');
+  const styleButtons=PRACTICE_STYLES.map(style=>{
+    const b=button(style.toUpperCase(),()=>publish('style',{style}));
+    b.className='gambit-mobile-style';
+    b.setAttribute('aria-pressed','false');
+    styleGroup.append(b);
+    return b;
+  });
 
   const reportPanel=document.createElement('section');
   reportPanel.id='gambit-mobile-report';
@@ -130,11 +146,11 @@ export function createMobileDeck(){
   footer.className='gambit-mobile-footnote';
   footer.textContent='Local practice only. Encrypted online squad battles are still in development.';
 
-  deck.append(head,intro,reportPanel,roleGroup,roleInfo,formationHeading,formationGroup,commands,lock,retry,footer);
+  deck.append(head,styleHeading,styleGroup,intro,reportPanel,roleGroup,roleInfo,formationHeading,formationGroup,commands,lock,retry,footer);
   document.body.append(deck);
   function sync(state:{selectedRole:number,formation:number,plan:MobilePlan,phase:MobilePhase,
-    report:MobileReport|null}){
-    const {selectedRole,formation,plan,phase:stage,report}=state;
+    report:MobileReport|null,style:string}){
+    const {selectedRole,formation,plan,phase:stage,report,style}=state;
     reportPanel.hidden=!report||stage==='intro'||stage==='chain'||stage==='resolving';
     if(report&&!reportPanel.hidden){
       reportTitle.textContent=report.heading;
@@ -153,6 +169,12 @@ export function createMobileDeck(){
     phase.textContent=stage==='resolving'?'RESOLVING ALL THREE':stage==='finished'?'MATCH COMPLETE':
       stage==='chain'?'VERIFIED DUEL':'LOCAL PRACTICE';
     intro.hidden=stage!=='intro';
+    styleHeading.hidden=stage!=='intro';
+    styleGroup.hidden=stage!=='intro';
+    styleButtons.forEach((b,i)=>{
+      b.disabled=stage!=='intro';
+      b.setAttribute('aria-pressed',String(PRACTICE_STYLES[i]===style));
+    });
     retry.hidden=stage!=='finished';
     lock.hidden=stage==='intro'||stage==='finished'||stage==='chain';
     formationHeading.hidden=stage==='intro'||stage==='finished'||stage==='chain';
