@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES,FORMATIONS} from './squad.mjs';
+import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES,FORMATIONS,enemySquadFor,enemyFormationFor} from './squad.mjs';
+import {buildPracticeInsight} from './practice-insight.mjs';
 import {createMobileDeck} from './mobile-deck';
 import {buildPracticeDebrief} from './tactical-report.mjs';
 import {renderReactorDeck} from './visual/arena';
@@ -440,8 +441,17 @@ class GambitArena extends Phaser.Scene {
   private lockPlan(){
     if(!this.active||this.busy||this.finished||this.watchingVerifiedDuel)return;
     let resolved;
-    try{resolved=commitSquadTurn(this.match,this.squadPlans,this.formation);}
-    catch{
+    let insight;
+    try{
+      // Local simulator only: explain one genuinely executed tactic AFTER
+      // resolution. Never reuse an AI cleartext trace for encrypted matches.
+      insight=buildPracticeInsight(this.squadPlans,enemySquadFor(this.match),
+        this.formation,enemyFormationFor(this.match));
+      resolved=commitSquadTurn(this.match,this.squadPlans,this.formation);
+      // Teaching cannot affect authoritative scores, role outcomes or winner.
+      if(insight.lanes.some((lane,i)=>lane.outcome!==resolved.event.lanes[i].outcome))
+        throw Error('Practice insight does not match simulated encounter');
+    }catch{
       this.notice.setText('Check all three fighter plans before locking.');
       return;
     }
@@ -482,10 +492,7 @@ class GambitArena extends Phaser.Scene {
       this.cameras.main.shake(140,.0015);
       this.notice.setText(event.pointsA>event.pointsB?'REACTOR ADVANTAGE · '+event.pointsA+' POINTS':
         event.pointsB>event.pointsA?'ENEMY PRESSURE · REPROGRAM YOUR SQUAD':'STALEMATE · ADAPT YOUR SQUAD');
-      const marked=event.bonusesA.mark?'SCOUT MARK +1 · ':'';
-      const blocked=event.bonusesA.blocked?'SHIELD -1 BONUS · ':'';
-      const breach=event.bonusesA.breach?'STRIKER BREACH +1 · ':'';
-      this.hint.setText((marked+breach+blocked)||'THREE FIGHTERS ENGAGED · '+event.pointsA+' : '+event.pointsB);
+      this.hint.setText(insight.headline);
     });
     this.time.delayedCall(1400,()=>{
       if(this.watchingVerifiedDuel)return;
@@ -499,7 +506,7 @@ class GambitArena extends Phaser.Scene {
     this.time.delayedCall(1950,()=>{
       if(this.watchingVerifiedDuel)return;
       this.busy=false;
-      this.lastDebrief=buildPracticeDebrief(event);
+      this.lastDebrief={...buildPracticeDebrief(event),note:insight.headline};
       this.showBattleReport(this.lastDebrief);
       this.refresh();
       if(this.match.finished)this.gameOver();
