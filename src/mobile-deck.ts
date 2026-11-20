@@ -149,8 +149,8 @@ export function createMobileDeck(){
   deck.append(head,styleHeading,styleGroup,intro,reportPanel,roleGroup,roleInfo,formationHeading,formationGroup,commands,lock,retry,footer);
   document.body.append(deck);
   function sync(state:{selectedRole:number,formation:number,plan:MobilePlan,phase:MobilePhase,
-    report:MobileReport|null,style:string}){
-    const {selectedRole,formation,plan,phase:stage,report,style}=state;
+    report:MobileReport|null,style:string,plans:MobilePlan[]}){
+    const {selectedRole,formation,plan,phase:stage,report,style,plans}=state;
     reportPanel.hidden=!report||stage==='intro'||stage==='chain'||stage==='resolving';
     if(report&&!reportPanel.hidden){
       reportTitle.textContent=report.heading;
@@ -182,6 +182,7 @@ export function createMobileDeck(){
     lock.disabled=!ready;
     for(let i=0;i<roleButtons.length;i++){
       const b=roleButtons[i];
+      b.textContent=ROLE_LABELS[i]+' · '+NAMES[plans[i]?.base??0];
       b.disabled=!ready;
       b.setAttribute('aria-pressed',String(i===selectedRole));
     }
