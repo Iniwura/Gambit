@@ -8,7 +8,8 @@
     "test:sepolia": "hardhat test --network sepolia",
     "typecheck": "tsc --noEmit",
     "deploy:sepolia": "hardhat run --network sepolia scripts/deploy-sepolia.ts",
-    "check:sepolia": "hardhat run --network sepolia scripts/check-signer.ts"
+    "check:sepolia": "hardhat run --network sepolia scripts/check-signer.ts",
+    "check:3v3:sepolia": "hardhat run --network sepolia scripts/check-3v3.ts"
   },
   "dependencies": {
     "@fhevm/solidity": "^0.11.1"
