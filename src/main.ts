@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES,FORMATIONS,enemySquadFor,enemyFormationFor} from './squad.mjs';
+import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES,FORMATIONS,PRACTICE_STYLES,enemySquadFor,enemyFormationFor} from './squad.mjs';
 import {buildPracticeInsight} from './practice-insight.mjs';
 import {createMobileDeck} from './mobile-deck';
 import {buildPracticeDebrief} from './tactical-report.mjs';
@@ -18,11 +18,13 @@ const W=1440,H=810;
 const C={cyan:0x58e4f3,pink:0xfa69ae,gold:0xffcb62,white:'#eff8ff'};
 const SPAWN_POSITIONS=[{x:288,y:299},{x:244,y:407},{x:303,y:515},{x:1138,y:299},{x:1181,y:407},{x:1120,y:515}];
 type Field='base'|'trigger'|'response';
+type PracticeStyle='steady'|'reactive'|'volatile';
 type Plan={base:number,trigger:number,response:number};
 type PracticeReport={round:number,heading:string,scoreline:string,note:string,lanes:Array<{lane:number,leftRole:string,rightRole:string,verdict:string,outcome:number}>};
 type VerifiedDuel={challengeId:bigint,outcome:0|1|2,explorerUrl:string,authenticated:true};
 let lastSelectedPlan:Plan={...startingSquadPlans()[0]};
 let practiceSessionCount=0;
+let selectedPracticeStyle:PracticeStyle='reactive';
 type Actor={shell:Phaser.GameObjects.Container,origin:{x:number,y:number}};
 const names=['STRIKE','GUARD','FLANK'];
 const mobileDeck=createMobileDeck();
@@ -44,6 +46,7 @@ class GambitArena extends Phaser.Scene {
   private roleButtons:Phaser.GameObjects.Rectangle[]=[];
   private roleHint!:Phaser.GameObjects.Text;
   private formationButtons:Phaser.GameObjects.Rectangle[]=[];
+  private styleButtons:Phaser.GameObjects.Rectangle[]=[];
   private battleReport?:Phaser.GameObjects.Container;
   private lastDebrief:PracticeReport|null=null;
   private buttons:Phaser.GameObjects.Container[]=[];
@@ -57,7 +60,7 @@ class GambitArena extends Phaser.Scene {
     // A fresh local opponent scenario on rematch: no wallet, signing,
     // nondeterministic onchain behavior or fake opponent session.
     const practiceSeed=(1102+Math.imul(practiceSessionCount++,0x9e3779b1))>>>0;
-    this.match=makeSquadMatch(practiceSeed);
+    this.match=makeSquadMatch(practiceSeed,selectedPracticeStyle);
     this.squadPlans=startingSquadPlans();
     this.selectedRole=0;
     this.formation=0;
@@ -74,6 +77,7 @@ class GambitArena extends Phaser.Scene {
     this.choices={base:[],trigger:[],response:[]};
     this.roleButtons=[];
     this.formationButtons=[];
+    this.styleButtons=[];
     this.battleReport=undefined;
     this.lastDebrief=null;
     const gameplayState=document.getElementById('game-state');
@@ -115,9 +119,10 @@ class GambitArena extends Phaser.Scene {
     this.game.events.on('gambit:verified-duel',this.showVerifiedDuel,this);
     this.game.events.on('gambit:verified-squad',this.showVerifiedSquad,this);
     const touchCommand=(e:Event)=>{
-      const command=(e as CustomEvent<{action:string,role?:number,formation?:number,field?:Field,value?:number}>).detail;
+      const command=(e as CustomEvent<{action:string,role?:number,formation?:number,field?:Field,value?:number,style?:PracticeStyle}>).detail;
       if(!command)return;
-      if(command.action==='role'&&typeof command.role==='number')this.selectRole(command.role);
+      if(command.action==='style'&&typeof command.style==='string')this.selectPracticeStyle(command.style);
+      else if(command.action==='role'&&typeof command.role==='number')this.selectRole(command.role);
       else if(command.action==='formation'&&typeof command.formation==='number')this.selectFormation(command.formation);
       else if(command.action==='choose'&&command.field&&typeof command.value==='number')
         this.choose(command.field,command.value);
@@ -149,7 +154,7 @@ class GambitArena extends Phaser.Scene {
   private syncMobileDeck(){
     const phase=this.watchingVerifiedDuel?'chain':this.finished?'finished':
       this.busy?'resolving':this.active?'ready':'intro';
-    mobileDeck.sync({selectedRole:this.selectedRole,formation:this.formation,plan:this.plan,phase,report:this.lastDebrief});
+    mobileDeck.sync({selectedRole:this.selectedRole,formation:this.formation,plan:this.plan,phase,report:this.lastDebrief,style:this.match.style});
   }
 
   private writeState(phase:string){
@@ -161,6 +166,7 @@ class GambitArena extends Phaser.Scene {
     el.dataset.scoreA=String(this.match.scoreA);
     el.dataset.scoreB=String(this.match.scoreB);
     el.dataset.practiceMode='three-role-squad';
+    el.dataset.opponentStyle=this.match.style;
     el.dataset.practiceSeed=String(this.match.seed);
     if(this.lastDebrief)el.dataset.reportRound=String(this.lastDebrief.round);
     else delete el.dataset.reportRound;
@@ -407,18 +413,43 @@ class GambitArena extends Phaser.Scene {
     }
   }
 
+  private selectPracticeStyle(style:PracticeStyle){
+    if(this.active||this.busy||this.finished||this.watchingVerifiedDuel||
+       !PRACTICE_STYLES.includes(style))return;
+    selectedPracticeStyle=style;
+    this.match={...this.match,style};
+    this.styleButtons.forEach((rect,index)=>{
+      const selected=PRACTICE_STYLES[index]===style;
+      rect.setFillStyle(selected?0x176077:0x17283d,1);
+      rect.setStrokeStyle(selected?3:1,selected?C.cyan:0x52738e,1);
+    });
+    this.writeState('intro');
+  }
+
   private intro(){
     this.active=false;
     const overlay=this.add.container(0,0).setDepth(7000);
     overlay.add(this.add.rectangle(W/2,H/2,W,H,0x050912,.82));
-    const panel=this.add.rectangle(W/2,H/2,650,320,0x15213a,.99).setStrokeStyle(3,C.cyan,.8);
+    const panel=this.add.rectangle(W/2,H/2,760,390,0x15213a,.99).setStrokeStyle(3,C.cyan,.8);
     overlay.add(panel);
-    overlay.add(this.text(W/2,270,'GAMBIT',63,C.white,true).setOrigin(.5));
-    overlay.add(this.text(W/2,345,'THREE FIGHTERS. THREE SECRET STRATEGIES.',20,'#9feefc',true).setOrigin(.5));
-    overlay.add(this.text(W/2,393,'Program your fighters. Choose a formation. Outsmart their deployment.',16,C.white).setOrigin(.5));
-    overlay.add(this.text(W/2,427,'LOCAL PRACTICE ONLY  •  NO WALLET OR ENCRYPTION',13,'#a9b8d7',true).setOrigin(.5));
-    const bg=this.add.rectangle(W/2,496,280,57,0x0d6179).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
-    overlay.add([bg,this.text(W/2,496,'ENTER ARENA',20,C.white,true).setOrigin(.5)]);
+    overlay.add(this.text(W/2,248,'GAMBIT',59,C.white,true).setOrigin(.5));
+    overlay.add(this.text(W/2,309,'OUTSMART THREE ENEMY FIGHTERS.',21,'#9feefc',true).setOrigin(.5));
+    overlay.add(this.text(W/2,348,'Program each fighter. Choose formation. Command the reactor.',16,C.white).setOrigin(.5));
+    overlay.add(this.text(W/2,382,'LOCAL PRACTICE · NO WALLET OR ENCRYPTION',12,'#a9b8d7',true).setOrigin(.5));
+    overlay.add(this.text(W/2,408,'CHOOSE YOUR OPPONENT',12,'#bdd6e7',true).setOrigin(.5));
+    const styleLabels=['STEADY','REACTIVE','VOLATILE'];
+    for(let i=0;i<PRACTICE_STYLES.length;i++){
+      const x=517+i*203,style=PRACTICE_STYLES[i] as PracticeStyle;
+      const active=style===selectedPracticeStyle;
+      const rect=this.add.rectangle(x,447,186,40,active?0x176077:0x17283d)
+        .setStrokeStyle(active?3:1,active?C.cyan:0x52738e)
+        .setInteractive({useHandCursor:true});
+      rect.on('pointerdown',()=>this.selectPracticeStyle(style));
+      this.styleButtons.push(rect);
+      overlay.add([rect,this.text(x,447,styleLabels[i],14,C.white,true).setOrigin(.5)]);
+    }
+    const bg=this.add.rectangle(W/2,518,280,57,0x0d6179).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
+    overlay.add([bg,this.text(W/2,518,'ENTER ARENA',20,C.white,true).setOrigin(.5)]);
     const begin=()=>{
       if(this.active)return;
       overlay.destroy(true);
