@@ -75,6 +75,12 @@ async function runCase(label,viewport){
       'mobile players must receive a readable end-of-match learning summary');
     assert.match(await review.textContent(),/MATCH REVIEW/);
     assert.match(await review.textContent(),/STANDOUT|BALANCED/);
+    assert.equal(await page.locator('.gambit-mobile-role-group').isVisible(),false,
+      'finished match cannot leave disabled fighter selection below debrief');
+    assert.equal(await page.locator('.gambit-mobile-commands').isVisible(),false,
+      'finished match cannot leave old tactic inputs visible');
+    assert.equal(await page.locator('#gambit-mobile-rematch').isVisible(),true,
+      'rematch must remain the clear final call to action');
   }
   await page.screenshot({path:'browser-evidence/'+label+'-finished.png'});
   const seedBefore=await page.locator('#game-state').getAttribute('data-practice-seed');
