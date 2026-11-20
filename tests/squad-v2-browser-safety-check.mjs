@@ -77,8 +77,10 @@ try{
   });
   const mobileErrors=[];wrongNetwork.on('pageerror',e=>mobileErrors.push(e.message));
   await wrongNetwork.goto(configured,{waitUntil:'networkidle',timeout:35000});
-  await wrongNetwork.locator('#gambit-squad-launch').waitFor({state:'visible',timeout:25000});
-  await wrongNetwork.locator('#gambit-squad-launch').click();
+  await wrongNetwork.locator('#gambit-squad-mobile-launch').waitFor({state:'visible',timeout:25000});
+  assert.equal(await wrongNetwork.locator('#gambit-squad-launch').isVisible(),false,
+    'mobile game view must never be covered by a fixed wallet lab button');
+  await wrongNetwork.locator('#gambit-squad-mobile-launch').click();
   await wrongNetwork.locator('#gambit-squad-connect').click();
   await wrongNetwork.locator('#gambit-squad-status')
     .filter({hasText:/Switch your wallet to Ethereum Sepolia/}).waitFor({timeout:12000});
