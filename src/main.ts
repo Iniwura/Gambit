@@ -409,10 +409,17 @@ class GambitArena extends Phaser.Scene {
     }
 
     if(outcome!==0){
-      // The winning fighter reacts; a draw cannot imply a victor.
+      // Keep this response tied ONLY to a visible LOCAL PRACTICE lane win:
+      // winner presses forward; loser recoils. Both return before next round.
       const actor=this.actors[outcome===2?defenderIndex+3:challengerIndex].shell;
-      this.tweens.add({targets:actor,scaleX:1.13,scaleY:1.13,duration:155,
-        yoyo:true,hold:90,ease:'Sine.easeOut'});
+      const loser=this.actors[outcome===1?defenderIndex+3:challengerIndex].shell;
+      this.tweens.add({targets:actor,scaleX:1.09,scaleY:1.09,
+        duration:145,yoyo:true,hold:75,ease:'Sine.easeOut'});
+      this.tweens.add({targets:loser,
+        x:loser.x+(outcome===1?26:-26),
+        angle:outcome===1?7:-7,
+        alpha:.66,duration:135,yoyo:true,hold:130,ease:'Sine.easeOut',
+        onComplete:()=>{loser.setAlpha(outcome===1?1:.77);loser.setAngle(0);}});
     }
   }
 
@@ -544,6 +551,19 @@ class GambitArena extends Phaser.Scene {
           if(i===2)stateEl.dataset.lastRoleEffects='3';
         }
         if(i===2){
+          // A short visible pulse connects the 3 lane wins to the reactor
+          // objective. It represents this LOCAL round's public scores only.
+          const advantage=event.pointsA-event.pointsB;
+          const pulseColor=advantage>0?C.cyan:advantage<0?C.pink:C.gold;
+          const pulse=this.add.circle(720,414,78,pulseColor,.06)
+            .setStrokeStyle(5,pulseColor,.9).setDepth(1140);
+          this.tweens.add({targets:pulse,scale:1.95,alpha:0,
+            duration:850,ease:'Sine.easeOut',onComplete:()=>pulse.destroy()});
+          const pressure=this.text(720,414,
+            'REACTOR   +'+event.pointsA+'   /   +'+event.pointsB,
+            18,C.white,true).setOrigin(.5).setDepth(2080);
+          this.tweens.add({targets:pressure,alpha:0,y:394,delay:300,
+            duration:650,onComplete:()=>pressure.destroy()});
           this.cameras.main.shake(115,.0013);
           this.notice.setText(event.pointsA>event.pointsB?
             'REACTOR ADVANTAGE · +'+event.pointsA+' PRESSURE':
@@ -559,7 +579,7 @@ class GambitArena extends Phaser.Scene {
         const unit=this.actors[i];
         const assignedLane=i<3?FORMATIONS[this.formation].slots.indexOf(i):-1;
         const y=assignedLane<0?unit.origin.y:[299,407,515][assignedLane];
-        this.tweens.add({targets:unit.shell,x:unit.origin.x,y,scale:1,duration:400});
+        this.tweens.add({targets:unit.shell,x:unit.origin.x,y,scale:1,angle:0,duration:400});
       }
     });
     this.time.delayedCall(2680,()=>{
