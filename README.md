@@ -36,6 +36,7 @@ The playable practice mode reveals each public lane result for learning. **The e
 | One-fighter `SealedGambit` | **Deployed, NOT live-match-verified** | Sepolia `0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0` |
 | Encrypted 3v3 `SquadGambit` | **Deployed, NOT live-match-verified** | Sepolia `0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134`; [deployment receipt](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a) |
 | Versioned encrypted squad browser adapter | Prepared, **gated** | Exact Sepolia address and independently verified runtime code hash required |
+| Zama SDK ten-value encryption probe | **Passed, read-only** | Public relayer produced 10 ciphertext handles plus input proof; CI run [44725183567](https://github.com/Iniwura/Gambit/actions/runs/44725183567); no signature or chain write |
 | Real two-wallet 3v3 proof | **Not complete** | Separate signatures, ten-input FHE flow, public KMS decryption, finalization and recovery still required |
 | Production-grade character art and audio | **Not complete** | Original procedural stand-ins only |
 | External playtest / security review | **Not complete** | Mandatory before submission-ready claim |
@@ -75,13 +76,14 @@ The Hardhat FHE suite uses **local mock encryption and decryption**. Green tests
 - `src/chain/squad-sepolia.ts` — deployed but **not yet live-match-verified** 3v3 client; exact Sepolia runtime hash required
 - `fhe/contracts/` — Solidity FHE candidates, including `SealedGambit.sol` and `SquadGambit.sol`
 - `fhe/test/` — adversarial, parity and proof-replay mock tests
+- `fhe/scripts/seal-squad-sepolia.ts` — guarded real v2 ten-input seal, **not executed**; see [live handoff](docs/LIVE_SQUAD_SEAL_HANDOFF.md)
 
 Detailed design and constraints: [GAME_DESIGN](docs/GAME_DESIGN.md), [FHE Squad Protocol](docs/CONFIDENTIAL_SQUAD_V2.md), [Visual QA](docs/VISUAL_ACCEPTANCE.md), and [Deployment Gate](docs/SQUAD_DEPLOYMENT_GATE.md).
 
 ## What's next
 
-1. Perform read-only checks of the deployed `SquadGambit` runtime, SDK initialization, and distinct challenger wallet readiness. The [live verification checklist](https://github.com/Iniwura/Gambit/issues/8) tracks the next evidence gate.
-2. Obtain **separate explicit approval for each new transaction** and verify a real two-wallet ten-value encrypted duel, signed aggregate KMS result and recovery. Deployment authorization is exhausted and does not cover gameplay.
+1. The live read-only ten-input SDK encryption probe passed in CI. Next, verify distinct challenger wallet readiness and the exact next squad ID with the [v2 live seal handoff](docs/LIVE_SQUAD_SEAL_HANDOFF.md). The [live verification checklist](https://github.com/Iniwura/Gambit/issues/8) tracks this evidence gate.
+2. Proceed only with one-shot, owner-controlled, **fee-capped testnet transaction flags**. Verify a real two-wallet ten-value encrypted duel, signed aggregate KMS result and recovery. Do not rely on deployment approval or reuse a transaction flag indiscriminately.
 3. Record actual Sepolia gas, HCU if observable, relayer/KMS latency, canonical receipts and user-facing verified results.
 4. Replace provisional fighter graphics with final original sprites and animations, perform beginner playtests, and conduct an independent privacy / gameplay audit.
 
