@@ -16,6 +16,7 @@ async function main(){
   if(artifact.contractName!=='SquadGambit'||!artifact.bytecode.startsWith('0x'))
     throw Error('Squad candidate not compiled');
   const quote=await ethers.provider.getFeeData();
+  const latest=await ethers.provider.getBlock('latest');
   const fee=quote.maxFeePerGas??quote.gasPrice;
   let estimated:bigint|null=null,estimateStatus='confirmed';
   try{
@@ -57,6 +58,9 @@ async function main(){
     creationBytes:(artifact.bytecode.length-2)/2,
     compiledRuntimeBytes:(artifact.deployedBytecode.length-2)/2,
     estimatedEvmGas:estimated?.toString()??null,
+    latestBlockGasLimit:latest?.gasLimit.toString()??null,
+    estimateUsesOver90PercentOfBlockLimit:estimated!==null&&latest!==null
+      ? estimated*100n>=latest.gasLimit*90n:false,
     estimateStatus,
     independentRpcEstimatedEvmGas:independentGas?.toString()??null,
     independentRpcStatus:independentStatus,
