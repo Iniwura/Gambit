@@ -49,12 +49,16 @@ async function run(viewport){
     null,{timeout:6000});
   await page.waitForFunction(()=>document.getElementById('game-state')?.dataset.lastRoleEffects==='3',
     null,{timeout:6000});
+  assert.equal(await state.getAttribute('data-last-lane-order'),'123',
+    'all three public practice lane outcomes must animate in order');
   await page.waitForFunction(()=>{
     const phase=document.getElementById('game-state')?.dataset.phase;
     return phase==='ready'||phase==='finished';
   },null,{timeout:25000});
   assert.equal(await state.getAttribute('data-report-round'),'1',
     'post-round Phaser debrief must be created from actual resolution');
+  assert.equal(await state.getAttribute('data-active-lane'),null,
+    'all temporary combat focus must clear before the next round');
   assert.equal(errors.length,0,'no browser errors: '+errors.join('; '));
   await ctx.close();
   console.log('PASS independent 3-role squad controls and 3-lane resolution at '+viewport.width+'px');
