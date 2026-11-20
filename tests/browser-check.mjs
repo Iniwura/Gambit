@@ -69,6 +69,13 @@ async function runCase(label,viewport){
   assert.equal(phase,'finished','match should complete within 5 rounds');
   const rounds=Number(await page.locator('#game-state').getAttribute('data-round'));
   assert.ok(rounds>=3&&rounds<=5,'round count must be bounded');
+  if(viewport.width<600){
+    const review=page.locator('#gambit-mobile-match-summary');
+    assert.equal(await review.isVisible(),true,
+      'mobile players must receive a readable end-of-match learning summary');
+    assert.match(await review.textContent(),/MATCH REVIEW/);
+    assert.match(await review.textContent(),/STANDOUT|BALANCED/);
+  }
   await page.screenshot({path:'browser-evidence/'+label+'-finished.png'});
   const seedBefore=await page.locator('#game-state').getAttribute('data-practice-seed');
   const r=await canvas.boundingBox();
