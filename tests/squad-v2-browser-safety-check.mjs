@@ -24,6 +24,10 @@ try{
   assert.equal(await noWallet.locator('#game-state').getAttribute('data-phase'),'intro');
   await noWallet.locator('#gambit-squad-launch').click();
   assert.equal(await noWallet.locator('#gambit-squad-dialog').isVisible(),true);
+  assert.equal(await noWallet.locator('#gambit-squad-resolve').count(),1,
+    'encrypted resolution must be one independent transaction action');
+  assert.equal(await noWallet.locator('#gambit-squad-finalize').count(),1,
+    'signed score finalization needs a separate action');
   await noWallet.locator('#gambit-squad-seal').click();
   await noWallet.locator('#gambit-squad-status')
     .filter({hasText:/Connect and verify Sepolia wallet first/}).waitFor({timeout:6000});

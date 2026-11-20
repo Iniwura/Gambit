@@ -137,11 +137,19 @@ export function mountSquadSepoliaPanel(
     const x=await c.submitDuel(id,draft.plans,draft.formation);
     setStatus('Duel #'+id+' submitted onchain. Tx: '+x.transactionHash);
   });
-  const finalize=button('5 · Resolve + verify signed total scores','gambit-squad-finalize',async()=>{
+  const resolve=button('5 · Resolve encrypted match (one transaction)','gambit-squad-resolve',async()=>{
     const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
-    setStatus('Reading contract state, computing encrypted result and verifying KMS proof. '+
-      'Further Sepolia signatures may be required.');
-    showResult(await c.resolveAndFinalize(id));
+    setStatus('Confirm ONE resolution transaction in your wallet. '+
+      'This does not authorize score finalization.');
+    const x=await c.resolveDuel(id);
+    setStatus('Duel #'+id+' resolved. Tx: '+x.transactionHash+
+      '. Finalizing the KMS-signed score requires a separate action.');
+  });
+  const finalize=button('6 · Verify KMS score + finalize (one transaction)','gambit-squad-finalize',async()=>{
+    const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
+    setStatus('Fetching the public KMS proof. Confirm ONE finalization transaction '+
+      'in your wallet after proof verification.');
+    showResult(await c.finalizeDuel(id));
   });
   const watch=document.createElement('button');watch.id='gambit-squad-watch';
   watch.type='button';watch.textContent='VIEW AUTHENTICATED REACTOR RESULT';
@@ -153,7 +161,7 @@ export function mountSquadSepoliaPanel(
     dialog.hidden=true;setVisibility();
     onVerified(lastResult);
   });
-  const allActions=[connect,seal,open,recover,inspect,submit,finalize];
+  const allActions=[connect,seal,open,recover,inspect,submit,resolve,finalize];
   function showResult(proof:SquadResult){
     if(proof.authenticated!==true)throw Error('Unauthenticated result rejected.');
     lastResult=proof;
@@ -172,7 +180,7 @@ export function mountSquadSepoliaPanel(
 
   card.append(heading,caution,identity,connect,invited.wrap,invited.input,
     seal,squad.wrap,squad.input,open,recover,duel.wrap,duel.input,
-    inspect,submit,finalize,status,result,watch);
+    inspect,submit,resolve,finalize,status,result,watch);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
   launch.addEventListener('click',()=>{dialog.hidden=false;setVisibility();close.focus();});

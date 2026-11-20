@@ -6,7 +6,7 @@ import {BrowserProvider,Contract,getAddress,keccak256,ZeroAddress} from 'ethers'
 import {encodeSquadInputs,decodePackedSquadScore,canOpenSquad,squadDuelStep,validateSquadStatus} from './squad-lifecycle.mjs';
 
 /**
- * Versioned, NOT MOUNTED v2 wallet client for UNDEPLOYED SquadGambit.
+ * Versioned experimental v2 wallet client for deployed SquadGambit; live encrypted match is NOT VERIFIED.
  *
  * Security gates BEFORE any user action:
  *  - exactly Sepolia chain 11155111
@@ -223,52 +223,70 @@ export async function createSquadSepoliaClient(
       evidence:'contract-state',explorerUrl:'https://sepolia.etherscan.io/address/'+contractAddress,
       resolutionTx:'',finalizationTx:''};
   }
-  async function resolveAndFinalize(duelId:bigint):Promise<SquadResult>{
+  /**
+   * Exactly ONE authorized resolution transaction per call. Finalization is
+   * deliberately a different user action, with a different wallet signature.
+   */
+  async function resolveDuel(duelId:bigint){
+    const {step}=await nextDuelStep(duelId);
+    if(step!=='resolve')throw Error('Duel is not awaiting encrypted resolution.');
+    await assertWalletStable();
+    const tx=await txSucceeded(contract.resolveDuel(duelId));
+    const evt=eventIn(tx.receipt,'DuelReady');
+    if(BigInt(evt.args.duelId)!==duelId)
+      throw Error('Resolution event references another duel.');
+    const handle=evt.args.resultHandle as string;
+    if(!/^0x[a-fA-F0-9]{64}$/.test(handle))
+      throw Error('Invalid encrypted result handle.');
+    const onchain=await contract.publicResultHandle(duelId) as string;
+    if(onchain.toLowerCase()!==handle.toLowerCase())
+      throw Error('Resolution event and canonical contract handle disagree.');
+    const after=await nextDuelStep(duelId);
+    if(after.step!=='finalize'||!after.duel.resolved)
+      throw Error('Confirmed resolution is not finalizable onchain.');
+    return {transactionHash:tx.hash,resultHandle:handle};
+  }
+
+  /**
+   * Exactly ONE finalization transaction per call. KMS public decryption
+   * occurs before signing. Never implicitly resolve or retransmit a duel.
+   */
+  async function finalizeDuel(duelId:bigint):Promise<SquadResult>{
     const {duel,step}=await nextDuelStep(duelId);
     if(step==='verified')return verifiedResult(duelId);
-    if(step==='expired'||step==='submit')
-      throw Error('Duel has not been submitted and cannot be resolved.');
-    let handle:`0x${string}`;
-    let resolutionTx='';
-    if(step==='resolve'){
-      await assertWalletStable();
-      const tx=await txSucceeded(contract.resolveDuel(duelId));
-      const event=eventIn(tx.receipt,'DuelReady');
-      if(BigInt(event.args.duelId)!==duelId)throw Error('Resolution event ID mismatch.');
-      handle=event.args.resultHandle as `0x${string}`;
-      resolutionTx=tx.hash;
-    }else{
-      handle=await contract.publicResultHandle(duelId) as `0x${string}`;
-    }
-    if(!/^0x[a-fA-F0-9]{64}$/.test(handle))throw Error('Invalid encrypted result handle.');
-    const onchainHandle=await contract.publicResultHandle(duelId) as string;
-    if(onchainHandle.toLowerCase()!==handle.toLowerCase())
-      throw Error('Published FHE result does not match contract state.');
+    if(step!=='finalize'||!duel.resolved||duel.finalized)
+      throw Error('Resolve the duel first; finalization is a separate transaction.');
+    const handle=await contract.publicResultHandle(duelId) as string;
+    if(!/^0x[a-fA-F0-9]{64}$/.test(handle))
+      throw Error('Invalid encrypted result handle.');
     const proof=await sdk.decryption.decryptPublicValues([handle as `0x${string}`]);
     const value=proof.clearValues[handle];
     const parsed=decodePackedSquadScore(value);
     if(!proof.decryptionProof||proof.decryptionProof==='0x')
       throw Error('Signed Zama KMS decryption proof missing.');
-    if((await nextDuelStep(duelId)).step==='verified')return verifiedResult(duelId);
+    if((await nextDuelStep(duelId)).step==='verified')
+      return verifiedResult(duelId);
+    if((await nextDuelStep(duelId)).step!=='finalize')
+      throw Error('Duel changed during KMS decryption; refusing to finalize.');
     await assertWalletStable();
-    const final=await txSucceeded(contract.finalizeDuel(duelId,parsed.packed,proof.decryptionProof));
-    const event=eventIn(final.receipt,'DuelFinalized');
-    if(BigInt(event.args.duelId)!==duelId||
-       Number(event.args.pointsChallenger)!==parsed.challenger||
-       Number(event.args.pointsDefender)!==parsed.defender||
-       Number(event.args.outcome)!==parsed.outcome)
-      throw Error('Signed onchain finalization event disagrees with FHE score.');
+    const tx=await txSucceeded(contract.finalizeDuel(duelId,parsed.packed,proof.decryptionProof));
+    const evt=eventIn(tx.receipt,'DuelFinalized');
+    if(BigInt(evt.args.duelId)!==duelId||
+       Number(evt.args.pointsChallenger)!==parsed.challenger||
+       Number(evt.args.pointsDefender)!==parsed.defender||
+       Number(evt.args.outcome)!==parsed.outcome)
+      throw Error('Onchain finalization event disagrees with authenticated FHE score.');
     const after=await readDuel(duelId);
     if(!after.finalized||after.squadId!==duel.squadId||
        Number(after.packedScore)!==parsed.packed)
-      throw Error('Finalized contract state disagrees with KMS proof.');
+      throw Error('Finalized onchain score disagrees with signed KMS proof.');
     return {squadId:duel.squadId,duelId,
       pointsChallenger:parsed.challenger,pointsDefender:parsed.defender,
       outcome:parsed.outcome as 0|1|2,authenticated:true,evidence:'transaction',
-      explorerUrl:'https://sepolia.etherscan.io/tx/'+final.hash,
-      resolutionTx,finalizationTx:final.hash};
+      explorerUrl:'https://sepolia.etherscan.io/tx/'+tx.hash,
+      resolutionTx:'',finalizationTx:tx.hash};
   }
   return {contractAddress,userAddress,
     readSquad,readDuel,nextDuelStep,sealSquad,closeSquad,
-    openDuel,recoverDuelId,submitDuel,verifiedResult,resolveAndFinalize};
+    openDuel,recoverDuelId,submitDuel,verifiedResult,resolveDuel,finalizeDuel};
 }

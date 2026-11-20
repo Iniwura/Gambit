@@ -48,8 +48,8 @@ The authorized deployment completed and its public manifest is committed at [`fh
 1. Defender signs and encrypts one squad, specifying an entirely different invited challenger address; verify `SquadSealed`, contract status and ten-value proof.
 2. Challenger signs `openDuel`. The contract permanently consumes the sealed policy. Recovery uses `duelForSquad(squadId)` and immutable `openedAt` (expiry one day if unsubmitted).
 3. Challenger signs `submitDuel` with its own ten encrypted values. Account and chain are rechecked before signing.
-4. An operator authorizes `resolveDuel`. Check `DuelReady` handle equals the canonical `publicResultHandle`.
-5. Public SDK decryption obtains a signed KMS proof. An authorized signer calls `finalizeDuel`, the contract rejects incorrect/replayed proofs, and the final `DuelFinalized` event, stored packed score and returned public score all agree.
+4. An operator separately authorizes **one** `resolveDuel` transaction. Check `DuelReady` handle equals canonical `publicResultHandle`. This must not automatically trigger finalization.
+5. Public SDK decryption obtains a signed KMS proof. An authorized signer separately approves **one** `finalizeDuel` transaction, the contract rejects incorrect/replayed proofs, and the final `DuelFinalized` event, stored packed score and returned public score all agree.
 6. Reload between each stage and verify recovery without duplicate writes. Show **aggregate-only** result animation in the Phaser scene after onchain verification.
 7. Publish a verifiable record of exact transaction hashes, addresses, blocks, gas used, decryption proof verification and **measured HCU/latency** when obtainable, without private strategies.
 
