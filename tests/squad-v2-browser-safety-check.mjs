@@ -28,6 +28,14 @@ try{
   assert.equal(await noWallet.locator('#gambit-squad-dialog').isVisible(),true);
   assert.equal(await noWallet.locator('#gambit-squad-public-inspect').count(),1,
     'judges must be able to inspect finalized scores without a wallet');
+  assert.equal(await noWallet.locator('#gambit-squad-share-invite').count(),1);
+  assert.equal(await noWallet.locator('#gambit-squad-share-result').isDisabled(),true,
+    'never share a result before it is truly finalized onchain');
+  await noWallet.locator('#gambit-squad-id').fill('19');
+  await noWallet.locator('#gambit-squad-share-invite').click();
+  await noWallet.locator('#gambit-squad-status')
+    .filter({hasText:/Squad invitation link copied|Copy Squad invitation link manually/})
+    .waitFor({timeout:6000});
   await noWallet.locator('#gambit-duel-id').fill('not-a-valid-id');
   await noWallet.locator('#gambit-squad-public-inspect').click();
   await noWallet.locator('#gambit-squad-status')
