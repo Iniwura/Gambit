@@ -22,7 +22,7 @@ cd fhe
 npm run hcu:static
 ```
 
-The analyzer is now a **required CI gate**, pinned to reviewed Solidity source via Git blob SHA \`b5c7e307595a4b0259431daa92016d1887795b8d\`. Any contract source edit, even one that does not modify the FHE calls, fails the gate until an engineer re-reviews the source-level operation inventory and updates the pin. This prevents silent *source drift* but does not automatically derive the counts or prove they were correct to begin with. The pinned source and the cost table must be re-audited before deployment after contract changes.
+The analyzer is now a **required CI gate**, pinned to reviewed Solidity source via Git blob SHA `b5c7e307595a4b0259431daa92016d1887795b8d`. Any contract source edit, even one that does not modify the FHE calls, fails the gate until an engineer re-reviews the source-level operation inventory and updates the pin. This prevents silent *source drift* but does not automatically derive the counts or prove they were correct to begin with. The pinned source and the cost table must be re-audited before deployment after contract changes.
 
 The analyzer uses the official published **non-scalar** costs, which are the
 conservative choice for ciphertext-to-ciphertext expressions:

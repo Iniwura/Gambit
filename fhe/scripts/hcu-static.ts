@@ -16,7 +16,7 @@ import {resolve} from 'node:path';
 const REVIEWED_SQUAD_CONTRACT_GIT_BLOB_SHA='b5c7e307595a4b0259431daa92016d1887795b8d';
 const squadSource=readFileSync(resolve(process.cwd(),'contracts/SquadGambit.sol'));
 const actualBlobSha=createHash('sha1')
-  .update('blob '+squadSource.length+'\\0'.replace('\\0','\0'))
+  .update('blob '+squadSource.length+String.fromCharCode(0))
   .update(squadSource)
   .digest('hex');
 if(actualBlobSha!==REVIEWED_SQUAD_CONTRACT_GIT_BLOB_SHA){
