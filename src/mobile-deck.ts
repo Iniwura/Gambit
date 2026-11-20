@@ -6,6 +6,7 @@
 export type MobileField='base'|'trigger'|'response';
 export type MobilePlan={base:number,trigger:number,response:number};
 export type MobilePhase='intro'|'ready'|'resolving'|'finished'|'chain';
+export type MobileSummary={scoreline:string,highlight:string,adjustment:string};
 export type MobileReport={round:number,heading:string,scoreline:string,note:string,
   lanes:{leftRole:string,rightRole:string,verdict:string,outcome:number}[]};
 
@@ -61,6 +62,19 @@ export function createMobileDeck(){
     styleGroup.append(b);
     return b;
   });
+
+  const summaryPanel=document.createElement('section');
+  summaryPanel.id='gambit-mobile-match-summary';
+  summaryPanel.setAttribute('aria-label','Local practice match review');
+  summaryPanel.setAttribute('aria-live','polite');
+  summaryPanel.hidden=true;
+  const summaryTitle=document.createElement('strong');
+  summaryTitle.textContent='MATCH REVIEW';
+  const summaryScore=document.createElement('strong');
+  summaryScore.className='gambit-mobile-summary-score';
+  const summaryHighlight=document.createElement('span');
+  const summaryTip=document.createElement('small');
+  summaryPanel.append(summaryTitle,summaryScore,summaryHighlight,summaryTip);
 
   const reportPanel=document.createElement('section');
   reportPanel.id='gambit-mobile-report';
@@ -146,11 +160,17 @@ export function createMobileDeck(){
   footer.className='gambit-mobile-footnote';
   footer.textContent='Local practice only. Encrypted online squad battles are still in development.';
 
-  deck.append(head,styleHeading,styleGroup,intro,reportPanel,roleGroup,roleInfo,formationHeading,formationGroup,commands,lock,retry,footer);
+  deck.append(head,styleHeading,styleGroup,intro,summaryPanel,reportPanel,roleGroup,roleInfo,formationHeading,formationGroup,commands,lock,retry,footer);
   document.body.append(deck);
   function sync(state:{selectedRole:number,formation:number,plan:MobilePlan,phase:MobilePhase,
-    report:MobileReport|null,style:string,plans:MobilePlan[]}){
-    const {selectedRole,formation,plan,phase:stage,report,style,plans}=state;
+    report:MobileReport|null,style:string,plans:MobilePlan[],summary:MobileSummary|null}){
+    const {selectedRole,formation,plan,phase:stage,report,style,plans,summary}=state;
+    summaryPanel.hidden=stage!=='finished'||!summary;
+    if(summary&&!summaryPanel.hidden){
+      summaryScore.textContent=summary.scoreline;
+      summaryHighlight.textContent=summary.highlight;
+      summaryTip.textContent=summary.adjustment;
+    }
     reportPanel.hidden=!report||stage==='intro'||stage==='chain'||stage==='resolving';
     if(report&&!reportPanel.hidden){
       reportTitle.textContent=report.heading;
