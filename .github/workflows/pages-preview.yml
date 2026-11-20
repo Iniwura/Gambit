@@ -65,7 +65,6 @@ jobs:
 
       - name: Compile contract artifact and publish-safe web assets
         env:
-          VITE_GAMBIT_CONTRACT_ADDRESS: '0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0'
           VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS: '0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134'
           VITE_GAMBIT_SQUAD_RUNTIME_HASH: '0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419'
         run: |
