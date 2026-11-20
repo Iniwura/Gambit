@@ -76,6 +76,19 @@ async function main() {
     throw Error('Challenger must be a distinct nonzero wallet');
   }
 
+  const expectedOwnerRaw = process.env.GAMBIT_EXPECTED_SQUAD_SEAL_SIGNER;
+  if (!expectedOwnerRaw || getAddress(expectedOwnerRaw) !== expectedOwner) {
+    throw Error('Explicitly approved public owner address is missing or wrong');
+  }
+  const approvedCapRaw = process.env.GAMBIT_MAX_SQUAD_SEAL_FEE_WEI;
+  if (!approvedCapRaw || !/^[1-9][0-9]*$/.test(approvedCapRaw)) {
+    throw Error('A fresh explicit maximum transaction fee in wei is required');
+  }
+  const approvedMaxFeeWei = BigInt(approvedCapRaw);
+  if (approvedMaxFeeWei > MAX_FEE_WEI) {
+    throw Error('Approved fee cap exceeds the 0.0005 Sepolia ETH hard limit');
+  }
+
   const expectedNextRaw = process.env.GAMBIT_EXPECTED_NEXT_SQUAD_ID;
   if (!expectedNextRaw || !/^[1-9][0-9]*$/.test(expectedNextRaw) ||
       BigInt(expectedNextRaw) !== currentId + 1n) {
@@ -114,8 +127,8 @@ async function main() {
     let maxPerGas = quote.maxFeePerGas ?? quote.gasPrice;
     if (!maxPerGas || maxPerGas <= 0n) throw Error('Gas fee quote unavailable');
     let currentBalance = await ethers.provider.getBalance(signerAddress);
-    if (gasLimit * maxPerGas > MAX_FEE_WEI || gasLimit * maxPerGas > currentBalance) {
-      throw Error('Estimated maximum fee exceeds 0.0005 Sepolia ETH or wallet balance');
+    if (gasLimit * maxPerGas > approvedMaxFeeWei || gasLimit * maxPerGas > currentBalance) {
+      throw Error('Estimated maximum fee exceeds the explicitly approved cap or wallet balance');
     }
 
     // Reject another actor's prior seal / a network switch / stale deployed code.
@@ -131,7 +144,7 @@ async function main() {
     maxPerGas = fresh.maxFeePerGas ?? fresh.gasPrice;
     currentBalance = await ethers.provider.getBalance(signerAddress);
     if (!maxPerGas || maxPerGas <= 0n ||
-        gasLimit * maxPerGas > MAX_FEE_WEI ||
+        gasLimit * maxPerGas > approvedMaxFeeWei ||
         gasLimit * maxPerGas > currentBalance) {
       throw Error('Fee quote drifted beyond the hard cap; no signature');
     }
@@ -151,11 +164,14 @@ async function main() {
       invitedChallenger: challenger, expectedSquadId: expectedNextRaw,
       encryptedInputs: 10, estimatedGas: estimated.toString(),
       maximumQuotedFeeWei: (gasLimit * maxPerGas).toString(),
+      userApprovedFeeCapWei: approvedMaxFeeWei.toString(),
       inputSecretsOrProofLogged: false
     }));
 
     // The only write in this script. No retries or automatic next lifecycle step.
     const submitted = await contract.sealSquad(...args, overrides);
+    // Emit the public tx ID before confirmation so a lost receipt is recoverable.
+    console.log('GAMBIT_SQUAD_SEAL_SUBMITTED '+JSON.stringify({transactionHash:submitted.hash,transactionSent:true,confirmed:false}));
     const receipt = await submitted.wait(1);
     if (!receipt || Number(receipt.status) !== 1) throw Error('Squad seal receipt not successful');
 
@@ -199,9 +215,12 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  // Exception details can embed credential-bearing RPC URLs / secret material.
-  console.error('GAMBIT_SQUAD_SEAL_STOPPED ' +
-    (error instanceof Error ? error.name : 'UnknownError'));
-  process.exitCode = 1;
+// The SDK's background WASM/relayer handles can remain open after terminate().
+ // End this single-command CLI only after all output is flushed.
+main().then(()=>{
+  process.stdout.write('',()=>process.exit(0));
+}).catch(error=>{
+  // Never stringify credential-bearing provider / SDK exception details.
+  process.stderr.write('GAMBIT_SQUAD_SEAL_STOPPED '+
+    (error instanceof Error ? error.name : 'UnknownError')+'\n',()=>process.exit(1));
 });
