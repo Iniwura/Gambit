@@ -74,6 +74,10 @@ jobs:
         run: npm run hcu:static
       - name: Execute mock contract tests
         run: npm test
+      - name: Live Zama SDK ten-input synthetic encryption probe (NO SIGNER, non-gating)
+        continue-on-error: true
+        timeout-minutes: 4
+        run: npm run probe:squad:sdk:readonly
       - name: Public Sepolia squad deployment estimate (READ ONLY, non-gating)
         continue-on-error: true
         timeout-minutes: 3
