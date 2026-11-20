@@ -14,6 +14,11 @@ try {
   await page.locator('#game-state[data-phase="intro"]').waitFor({timeout:20000});
   const deck=page.locator('#gambit-mobile-deck');
   assert.equal(await deck.isVisible(),true,'real mobile command deck required');
+  const styles=deck.locator('.gambit-mobile-style');
+  assert.equal(await styles.count(),3,'all three local bot styles must be touch accessible');
+  await styles.nth(0).click();
+  assert.equal(await page.locator('#game-state').getAttribute('data-opponent-style'),'steady');
+  assert.equal(await styles.nth(0).getAttribute('aria-pressed'),'true');
   await page.locator('#gambit-mobile-enter').click();
   await page.locator('#game-state[data-phase="ready"]').waitFor({timeout:8000});
   const role=deck.locator('.gambit-mobile-role');
