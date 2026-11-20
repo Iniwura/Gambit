@@ -196,7 +196,13 @@ export function createMobileDeck(){
       b.setAttribute('aria-pressed',String(PRACTICE_STYLES[i]===style));
     });
     retry.hidden=stage!=='finished';
-    lock.hidden=stage==='intro'||stage==='finished'||stage==='chain';
+    // Finished mobile game is a review + rematch, never a wall of disabled
+    // controls. Keep the last public report, hide irrelevant editing widgets.
+    const completed=stage==='finished'||stage==='chain';
+    roleGroup.hidden=completed;
+    roleInfo.hidden=completed;
+    commands.hidden=completed;
+    lock.hidden=stage==='intro'||completed;
     formationHeading.hidden=stage==='intro'||stage==='finished'||stage==='chain';
     formationGroup.hidden=stage==='intro'||stage==='finished'||stage==='chain';
     lock.disabled=!ready;
