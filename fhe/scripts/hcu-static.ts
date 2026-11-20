@@ -7,14 +7,14 @@
  */
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {resolve} from 'node:path';
+import {resolve as resolvePath} from 'node:path';
 
 // The operation inventory below is hand-reviewed, not compiler-derived.
 // Refuse a stale HCU approval if the Solidity source is modified in ANY way.
 // A contract change requires a new manual FHE-op audit and a revised approved
 // Git blob SHA. Keep this assertion in the CI gate before approving deployment.
 const REVIEWED_SQUAD_CONTRACT_GIT_BLOB_SHA='b5c7e307595a4b0259431daa92016d1887795b8d';
-const squadSource=readFileSync(resolve(process.cwd(),'contracts/SquadGambit.sol'));
+const squadSource=readFileSync(resolvePath(process.cwd(),'contracts/SquadGambit.sol'));
 const actualBlobSha=createHash('sha1')
   .update('blob '+squadSource.length+String.fromCharCode(0))
   .update(squadSource)
