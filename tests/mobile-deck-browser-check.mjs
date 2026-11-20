@@ -27,7 +27,10 @@ try {
   assert.equal(await page.locator('#game-state').getAttribute('data-selected-role'),'GUARDIAN');
   await deck.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(0).click();
   assert.equal(await page.locator('#game-state').getAttribute('data-selected-base'),'0');
+  assert.match(await role.nth(1).textContent(),/GUARDIAN.*STRIKE/,
+    'all saved squad openings should remain visible without reselecting');
   await role.nth(0).click();
+  assert.match(await role.nth(0).textContent(),/SCOUT.*FLANK/);
   await page.screenshot({path:'browser-evidence/mobile-command-deck.png'});
   assert.equal(await page.locator('#game-state').getAttribute('data-selected-role'),'SCOUT');
   assert.equal(await page.locator('#game-state').getAttribute('data-selected-base'),'2');
