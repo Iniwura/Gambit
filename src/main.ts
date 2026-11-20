@@ -419,7 +419,7 @@ class GambitArena extends Phaser.Scene {
         x:loser.x+(outcome===1?26:-26),
         angle:outcome===1?7:-7,
         alpha:.66,duration:135,yoyo:true,hold:130,ease:'Sine.easeOut',
-        onComplete:()=>{loser.setAlpha(outcome===1?1:.77);loser.setAngle(0);}});
+        onComplete:()=>loser.setAngle(0)});
     }
   }
 
