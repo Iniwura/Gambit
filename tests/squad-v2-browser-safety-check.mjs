@@ -19,6 +19,8 @@ try{
   noWallet.on('pageerror',error=>errs.push(error.message));
   await noWallet.goto(configured,{waitUntil:'networkidle',timeout:35000});
   await noWallet.locator('#gambit-squad-launch').waitFor({state:'visible',timeout:25000});
+  assert.equal(await noWallet.locator('#gambit-chain-launch').count(),0,
+    'never mount obsolete one-fighter wallet UI alongside configured 3v3 squad UI');
   assert.equal(await noWallet.locator('#gambit-squad-dialog').isVisible(),false,
     'v2 wallet controls start closed and inert');
   assert.equal(await noWallet.locator('#game-state').getAttribute('data-phase'),'intro');
