@@ -1,5 +1,6 @@
 import {createSquadSepoliaClient,type FighterPlan,type SquadResult} from './squad-sepolia';
 import {readVerifiedSquadPublic} from './squad-public-reader';
+import {squadInvitationLink,squadPublicResultLink} from './squad-links.mjs';
 
 type Client=Awaited<ReturnType<typeof createSquadSepoliaClient>>;
 type SquadDraft={plans:FighterPlan[],formation:number};
@@ -90,6 +91,8 @@ export function mountSquadSepoliaPanel(
   const invited=textbox('Invite this challenger wallet','gambit-squad-invite','0x... different address');
   const squad=textbox('Squad ID (seal, invite or recovery)','gambit-squad-id','e.g. 1');
   const duel=textbox('Duel ID (submit, resolve or continue)','gambit-duel-id','e.g. 1');
+  const invitedId=new URLSearchParams(window.location.search).get('squad');
+  if(invitedId&&/^[1-9][0-9]{0,77}$/.test(invitedId))squad.input.value=invitedId;
   // A shared read-only result link can prefill the canonical duel ID. It
   // must never start RPC, connect a wallet, or present an unverified result.
   const publicId=new URLSearchParams(window.location.search).get('duel');
@@ -97,10 +100,19 @@ export function mountSquadSepoliaPanel(
 
   function requireClient():Client{if(!client)throw Error('Connect and verify Sepolia wallet first.');return client;}
   function setStatus(message:string){status.textContent=message;}
+  async function copyOrDisplay(label:string,url:string){
+    try{
+      await navigator.clipboard.writeText(url);
+      setStatus(label+' copied. The link contains only the public chain ID.');
+    }catch{
+      setStatus('Copy '+label+' manually: '+url);
+    }
+  }
   function setBusy(value:boolean){
     busy=value;
     for(const item of allActions)item.disabled=value;
     close.disabled=value;launch.disabled=value;
+    shareResult.disabled=value||!lastResult;
   }
   const connect=button('1 · Connect + verify deployed contract','gambit-squad-connect',async()=>{
     client=await createSquadSepoliaClient(address,hash);
@@ -115,6 +127,10 @@ export function mountSquadSepoliaPanel(
     const x=await c.sealSquad(invited.input.value,draft.plans,draft.formation);
     squad.input.value=String(x.squadId);
     setStatus('Squad #'+x.squadId+' sealed. Tx: '+x.transactionHash);
+  });
+  const shareInvite=button('Copy squad invitation link','gambit-squad-share-invite',async()=>{
+    const id=positiveId(squad.input.value,'Squad ID');
+    await copyOrDisplay('Squad invitation link',squadInvitationLink(window.location.href,id));
   });
   const open=button('3 · Open invitation as challenger','gambit-squad-open',async()=>{
     const c=requireClient(),s=positiveId(squad.input.value,'Squad ID');
@@ -174,11 +190,17 @@ export function mountSquadSepoliaPanel(
     dialog.hidden=true;setVisibility();
     onVerified(lastResult);
   });
-  const allActions=[connect,seal,open,recover,publicInspect,inspect,submit,resolve,finalize];
+  const shareResult=button('Copy public verified result link','gambit-squad-share-result',async()=>{
+    if(!lastResult)throw Error('A real finalized onchain score must be verified before sharing.');
+    await copyOrDisplay('Verified score link',
+      squadPublicResultLink(window.location.href,lastResult.duelId));
+  });
+  shareResult.disabled=true;
+  const allActions=[connect,seal,shareInvite,open,recover,publicInspect,inspect,submit,resolve,finalize,shareResult];
   function showResult(proof:SquadResult){
     if(proof.authenticated!==true)throw Error('Unauthenticated result rejected.');
     lastResult=proof;
-    watch.disabled=false;
+    watch.disabled=false;shareResult.disabled=false;
     setStatus('Signed public result finalized on Sepolia. Only aggregate totals are visible.');
     result.replaceChildren();
     const label=document.createElement('strong');
@@ -192,8 +214,8 @@ export function mountSquadSepoliaPanel(
   }
 
   card.append(heading,caution,identity,connect,invited.wrap,invited.input,
-    seal,squad.wrap,squad.input,open,recover,duel.wrap,duel.input,
-    publicInspect,inspect,submit,resolve,finalize,status,result,watch);
+    seal,squad.wrap,squad.input,shareInvite,open,recover,duel.wrap,duel.input,
+    publicInspect,inspect,submit,resolve,finalize,status,result,shareResult,watch);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
   launch.addEventListener('click',()=>{dialog.hidden=false;setVisibility();close.focus();});
@@ -209,7 +231,7 @@ export function mountSquadSepoliaPanel(
     on?:(name:string,listener:(value:unknown)=>void)=>void
   }}).ethereum;
   const invalidate=()=>{
-    client=null;lastResult=null;watch.disabled=true;
+    client=null;lastResult=null;watch.disabled=true;shareResult.disabled=true;
     identity.textContent='Wallet changed. Reconnect required.';
     setStatus('Account/network changed. Existing IDs can be safely recovered after reconnecting.');
   };
