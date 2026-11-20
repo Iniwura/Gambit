@@ -34,8 +34,10 @@ try{
   await noWallet.locator('#gambit-squad-id').fill('19');
   await noWallet.locator('#gambit-squad-share-invite').click();
   await noWallet.locator('#gambit-squad-status')
-    .filter({hasText:/Squad invitation link copied|Copy Squad invitation link manually/})
+    .filter({hasText:/Connect and verify Sepolia wallet first/})
     .waitFor({timeout:6000});
+  assert.equal(await noWallet.locator('#gambit-squad-share-result').isDisabled(),true,
+    'inert unverified link actions must not unlock the result viewer');
   await noWallet.locator('#gambit-duel-id').fill('not-a-valid-id');
   await noWallet.locator('#gambit-squad-public-inspect').click();
   await noWallet.locator('#gambit-squad-status')
