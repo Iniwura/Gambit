@@ -141,8 +141,8 @@ class GambitArena extends Phaser.Scene {
    * This does NOT transmit plans or request a wallet signature.
    */
   public squadSnapshot():{plans:FighterPlan[],formation:number}{
-    if(!this.active||this.busy||this.finished||this.watchingVerifiedDuel)
-      throw Error('Enter active local practice to configure your complete squad.');
+    if(this.busy||this.watchingVerifiedDuel||(!this.active&&!this.finished))
+      throw Error('Enter practice to choose your squad before sealing it on Sepolia.');
     return {
       plans:this.squadPlans.map(p=>({
         base:p.base as 0|1|2,trigger:p.trigger as 0|1|2,
