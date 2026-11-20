@@ -256,7 +256,7 @@ export async function createSquadSepoliaClient(
     if(step==='verified')return verifiedResult(duelId);
     if(step!=='finalize'||!duel.resolved||duel.finalized)
       throw Error('Resolve the duel first; finalization is a separate transaction.');
-    const handle=await contract.publicResultHandle(duelId) as string;
+    const handle=await contract.publicResultHandle(duelId) as `0x${string}`;
     if(!/^0x[a-fA-F0-9]{64}$/.test(handle))
       throw Error('Invalid encrypted result handle.');
     const proof=await sdk.decryption.decryptPublicValues([handle as `0x${string}`]);
