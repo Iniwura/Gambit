@@ -154,7 +154,7 @@ class GambitArena extends Phaser.Scene {
   private syncMobileDeck(){
     const phase=this.watchingVerifiedDuel?'chain':this.finished?'finished':
       this.busy?'resolving':this.active?'ready':'intro';
-    mobileDeck.sync({selectedRole:this.selectedRole,formation:this.formation,plan:this.plan,phase,report:this.lastDebrief,style:this.match.style});
+    mobileDeck.sync({selectedRole:this.selectedRole,formation:this.formation,plan:this.plan,plans:this.squadPlans,phase,report:this.lastDebrief,style:this.match.style});
   }
 
   private writeState(phase:string){
@@ -221,7 +221,7 @@ class GambitArena extends Phaser.Scene {
     const c=this.add.container(x,y).setDepth(3000);
     const rect=this.add.rectangle(0,0,w,h,0x17263f,1).setStrokeStyle(2,0x57698f,.7);
     const label=this.text(0,0,title,15,C.white,true).setOrigin(.5);
-    c.add([rect,label]);c.setSize(w,h);c.setInteractive(new Phaser.Geom.Rectangle(-w/2,-h/2,w,h),Phaser.Geom.Rectangle.Contains);
+    c.add([rect,label]);rect.setData('tacticLabel',label);c.setSize(w,h);c.setInteractive(new Phaser.Geom.Rectangle(-w/2,-h/2,w,h),Phaser.Geom.Rectangle.Contains);
     c.on('pointerdown',()=>{if(this.active&&!this.busy&&!this.finished)cb();});
     c.on('pointerover',()=>rect.setStrokeStyle(3,accent,1));
     c.on('pointerout',()=>rect.setStrokeStyle(2,0x57698f,.7));
@@ -302,6 +302,8 @@ class GambitArena extends Phaser.Scene {
       stateEl.dataset.selectedResponse=String(this.plan.response);
     }
     this.roleButtons.forEach((rect,i)=>{
+      const label=rect.getData('tacticLabel') as Phaser.GameObjects.Text | undefined;
+      if(label)label.setText(SQUAD_ROLES[i]+'  ·  '+names[this.squadPlans[i].base]);
       const active=i===this.selectedRole;
       rect.setFillStyle(active?0x155b6e:0x17263f,1);
       rect.setStrokeStyle(active?3:1,active?C.gold:0x53698b,active?1:.7);
