@@ -440,8 +440,8 @@ class GambitArena extends Phaser.Scene {
 
   private lockPlan(){
     if(!this.active||this.busy||this.finished||this.watchingVerifiedDuel)return;
-    let resolved;
-    let insight;
+    let resolved:ReturnType<typeof commitSquadTurn>;
+    let insight:ReturnType<typeof buildPracticeInsight>;
     try{
       // Local simulator only: explain one genuinely executed tactic AFTER
       // resolution. Never reuse an AI cleartext trace for encrypted matches.
