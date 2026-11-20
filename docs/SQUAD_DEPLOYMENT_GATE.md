@@ -1,11 +1,11 @@
 # GAMBIT — SquadGambit v2 Deployment and Live-Proof Gate
 
-**Status: BLOCKED ON LIVE DEPLOYMENT AUTHORIZATION.** This document is an implementation and verification guide. It does not authorize spending testnet ETH, deploying, signing, or using a private key.
+**Status (20 Nov 2026): `SquadGambit` DEPLOYED on Sepolia, but no complete live encrypted match verified.** The deployment authorization has been consumed. This is now the historical deployment playbook and the live-proof acceptance checklist; it grants no approval for subsequent signing, funding or use of keys. Follow [Issue #8](https://github.com/Iniwura/Gambit/issues/8) for the live two-wallet validation.
 
 ## Immutable compatibility boundary
 
 - **Current live Sepolia v1:** `SealedGambit`, `0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0`, *one* tactic per player, deployed but no two-wallet finalized match verified.
-- **New v2:** `SquadGambit`, **UNDEPLOYED**, accepts ten encrypted `euint8` inputs per side (nine per-fighter action values + encrypted formation).
+- **Deployed v2:** `SquadGambit`, Sepolia `0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134`, [deployment transaction](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a), runtime SHA-3 `0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419`. Accepts ten encrypted `euint8` inputs per side (nine per-fighter action values + encrypted formation). Full live duel not yet verified.
 - There is deliberately **no** fallback from v2 to v1, and the v2 wallet panel remains absent unless *both* `VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS` and `VITE_GAMBIT_SQUAD_RUNTIME_HASH` are populated with values from a real v2 deployment.
 - Only the public packed score (`8*challengerPoints + defenderPoints`) gets a KMS-signed public decryption. Individual lanes and hidden formations must not be reconstructed for an onchain replay.
 
@@ -28,7 +28,7 @@ npm run check:squad:sepolia
 
 The script checks chain 11155111, the public signer, the wallet balance and a fresh unsigned deployment gas estimate. **Default execution does not transmit a transaction.** No signing is authorized by running preflight.
 
-## Required separate approval for one actual v2 contract deployment
+## Historical one-time authorization used for the completed v2 deployment (DO NOT RE-RUN)
 
 Only after the user explicitly approves the public deployment signer and a **maximum Sepolia test ETH fee**, the operator may set the deliberately strict one-use environment controls:
 
@@ -41,7 +41,7 @@ npm run deploy:squad:sepolia
 
 The deployment script refuses mainnet, a wrong signer, missing/malformed approval values, an insufficient balance and quotes above the explicit approved budget or hard 0.002 Sepolia ETH emergency ceiling. It rechecks quoted fee parameters immediately before signing and pins them into the transaction. This is **not** prior permission to deploy.
 
-After an authorized successful transaction, save the emitted `deployments/sepolia-squad.json` artifact with explorer proof, deployed runtime bytes and `runtimeKeccak256`. Do not commit wallet credentials. Set the new Vercel v2 address and hash **only after checking them against Sepolia chain state**, then verify the browser panel loads.
+The authorized deployment completed and its public manifest is committed at [`fhe/deployments/sepolia-squad.json`](../fhe/deployments/sepolia-squad.json). **Do not deploy again under the old authorization.** Set the versioned browser panel's v2 address and hash **only after independently checking them against current Sepolia chain state**, then verify the browser panel loads without any automatic signing.
 
 ## Final live proof (additional signed actions)
 
@@ -55,7 +55,7 @@ After an authorized successful transaction, save the emitted `deployments/sepoli
 
 ## Outstanding release blockers
 
-- No v2 deployed contract address / runtime hash exists yet.
+- v2 is deployed; **no real public wallet/client session has yet been verified against its deployed address and runtime hash**.
 - No real two-wallet nine-orders-plus-formation encrypted submission has been observed.
 - Live HCU usage, gas, SDK proof size and latency are unmeasured; local mock gas is not a substitute.
 - Single-use invites can be griefed by an invited player who never submits; this remains an acknowledged tradeoff.

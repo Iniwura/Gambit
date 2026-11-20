@@ -5,9 +5,11 @@ branch.
 
 ## Verdict
 
-**UNVERIFIED for live Zama Sepolia; static estimate is within the published
-devnet limits.** No deployment, signature, encrypted live match, or live HCU
-metering has been performed.
+**UNVERIFIED for real Zama Sepolia FHE execution; static estimate is within the published
+devnet limits.** The contract was successfully deployed on Sepolia on 20 Nov 2026 and its
+runtime was recorded in [`fhe/deployments/sepolia-squad.json`](../fhe/deployments/sepolia-squad.json).
+**No encrypted gameplay signature, live FHE resolution, signed KMS result or measured HCU
+has been performed.** Deployment EVM gas does not measure FHE computational cost.
 
 The official HCU guide currently documents a 20,000,000 total HCU limit and a
 5,000,000 sequential-depth limit for its referenced devnet. These limits are

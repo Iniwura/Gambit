@@ -4,7 +4,7 @@
 
 Program three fighters, choose a hidden deployment and outthink an opponent. The final reactor score is independently verifiable without publishing either squad's encrypted orders.
 
-> **Release status: pre-alpha.** The 3v3 practice match is playable in Phaser, the experimental FHE 3v3 contract compiles and passes mock tests, and an earlier one-fighter contract is deployed on Sepolia. **A real two-wallet encrypted 3v3 match is NOT yet verified.** Production visuals and external user testing are outstanding.
+> **Release status: pre-alpha.** The 3v3 practice match is playable in Phaser, and both experimental contracts have been deployed to Sepolia. The full encrypted squad contract was deployed on 20 Nov 2026 and passes local mock tests, but no complete real FHE two-wallet match has been verified. **A real two-wallet encrypted 3v3 match is NOT yet verified.** Production visuals and external user testing are outstanding.
 
 ## Play
 
@@ -34,9 +34,9 @@ The playable practice mode reveals each public lane result for learning. **The e
 | Scout / Guardian / Striker tactics | Implemented | Independent plans, role bonuses, formation matchup tests |
 | Desktop / mobile controls | Implemented | Real Chromium actions across both screen sizes |
 | One-fighter `SealedGambit` | **Deployed, NOT live-match-verified** | Sepolia `0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0` |
-| Encrypted 3v3 `SquadGambit` | **Compiled mock candidate, NOT deployed** | Ten encrypted inputs, authenticated aggregate result, negative tests |
+| Encrypted 3v3 `SquadGambit` | **Deployed, NOT live-match-verified** | Sepolia `0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134`; [deployment receipt](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a) |
 | Versioned encrypted squad browser adapter | Prepared, **gated** | Exact Sepolia address and independently verified runtime code hash required |
-| Real two-wallet 3v3 proof | **Not complete** | Deployment + real signing / decryption / finalization still required |
+| Real two-wallet 3v3 proof | **Not complete** | Separate signatures, ten-input FHE flow, public KMS decryption, finalization and recovery still required |
 | Production-grade character art and audio | **Not complete** | Original procedural stand-ins only |
 | External playtest / security review | **Not complete** | Mandatory before submission-ready claim |
 
@@ -72,7 +72,7 @@ The Hardhat FHE suite uses **local mock encryption and decryption**. Green tests
 - `src/tactical-report.mjs` — public-only post-round debrief and validation
 - `src/visual/` — original procedural environment and fighter silhouettes
 - `src/chain/sepolia.ts` — deployed **one-fighter** client
-- `src/chain/squad-sepolia.ts` — separate **undeployed** 3v3 encrypted client, verified runtime hash required
+- `src/chain/squad-sepolia.ts` — deployed but **not yet live-match-verified** 3v3 client; exact Sepolia runtime hash required
 - `fhe/contracts/` — Solidity FHE candidates, including `SealedGambit.sol` and `SquadGambit.sol`
 - `fhe/test/` — adversarial, parity and proof-replay mock tests
 
@@ -80,9 +80,9 @@ Detailed design and constraints: [GAME_DESIGN](docs/GAME_DESIGN.md), [FHE Squad 
 
 ## What's next
 
-1. Complete the dedicated encrypted 3v3 deployment preflight and evaluate **actual Sepolia HCU / fee feasibility**, not just local EVM gas.
-2. With a fresh explicit transaction approval, deploy the candidate and record the address + runtime fingerprint. **Nothing in this repository auto-deploys it.**
-3. Verify one authentic two-wallet ten-value encrypted duel, canonical signatures, full chain-state recovery, and a Zama signed aggregate result.
+1. Perform read-only checks of the deployed `SquadGambit` runtime, SDK initialization, and distinct challenger wallet readiness. The [live verification checklist](https://github.com/Iniwura/Gambit/issues/8) tracks the next evidence gate.
+2. Obtain **separate explicit approval for each new transaction** and verify a real two-wallet ten-value encrypted duel, signed aggregate KMS result and recovery. Deployment authorization is exhausted and does not cover gameplay.
+3. Record actual Sepolia gas, HCU if observable, relayer/KMS latency, canonical receipts and user-facing verified results.
 4. Replace provisional fighter graphics with final original sprites and animations, perform beginner playtests, and conduct an independent privacy / gameplay audit.
 
 **Design rule:** no fake signatures, no simulated chain receipts, no unverified onchain victories.

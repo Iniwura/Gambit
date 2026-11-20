@@ -1,6 +1,16 @@
 # GAMBIT — verified engineering status
 
-Updated 2026-11-19. Engineering work is on **draft PR #5** (`build/verified-first-slice`), not merged to main.
+Updated 2026-11-20. Engineering work is on **draft PR #5** (`build/verified-first-slice`), not merged to main.
+
+## Latest: encrypted 3v3 contract deployed (not live-match-verified)
+
+- `SquadGambit` deployed on Ethereum Sepolia (chain `11155111`) at `0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134` by `0x7d567Fa1d5fe35737BbF045f47667e13298Ee176`.
+- Deployment [tx](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a), block 12174655, success according to the committed [manifest](../fhe/deployments/sepolia-squad.json). Runtime 10,183 bytes; hash `0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419`.
+- Exactly one deployment tx was reported; 16,291,904 gas used, actual fee 309,546,176 wei. The earlier single-fighter `SealedGambit` deployment is separate.
+- [CI run](https://github.com/Iniwura/Gambit/actions/runs/44719103075) passed the four quality gates at `6ef46b7`, including the static HCU source-drift guard. **Live HCU and KMS proof are NOT measured or verified.**
+- The experimental 3v3 contract is deployed; **no sealed squad, two-wallet signed duel, real FHE resolution or final public KMS proof has been verified**. Continue with [Issue #8](https://github.com/Iniwura/Gambit/issues/8); each testnet write requires its own explicit approval. Do not merge or present an onchain playable match yet.
+
+The sections below are historical work-in-progress notes from before this v2 deployment. Where they describe `SquadGambit` as undeployed, the deployment record above supersedes them.
 
 ## Independently verified Ethereum Sepolia deployment
 
