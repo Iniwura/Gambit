@@ -49,8 +49,9 @@ export function mountSquadSepoliaPanel(
   };
   const launch=document.createElement('button');
   launch.id='gambit-squad-launch';launch.type='button';
+  launch.setAttribute('aria-haspopup','dialog');
   launch.textContent='ENCRYPTED SQUAD LAB';
-  launch.style.cssText='position:fixed;top:64px;right:12px;z-index:10010;border-radius:10px;' +
+  launch.style.cssText='position:fixed;top:9px;right:12px;z-index:10010;border-radius:10px;' +
     'border:1px solid #ffbd69;background:#2a3043;color:#fff;padding:10px 14px;font:750 12px system-ui';
 
   const dialog=document.createElement('section');
