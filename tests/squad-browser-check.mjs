@@ -16,6 +16,9 @@ async function run(viewport){
   const response=await page.goto(root,{waitUntil:'networkidle',timeout:35000});
   assert.equal(response.status(),200);
   await page.locator('#game-state[data-phase="intro"]').waitFor({timeout:15000});
+  // Player-selected bot personality is a real gameplay option, not decoration.
+  await selectCanvas(page,923,447);
+  assert.equal(await page.locator('#game-state').getAttribute('data-opponent-style'),'volatile');
   await selectCanvas(page,720,496);
   await page.locator('#game-state[data-phase="ready"]').waitFor({timeout:8000});
   const state=page.locator('#game-state');
