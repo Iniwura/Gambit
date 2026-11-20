@@ -78,6 +78,7 @@ class GambitArena extends Phaser.Scene {
     const gameplayState=document.getElementById('game-state');
     if(gameplayState){
       delete gameplayState.dataset.lastLaneCount;
+      delete gameplayState.dataset.roleEffectStarts;
       delete gameplayState.dataset.lastRoleEffects;
       delete gameplayState.dataset.enemyFormation;
       delete gameplayState.dataset.reportRound;
@@ -347,6 +348,10 @@ class GambitArena extends Phaser.Scene {
   }
 
   private playRoleEffect(challengerIndex:number,defenderIndex:number,outcome:number,y:number){
+    const stateEl=document.getElementById('game-state');
+    if(stateEl)stateEl.dataset.roleEffectStarts=String(
+      Number(stateEl.dataset.roleEffectStarts||'0')+1
+    );
     const index=outcome===2?defenderIndex:challengerIndex;
     const tint=outcome===1?C.cyan:outcome===2?C.pink:C.gold;
     const winnerX=outcome===1?640:outcome===2?800:720;

@@ -2,6 +2,9 @@
   "name": "gambit-encrypted-confrontation",
   "private": true,
   "version": "0.1.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",

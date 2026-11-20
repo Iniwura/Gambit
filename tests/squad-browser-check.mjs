@@ -45,6 +45,8 @@ async function run(viewport){
   await selectCanvas(page,1261,754);
   await page.locator('#game-state[data-phase="resolving"]').waitFor({timeout:7000});
   assert.equal(await state.getAttribute('data-last-lane-count'),'3','all three fighters resolved');
+  await page.waitForFunction(()=>document.getElementById('game-state')?.dataset.roleEffectStarts==='3',
+    null,{timeout:6000});
   await page.waitForFunction(()=>document.getElementById('game-state')?.dataset.lastRoleEffects==='3',
     null,{timeout:6000});
   await page.waitForFunction(()=>{
