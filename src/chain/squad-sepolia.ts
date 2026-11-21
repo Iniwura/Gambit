@@ -243,16 +243,43 @@ export async function createSquadSepoliaClient(
       BigInt(evt.args.squadId)!==squadId||
       getAddress(evt.args.challenger)!==userAddress)
       throw Error('Unexpected challenge event identity or duel sequence.');
-    const status=await readDuel(duelId);
-    if(status.squadId!==squadId||getAddress(status.challenger)!==userAddress
-      ||BigInt(await contract.duelForSquad(squadId))!==duelId)
-      throw Error('Recovered duel identity mismatch.');
-    return {duelId,transactionHash:tx.hash,maximumQuotedFeeWei:fee.maxQuotedFeeWei};
+    // The write has already succeeded if we reached this point:
+    // receipt.status===1 AND an authentic DuelOpened event matched.
+    // Rabby (or any wallet provider with load-balanced RPCs) may return
+    // PRE-transaction state for a moment. That must NEVER be shown as a
+    // failed send or invite the user to retry a consumed one-use action.
+    let canonicalStateVerified=false;
+    try{
+      // Ask for the exact mined block rather than an inconsistent 'latest'
+      // read across different backend nodes.
+      const blockTag=tx.receipt.blockNumber;
+      const [stored,linked]=await Promise.all([
+        contract.duelStatus(duelId,{blockTag}),
+        contract.duelForSquad(squadId,{blockTag})
+      ]);
+      canonicalStateVerified=
+        BigInt(stored.squadId)===squadId&&
+        getAddress(stored.challenger)===userAddress&&
+        BigInt(linked)===duelId;
+    }catch{
+      // Network/history lag is not a reason to sign or broadcast again.
+      canonicalStateVerified=false;
+    }
+    return {duelId,transactionHash:tx.hash,
+      maximumQuotedFeeWei:fee.maxQuotedFeeWei,
+      receiptVerified:true as const,canonicalStateVerified};
   }
   async function recoverDuelId(squadId:bigint){
     await readSquad(squadId);
     const duelId=BigInt(await contract.duelForSquad(squadId));
-    if(duelId===0n)return null;
+    if(duelId===0n){
+      // A claimed squad cannot truthfully be presented as never opened:
+      // this is a lagging or inconsistent RPC node after confirmation.
+      const status=await readSquad(squadId);
+      if(status.claimed)
+        throw Error('Squad already claimed. Wallet RPC has not caught up; do NOT open it again. Verify onchain receipt.');
+      return null;
+    }
     const duel=await readDuel(duelId);
     if(duel.squadId!==squadId)throw Error('Recovery index points to another squad.');
     return duelId;
