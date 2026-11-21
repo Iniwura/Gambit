@@ -132,7 +132,7 @@ try{
   await multiWallet.goto(configured,{waitUntil:'networkidle',timeout:35000});
   await multiWallet.locator('#gambit-squad-launch').click();
   await multiWallet.locator('#gambit-squad-wallet-choice')
-    .locator('option',{hasText:'MetaMask'}).waitFor({timeout:6000});
+    .locator('option',{hasText:'MetaMask'}).waitFor({state:'attached',timeout:6000});
   assert.equal(await multiWallet.locator('#gambit-squad-wallet-choice option:checked').textContent(),'MetaMask');
   await multiWallet.locator('#gambit-squad-connect').click();
   await multiWallet.locator('#gambit-squad-status')
