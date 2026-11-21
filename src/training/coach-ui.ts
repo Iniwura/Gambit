@@ -86,6 +86,8 @@ export function mountTrainingCoach():void{
         pausedReason||'Open local practice before launching a guide.';
       get<HTMLElement>(panel,'gambit-training-device-hint').textContent='';
       get<HTMLElement>(panel,'gambit-training-result').hidden=true;
+      get<HTMLButtonElement>(panel,'gambit-training-continue').hidden=true;
+      delete panel.dataset.guideRound;
       get<HTMLElement>(panel,'gambit-training-step-count').textContent='NOT STARTED';
       get<HTMLElement>(panel,'gambit-training-state').textContent='LOCAL ONLY';
       return;
