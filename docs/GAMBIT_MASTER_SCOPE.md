@@ -96,28 +96,65 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 - Contract [resolved encrypted match](https://sepolia.etherscan.io/tx/0xe91ba8ba3af4ce9666871752974b5b2168f4ccac4a6a8157df93d27fe79696ac), authentic public [KMS proof preflight](https://github.com/Iniwura/Gambit/actions/runs/44913989691), [finalized 0:1 Violet](https://sepolia.etherscan.io/tx/0x57a19f25a234eca7db206781a18cc965a09818a04b87a9f30d8d659562a9bdad).
 - Independent [final receipt verifier](https://github.com/Iniwura/Gambit/actions/runs/44914775566), [real browser no-wallet spectator](https://github.com/Iniwura/Gambit/actions/runs/44917771468), [four quality gates](https://github.com/Iniwura/Gambit/actions/runs/44917777173), [published game](https://iniwura.github.io/Gambit/).
 
-## 5. Production sequence (do not skip game-design proof)
+## 5. Locked build order — architecture and working game BEFORE graphics
 
-**P0 — Independent baseline audit and gameplay lock.** Strict uncoached playtest of current practice and first-slice judge journey; benchmark choice quality, dominant strategies, opponent behavior, confusion points, performance and FHE security assumptions. Define exact target Arena rules, including whether and how a five-round confidential session and hidden GAMBIT intervention can work without excessive HCU or delays. Record scored visual gameplay evidence, not just CI. **Priority now.**
+**This section is a direct statement of the owner's original plan and overrides any older phase language that mixes artwork into the systems build. Do not skip or reorder.**
 
-**P1 — Premium core ARENA vertical slice.** Make the moment-to-moment tactical loop genuinely fun and readable, deliver coherent original characters, environment, responsive controls, VFX/sound and compelling consequence feedback. First-time onboarding must be direct; no technical modal as the core game. Re-run human playtests.
+> **1. Finish game architecture and design → 2. Build and test a fully working, responsive greybox game → 3. Validate end-to-end behaviour, game feel and reliability → 4. ONLY THEN begin final game graphics, animation, visual polish and audio.**
 
-**P2 — Finished Create/Join/Recover/Verify experience and repeatability.** Productize the complete asynchronous two-player journey, real match lobby/history and rematch handling; run additional *distinct* full Sepolia matches when individually approved; measure user time/cost and verify failure recovery, privacy and fairness. Only upgrade the onchain rules after acceptance tests and explicit authorization for new deployments/writes.
+The existing provisional Phaser arena, vector characters and basic UI are debugging scaffolds. They may remain usable while we work, but **no premium art pass, sprite replacement, cinematic overhaul or cosmetic-first redesign is authorized as the next production phase**. Fix UI only where necessary to expose or test functional game states and user actions. This is a work-sequencing rule, not permission to ship an inaccessible or unusable test interface.
 
-**P3 — Competitive Arena expansion.** Validate and implement the high-stakes GAMBIT commitment and evolving multi-round gameplay through a versioned, audited-enough FHE rule set; add richer human competition and secure match identity/recovery. Avoid claiming one encounter is an entire five-round onchain battle.
+### Phase 1 — Lock full game plan, design and architecture (CURRENT PRIMARY TASK)
 
-**P4 — BLACKSITE.** Specify and implement a genuinely different confidential mission/codebreaking gameplay loop, with verified win/failure, replay and bounded secrecy mechanics. This is *not* part of the already proven first onchain slice.
+Produce reviewable specifications and architecture for **all four** product pillars before production graphics:
 
-**P5 — COMMANDER PROFILE and longevity.** Verified receipts/history, stats, achievements, progression, missions and appropriately private identity; polished mobile UX and long-term motivation.
+- **ARENA:** complete rules, match loop, three classes/roles, three sectors, conditional tactics, formations, intended multi-round format, high-stakes GAMBIT commitment hypothesis, fair win/lose conditions, ability interactions, matchmaking/invite/rematch, async turn timing and privacy disclosures. Decide explicitly which features are already verifiable on `SquadGambit` and which require a versioned contract change. Resolve ambiguities in design before calling the game architecture finished.
+- **BLACKSITE:** mission loop, playable objective, puzzles/codes, clues, secrecy model, success/failure, progression, adversarial/brute-force limits, why FHE adds a meaningful mechanic, lifecycle and user navigation. It is **a planned mode**, not working yet.
+- **TRAINING:** guided tutorial steps and unlock/progression logic, practice bot behaviour, valid/invalid moves, deterministic teaching outcomes, onboarding-to-PVP transition, session resets.
+- **COMMANDER PROFILE:** explicit user identity and privacy, authoritative match/missions history and achievements, derived statistics, storage and chain verification, progress/recovery states; no synthetic matches or fake wins.
+- **Shared systems:** separate deterministic game rules from Phaser renderer; application/scene navigation and screens; state machines for matchmaking, missions and progression; data schemas; service boundaries; storage and chain adapter contracts; responsive input event model; error/retry/restore; threat model; performance/latency/HCU assumptions. Specify every supported action's input, output, failure and observed state.
 
-**P6 — Professional release and hackathon package.** Independent adversarial security/privacy audit, several newcomer playtests, visual/audio production acceptance, performance/accessibility QA, compelling live walkthrough, clean GitHub docs, authentic receipt evidence, X post, and the required real-person Zama pitch. Avoid AI voice for a real-person-required pitch. Do not label the full product complete before these gates.
+**Exit gate:** approved, coherent gameplay specification and architectural state/data-flow diagram; module and API contracts; list of all interactions and failure states; milestone acceptance tests and risks. All product pillars have a design/architecture definition. No artist-quality mockup is an exit requirement.
 
-**Hackathon discipline:** the competition is an intermediate milestone, **not** permission to discard the full product. Prioritize credible, strong playable Arena and a polished self-contained submission by the official deadline. If all four pillars cannot be responsibly finished by then, keep them on the published roadmap rather than misrepresent them as shipped.
+### Phase 2 — Implement the full functional, responsive greybox
+
+- Build actual stateful playable actions and real navigation for each planned experience (Arena, Training, BLACKSITE and Commander Profile) according to the agreed staged release scope. **When a pillar is not implemented, mark it incomplete; never create a fake clickable placeholder and call it working.**
+- Arena must handle role selection, programming, formations, counters, multiple intended gameplay states, outcome/replay, full actual opponent journey, and reliable no-wallet practice; if multi-round confidential play requires a new contract, retain the honest single-encounter mode until that extension is verified.
+- BLACKSITE must have a mechanically complete mission from entry to win/fail/retry before it receives art.
+- Training must onboard a novice through a working action → consequence → learning loop; Commander Profile must display only genuinely sourced identity, history and progression.
+- Verify the UI **responds correctly** to every action at desktop and mobile sizes: visible acknowledgment, correct transitions, no dead buttons, usable touch targets, correct keyboard focus, loading and cancel states, restart and recovery. Functional responsiveness means user feedback and technical reliability, not merely responsive layout.
+- Automated deterministic rules, browser E2E, error-state, performance and fairness checks are mandatory. Crypto actions stay user-approved and authenticated; do not simulate onchain claims.
+
+**Exit gate:** each in-scope feature is actually playable/clickable and survives navigation, refresh, rematch, invalid input and network failure as appropriate. Rules, UI and data agree; desktop/mobile browser evidence passes; no known critical functional blockers; open items explicitly listed. No final assets required.
+
+### Phase 3 — Prove game responsiveness, stability and real player experience
+
+- Test completed functional flows with uncoached users, measure where they hesitate and which choices feel consequential. Verify opponent behaviour and dominant strategies with reproducible match simulations.
+- Audit input latency, animation-independent state changes, network/KMS waits, match recovery, reproducibility, privacy and exception handling, plus repeated actual Sepolia matches with **fresh individual approval** if required.
+- Repair design and implementation failures **before** polishing visuals. Any rule/mechanic redesign goes through the same deterministic and integration tests.
+- Independently check that four game pillars and navigation fit together as one understandable product.
+
+**Exit gate to visual production:** functional game design is stable, critical paths play correctly, input and results respond reliably across devices, and there is a documented design/architecture freeze for visual asset production. A single real duel alone does **not** satisfy this gate.
+
+### Phase 4 — Only after the earlier gates: make it LOOK and FEEL like a finished game
+
+- Replace provisional vector silhouettes with **original approved game characters**, sprite/animation sets and cohesive 2.5D environments.
+- Add combat movement, role-specific reactions, mission scenes, UI presentation, lighting, transitions, feedback VFX and original/licensed sound/music with mute/reduced-motion controls.
+- Polish across the **entire game**, not only the landing page or one results modal; preserve game logic, accessibility, information confidentiality and browser performance.
+- Run actual visual acceptance, playtests, mobile/accessibility checks and performance regressions.
+
+### Phase 5 — Independent release audit and hackathon submission
+
+Adversarial security/privacy review, repeated complete match evidence, objective screenshot and performance QA, actual external players, story-driven demo walkthrough, clean repo and official submission. Any real-person pitch requirement must be respected. Do not call a demo, CI run, or two-player proof a complete shipped product.
+
+**Hackathon scheduling:** Submission is an intermediate deadline; do not misrepresent BLACKSITE, Profile, multi-round Arena or the planned signature mechanic as shipped when they are not. Document deferrals without silently deleting them from this master scope.
+
+**Current position (21 Nov 2026):** the architecture and full game plan are **not locked**. Training's local practice and one single-encounter Arena FHE vertical slice are implemented and verified, but that is not a finished four-pillar functional game. **Resume Phase 1 immediately. Do not start the premium graphics pass yet.**
 
 ## 6. Anti-forgetting rules for every subsequent build session
 
 1. Read **this file before choosing next work**. The README is the public entry, `docs/STATUS.md` is the evidence log, the charter sets acceptance gates and this file defines **full scope**.
-2. Before coding, say which product pillar and production stage the change advances. Avoid isolated UI/README tweaks when core gameplay and full-product gaps are still unsolved.
+2. Before coding, name the product pillar **and the current build-order phase**. Prioritize architecture/game mechanics and complete functional behaviour. **Do not begin aesthetic-first redesign, final artwork, custom sprites, audio or cinematic polish until Phases 1–3 have passed.**
 3. After coding, update the matrix above or `docs/STATUS.md` with verified changes and links; label all unproven work **planned** or **in progress**.
 4. Preserve **Duel #1** as finalized. Never automatically replay or send transactions. New deployments and onchain writes require specific explicit permission.
 5. Maintain distinction between a finished **encrypted core proof**, a working **practice prototype**, a genuinely polished **Arena product** and the four-pillar **GAMBIT platform**.
@@ -125,6 +162,6 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 
 ## 7. Current decision
 
-**We have completed the confidential foundation, not the complete game.** Start with P0: rigorous gameplay/experience audit, then deliver a production-quality Arena vertical slice before treating secondary pages as substitutes for building the full game. Maintain BLACKSITE and Commander Profile as explicit future pillars.
+**We have completed one encrypted technical vertical slice, not the game architecture or complete product.** The next task is to lock the detailed four-pillar game design and system architecture (Phase 1), then implement and test all agreed functional interactions and responsiveness (Phases 2–3). **Final graphics, audio and aesthetic production begin only after those gates pass.**
 
 For status that might change after this document, consult live GitHub Actions and [`docs/STATUS.md`](STATUS.md), not an old percentage or obsolete checklist.
