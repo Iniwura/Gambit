@@ -53,7 +53,7 @@ Take command of three distinct fighters, outthink real human opponents with secr
 - Later: scenarios, mastery exercises and difficulty appropriate to actual skill, not only increased enemy stats.
 - **Never** present local bot results or local per-lane reports as encrypted onchain evidence.
 
-**CURRENT STATUS:** the full five-round local practice match exists with three roles, formations, bot styles, real deterministic combat, role effects, mobile controls and rematch tests. An optional [first-round Tactical Academy greybox](../src/training/coach-ui.ts) now guides accepted local commands into a real Striker conditional counter, FEINT formation, actual tactic-bound commit and authentic round debrief. [Desktop/mobile acceptance](TRAINING_GUIDED_ROUND_ACCEPTANCE.md) is pending. **A complete five-round guided curriculum, uncoached newbie validation, saved mastery progress and premium audiovisual feedback are still not demonstrated.**
+**CURRENT STATUS:** the full five-round local practice match exists with three roles, formations, bot styles, real deterministic combat, role effects, mobile controls and rematch tests. An optional [first-round Tactical Academy greybox](../src/training/coach-ui.ts) now guides accepted local commands into a real Striker conditional counter, FEINT formation, actual tactic-bound commit and authentic round debrief. [Desktop/mobile acceptance](TRAINING_GUIDED_ROUND_ACCEPTANCE.md) is **verified (4/4 full quality gates, [run 44934706796](https://github.com/Iniwura/Gambit/actions/runs/44934706796))**. **A complete five-round guided curriculum, uncoached newbie validation, saved mastery progress and premium audiovisual feedback are still not demonstrated.**
 
 ### D. COMMANDER PROFILE — persistent identity and reasons to return
 
@@ -78,7 +78,7 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 | --- | --- | --- |
 | Phaser/TypeScript web build, basic arena, role-specific procedural visuals | **Built; quality not finally approved** | Working early presentation, not premium production sprite/audio pack |
 | Cleartext 3-role practice, role-specific rules, three formations, bot styles, five-round matches and rematch | **Built and browser-tested** | Training game only; not five encrypted onchain rounds |
-| Optional real-action first-round Tactical Academy | **Implemented; full browser CI pending** | Not a complete onboarding curriculum, saved mastery or encrypted result |
+| Optional real-action first-round Tactical Academy | **Verified desktop/mobile actual local match; 182/182 deterministic tests** | Not a complete onboarding curriculum, saved mastery or encrypted result |
 | Public `SquadGambit` FHE contract on Sepolia, separate wallets, ten inputs per side | **Deployed / demonstrated** | Single encrypted encounter, not complete Arena roadmap |
 | `sealSquad` → `openDuel` → `submitDuel` → `resolveDuel` → public KMS decryption → `finalizeDuel` | **Verified ONCHAIN for Duel #1** | One example; not proof of repeatable production-scale multiplayer |
 | Authenticated first result (Cyan 0 : 1 Violet), receipt and public recovery | **Verified** | Onchain aggregate only; hidden fighter plans remain secret |
