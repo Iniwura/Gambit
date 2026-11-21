@@ -117,7 +117,7 @@ The shell is implemented as a pure reference in `src/architecture/game-shell.mjs
 4. Multi-round and signature mechanics pass independent balance tests and audited-enough onchain feasibility before deployment.
 5. A second authentic full session demonstrates repeatability, with each new write separately approved.
 
-## 5. BLACKSITE rules specification (local research proven; product not built)
+## 5. BLACKSITE rules specification (playable local greybox; competitive FHE mode not built)
 
 The existing `src/research/blacksite-cipher.mjs` and `tests/blacksite-cipher.test.mjs` already define a mathematical reference:
 - Four ordered symbols in `0–3`, repeats allowed: **4^4=256** possible secret codes.
@@ -126,13 +126,13 @@ The existing `src/research/blacksite-cipher.mjs` and `tests/blacksite-cipher.tes
 - Repeated guesses are rejected; a correct four-exact answer ends in `breached`; running out of attempts ends in `locked`. Feedback history is immutable and the public snapshot explicitly excludes the local secret.
 - Reference exhaustive tests show a perfect offline minimax solver can find all 256 codes in at most four feedback queries. **That is a mathematical observation, NOT a fun game, human skill result, or encrypted proof.**
 
-**Headless local mission lifecycle IMPLEMENTED (not playable):** [`src/blacksite/mission.mjs`](../src/blacksite/mission.mjs) enforces briefing → active → at most five guesses → breached/locked → debrief → restart with a distinct local ID. The training secret is held outside exported public state in a module WeakMap; **this does not provide cryptographic privacy in a browser**. [Tests](../tests/blacksite-mission-contract.test.mjs) cover all 256 secrets, state immutability, duplicate/invalid guesses, terminal lock, retry and public-field allowlisting. **The Phaser mode, missions, responsive controls, secure creator/solver protocol and encrypted contract remain unbuilt.**
+**Local mission controller plus browser greybox IMPLEMENTED:** [`src/blacksite/mission.mjs`](../src/blacksite/mission.mjs) enforces briefing → active → at most five guesses → breached/locked → debrief → restart with a distinct local ID. [`src/blacksite/greybox.ts`](../src/blacksite/greybox.ts) mounts real keyboard/touch controls, visible clue feedback and error states over the existing Arena, with no reset to its local practice seed; it enters the explicitly authorized [`blacksite-training`](../src/architecture/game-shell.mjs) shell scene. The training secret stays out of public snapshots via WeakMap, **but this is not cryptographic browser secrecy**. [Domain tests](../tests/blacksite-mission-contract.test.mjs) cover all 256 secrets; [desktop/mobile browser E2E](../tests/blacksite-greybox-browser-check.mjs) is part of the full quality suite. [Detailed greybox acceptance contract](BLACKSITE_GREYBOX_ACCEPTANCE.md). **The competitive BLACKSITE FHE mission, mission worlds, secure creator/solver protocol and actual encrypted contract remain unbuilt.**
 
 **Additional Phase-1 competitive research:** [BLACKSITE v2 Security and Balance Decision](BLACKSITE_V2_PROTOCOL_DECISION.md) tests a distinct 7,776-code rule set with paid aggregate class scans. An exact exhaustive information audit found two fixed guesses significantly more informative than a scan+guess in the tested opening; **competitive scans are NOT APPROVED as currently designed**. The local original tutorial remains 256 codes. This does **not** demonstrate human solvability, strong cryptographic entropy or a real FHE mission.
 
 **Critical feasibility decision:** 256 codes ≈ 8 bits of entropy, and five attempts plus aggregate clues may leak enough to solve the puzzle predictably. Do not assert robust secrecy, uniqueness or resistance to brute-force. Before making a Zama contract: design one-use mission IDs, creator versus solver authority, cryptographically acceptable secret sourcing/commitment, FHE comparison and hint budget, anti-grief/anti-replay, HCU/latency, public reveal policy and recovery. Never emit or locally log a hidden mission code in onchain mode. The local training prototype is cleartext only.
 
-**Blacksite gate:** no playable mode until mission controller, navigation, feedback, fail/win/retry, deterministic tests, privacy model and responsive browser run are demonstrated. No encrypted BLACKSITE claim until actual contract and genuine public proof.
+**Blacksite gates:** local training is now implemented with stateful controls and responsive styling; **do not mark cross-device browser acceptance verified without a completed passing run**. Competitive BLACKSITE remains explicitly blocked until a fair secret protocol, meaningful gameplay/economy, contract, complete browser flow and authentic encrypted receipts are independently tested. No local win can be ranked.
 
 ## 6. TRAINING rules specification
 
