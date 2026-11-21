@@ -18,7 +18,7 @@ Practice needs no wallet. It is a deterministic **cleartext** match, not a claim
 2. Give each fighter an opening move, an enemy-move trigger and the response to that trigger.
 3. Select **HOLD**, **PIVOT** or **FEINT** to change which opposing fighter each role faces.
 4. Lock the squad. Watch **three individually staged** encounters, reactor score changes and an explanation of which conditional counter actually executed.
-5. Reprogram your team across up to five rounds. The final screen identifies a standout fighter and a weaker role to rethink; rematch against a different seeded opponent.
+5. Reprogram your team across five full practice rounds. The highest cumulative reactor pressure wins; the capped reactor-control meter only reflects momentum. The final screen identifies a standout fighter and a weaker role to rethink; rematch against a different seeded opponent.
 
 **Controls:** 4/5/6 select a fighter, 7/8/9 select formation, 1/2/3 the opening move, Q/W/E the trigger, A/S/D the counter and Enter to lock. Mobile has a separate large-touch command deck.
 
