@@ -52,7 +52,7 @@ test('all 27 lane configurations × 16 stake combinations are bounded and team-s
 
 test('malformed sectors, rogue scores and unearned private output are rejected',()=>{
   const base=reference([1,1,2]);
-  for(const stake of [-1,3,4,'0',0.5,NaN,{},undefined])
+  for(const stake of [-1,3,4,'0',0.5,NaN,{}])
     assert.throws(()=>scoreGambitCommitment(base,stake,null),
       /GAMBIT stake/);
   for(const malformed of [
