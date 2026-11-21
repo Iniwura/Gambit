@@ -50,7 +50,7 @@ For any round, a terminal `EXPIRED`/unavailable state must have an explicit fair
 
 ## 4. Signature GAMBIT — bounded local candidate
 
-See `src/research/gambit-commitment-v0.mjs` and `tests/gambit-commitment-research.test.mjs`. This **pure, unshipped** model explores a once-per-match secret stake in one of three reactor sectors.
+See `src/research/gambit-commitment-v0.mjs` and `tests/gambit-commitment-research.test.mjs`. The additional [`arena-v3-match.mjs`](../src/research/arena-v3-match.mjs) headless research state machine and [tests](../tests/arena-v3-research.test.mjs) now enforce exactly one local stake per player over five rounds, double-submission refusal, immutable progression and aggregate-only public history. **Neither research model is a deployed FHE match or player-facing feature.** This model explores a once-per-match secret stake in one of three reactor sectors.
 
 **Candidate action:** player chooses one private reactor sector or does not stake. If the side **wins** that sector in the selected round, increase that round's reactor pressure by **2**. If the side **loses or draws**, decrease that round's pressure by **1** (floor at 0). Each player may use the stake only once per future match; enforcement by a new round/match state machine remains **NOT IMPLEMENTED**.
 
