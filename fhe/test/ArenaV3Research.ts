@@ -51,6 +51,7 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
     const {c,challenger,defender,outsider}=await fixture();
     const w=[always(0),always(0),always(0)];
     const l=[always(2),always(2),always(2)];
+    let priorProof:string|null=null;
     for(let round=1;round<=5;round++){
       const status=await c.matchStatus(1n);
       expect(status.currentRound).to.equal(BigInt(round));
@@ -65,6 +66,11 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
       const receipt=await fhevm.publicDecrypt([h]);
       const packed=Number(receipt.clearValues[h]);
       expect(packed).to.equal(40); // 5:0, baseline no GAMBIT.
+      if(priorProof!==null){
+        // Same PUBLIC score as last round, but a DIFFERENT encrypted handle.
+        // A KMS signature from round n-1 cannot finalize round n.
+        await expect(c.finalizeRound(1n,packed,priorProof)).to.be.reverted;
+      }
       await expect(c.finalizeRound(1n,packed+1,receipt.decryptionProof)).to.be.reverted;
       await expect(c.connect(outsider).finalizeRound(1n,packed,receipt.decryptionProof))
         .to.emit(c,'RoundFinalized');
@@ -74,6 +80,7 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
       const rs=await c.roundStatus(1n,round);
       expect(rs.finalized).to.equal(true);
       expect(rs.packedScore).to.equal(40);
+      priorProof=receipt.decryptionProof;
     }
     const final=await c.matchStatus(1n);
     expect(final.complete).to.equal(true);
@@ -131,6 +138,40 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
     await expect(c.expireIncomplete(1n)).to.be.revertedWith('Both sealed on time');
     await finalize(c,40);
     expect((await c.matchStatus(1n)).cumulativeChallenger).to.equal(5n);
+  });
+
+
+  it('measures research contract runtime and transaction GAS on Hardhat mock only',async function(){
+    const {c,challenger,defender}=await fixture();
+    const w=[always(0),always(0),always(0)];
+    const l=[always(2),always(2),always(2)];
+    const code=await ethers.provider.getCode(await c.getAddress());
+    const created=await c.deploymentTransaction()?.wait();
+    const a=await (await submit(c,challenger,w)).wait();
+    const b=await (await submit(c,defender,l)).wait();
+    const resolved=await (await c.resolveRound(1n)).wait();
+    const handle=await c.publicResultHandle(1n,1);
+    const decrypted=await fhevm.publicDecrypt([handle]);
+    const packed=Number(decrypted.clearValues[handle]);
+    expect(packed).to.equal(40);
+    const finalized=await (await c.finalizeRound(1n,packed,decrypted.decryptionProof)).wait();
+    expect(code).to.match(/^0x[0-9a-f]+$/i);
+    expect(created?.gasUsed).to.be.greaterThan(0n);
+    for(const tx of [a,b,resolved,finalized])expect(tx?.gasUsed).to.be.greaterThan(0n);
+    console.log('GAMBIT_ARENA_V3_MOCK_COST '+JSON.stringify({
+      network:'local Hardhat FHE mock only',
+      hcu:'NOT MEASURED',
+      deployedToSepolia:false,
+      runtimeBytes:(code.length-2)/2,
+      deployGas:created?.gasUsed.toString(),
+      firstSealGas:a?.gasUsed.toString(),
+      secondSealGas:b?.gasUsed.toString(),
+      resolveGas:resolved?.gasUsed.toString(),
+      finalizeGas:finalized?.gasUsed.toString(),
+      proofBytes:(decrypted.decryptionProof.length-2)/2,
+      encryptedInputsPerPlayerPerRound:11,
+      hypotheticalFiveRoundWrites:21
+    }));
   });
 
   it('cannot create self-match, duplicate a sealed round, forge proof or double-resolve',async function(){
