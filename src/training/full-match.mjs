@@ -32,12 +32,19 @@ const validScore=s=>typeof s==='string'&&/^\d{1,2} : \d{1,2}$/.test(s);
 const scoreParts=s=>s.split(' : ').map(Number);
 function check(ok,label){if(!ok)throw Error('TRAINING_FULL_INVALID '+label)}
 function freezeState(s){
+  const receipts=Object.freeze(s.receipts.map(e=>Object.freeze({...e,
+    bonusA:e.bonusA?Object.freeze({...e.bonusA}):null,
+    bonusB:e.bonusB?Object.freeze({...e.bonusB}):null
+  })));
+  const debrief=s.debrief?Object.freeze({...s.debrief,
+    stats:Object.freeze(s.debrief.stats.map(x=>Object.freeze({...x})))
+  }):null;
   return Object.freeze({...s,edits:Object.freeze(s.edits.map(e=>Object.freeze({...e}))),
-    receipts:Object.freeze(s.receipts.map(e=>Object.freeze({...e}))),
-    debrief:s.debrief?Object.freeze({...s.debrief}):null});
+    receipts,debrief});
 }
 export function createFullMatchCoach(first){
-  check(first&&first.round===1&&first.lanes===3&&validScore(first.scoreline),
+  check(first&&first.round===1&&first.lanes===3&&validScore(first.scoreline)&&
+    scoreParts(first.scoreline).every(x=>x>=0&&x<=5),
     'actual completed first round required');
   return freezeState({mode:'gambit-full-match-academy',version:FULL_MATCH_COACH_VERSION,
     index:0,step:FULL_MATCH_STEPS[0].id,completed:false,missed:false,
@@ -118,14 +125,18 @@ export function advanceFullMatchCoach(s,e){
     const completedMatch=target===5;
     if(e.finished!==completedMatch)return miss(s,'Unexpected match-completion status.');
     const [a,b]=scoreParts(e.scoreline),[pa,pb]=scoreParts(s.scoreline);
-    if(a<pa||b<pb)return miss(s,'Cumulative practice score decreased.');
+    if(a<pa||b<pb||a-pa>5||b-pb>5)
+      return miss(s,'Cumulative practice score changed outside one legal local round.');
     if(completedMatch){
       const d=e.debrief;
       if(!d||d.scoreline!==e.scoreline||
         d.winner!==(a===b?0:a>b?1:2)||
         !Array.isArray(d.stats)||d.stats.length!==3||
-        d.stats.some(x=>!x||!Number.isInteger(x.wins)||!Number.isInteger(x.losses)||
-          !Number.isInteger(x.draws)||x.wins+x.losses+x.draws!==5))
+        d.stats.some((x,i)=>!x||x.role!==['SCOUT','GUARDIAN','STRIKER'][i]||
+          !Number.isInteger(x.wins)||x.wins<0||
+          !Number.isInteger(x.losses)||x.losses<0||
+          !Number.isInteger(x.draws)||x.draws<0||
+          x.wins+x.losses+x.draws!==5))
         return miss(s,'Final canonical local match debrief was missing or inconsistent.');
     }
     const receipt={round:target,scoreline:e.scoreline,lanes:3,
