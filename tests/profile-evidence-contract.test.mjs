@@ -2,8 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Interface,keccak256} from 'ethers';
 import {
-  verifyArenaProfileRecord,deriveCommanderArenaProfile
+  verifyArenaProfileRecord as verifyTrustedProfileRecord,
+  deriveCommanderArenaProfile as deriveTrustedProfile,
+  verifyResearchArenaProfileRecord as verifyArenaProfileRecord,
+  deriveResearchArenaProfile as deriveCommanderArenaProfile
 } from '../src/profile/verified-arena-record.mjs';
+import {
+  approveGambitProfileDeployment,
+  TRUSTED_SQUAD_GAMBIT_SEPOLIA,listApprovedGambitDeployments
+} from '../src/profile/trusted-deployments.mjs';
 
 const CONTRACT='0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134';
 const A='0x1111111111111111111111111111111111111111';
@@ -175,4 +182,53 @@ test('every profile record is consent-neutral read-only and canonically deduplic
     fakeLocalWinsAccepted:false,chainTransactions:0,
     claim:'architecture contract only, no live player profile UI'
   }));
+});
+
+test('only pinned deployed GAMBIT runtime can mint real Commander Profile history',async()=>{
+  const fake=fixture();
+  const mocked=await verifyArenaProfileRecord(fake.provider,7n,fake.options);
+  assert.throws(()=>deriveTrustedProfile(A,[mocked]),
+    /unverified or fabricated/,
+    'research records must never be promoted to verified match wins');
+  assert.equal(deriveCommanderArenaProfile(A,[mocked]).wins,1,
+    'research mock remains useful for internal deterministic assertions');
+  await assert.rejects(
+    verifyTrustedProfileRecord(fake.provider,7n,fake.options),
+    /PROFILE_UNTRUSTED_DEPLOYMENT/);
+  assert.equal(listApprovedGambitDeployments().length,1);
+  const pin=TRUSTED_SQUAD_GAMBIT_SEPOLIA;
+  assert.equal(pin.contractAddress,CONTRACT);
+  assert.equal(pin.fromBlock,12174655);
+  assert.equal(pin.runtimeHash,
+    '0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419');
+  const trusted=approveGambitProfileDeployment({
+    contractAddress:pin.contractAddress,runtimeHash:pin.runtimeHash,
+    chainId:11155111,fromBlock:pin.fromBlock,minimumConfirmations:36
+  });
+  assert.equal(trusted.minimumConfirmations,36);
+  assert.ok(Object.isFrozen(trusted));
+  for(const malicious of [
+    {...trusted,contractAddress:B},
+    {...trusted,runtimeHash:keccak256(RUNTIME)},
+    {...trusted,fromBlock:100},
+    {...trusted,chainId:1},
+    {...trusted,minimumConfirmations:0},
+    {...trusted,minimumConfirmations:11},
+    {...trusted,minimumConfirmations:5001},
+    null,
+    {},
+  ])assert.throws(()=>approveGambitProfileDeployment(malicious),
+    /PROFILE_UNTRUSTED_DEPLOYMENT/);
+});
+
+test('a forged contract matching an arbitrary caller-provided hash is never eligible for ranked wins',async()=>{
+  const fake=fixture();
+  const mocked=await verifyArenaProfileRecord(fake.provider,7n,fake.options);
+  assert.equal(mocked.evidence,'canonical-sepolia-receipt');
+  assert.throws(()=>deriveTrustedProfile(A,[mocked]),
+    /unverified or fabricated/);
+  assert.throws(()=>deriveTrustedProfile(B,[mocked]),
+    /unverified or fabricated/);
+  assert.equal(deriveTrustedProfile(A,[]).matches,0,
+    'unverified profile is an honest empty state');
 });
