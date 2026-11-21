@@ -27,7 +27,7 @@ contract ArenaV3Research is ZamaEthereumConfig {
     uint64 public constant ROUND_ENTRY_SECONDS = 1 days;
 
     struct Tactic {
-        bool sealed;
+        bool submitted;
         bool useGambit;
         uint64 sealedAt;
         euint8 formation;
@@ -109,7 +109,7 @@ contract ArenaV3Research is ZamaEthereumConfig {
         require(!r.resolved && !r.finalized, "Round closed");
         bool isChallenger = msg.sender == m.challenger;
         Tactic storage p = isChallenger ? r.challenger : r.defender;
-        require(!p.sealed, "Already sealed");
+        require(!p.submitted, "Already sealed");
         if (useGambit) {
             if (isChallenger) {
                 require(!m.challengerGambitSpent, "GAMBIT already spent");
@@ -134,7 +134,7 @@ contract ArenaV3Research is ZamaEthereumConfig {
             FHE.allowThis(p.trigger[i]);
             FHE.allowThis(p.response[i]);
         }
-        p.sealed = true;
+        p.submitted = true;
         p.sealedAt = uint64(block.timestamp);
         emit RoundSealed(id, m.currentRound, msg.sender);
     }
@@ -142,7 +142,7 @@ contract ArenaV3Research is ZamaEthereumConfig {
     function resolveRound(uint256 id) external liveMatch(id) {
         Match storage m = matches[id];
         Round storage r = rounds[id][m.currentRound];
-        require(r.challenger.sealed && r.defender.sealed, "Both orders required");
+        require(r.challenger.submitted && r.defender.submitted, "Both orders required");
         require(!r.resolved && !r.finalized, "Already resolved");
 
         ebool same = FHE.eq(r.challenger.formation, r.defender.formation);
@@ -214,7 +214,7 @@ contract ArenaV3Research is ZamaEthereumConfig {
         Match storage m = matches[id];
         Round storage r = rounds[id][m.currentRound];
         require(block.timestamp > r.deadlineAt, "Entry still open");
-        require(!r.challenger.sealed || !r.defender.sealed, "Both sealed on time");
+        require(!r.challenger.submitted || !r.defender.submitted, "Both sealed on time");
         require(!r.resolved && !r.finalized, "Already in settlement");
         m.abandoned = true;
         emit MatchAbandonedUnscored(id, m.currentRound);
@@ -239,8 +239,8 @@ contract ArenaV3Research is ZamaEthereumConfig {
         require(matches[id].challenger != address(0) && round >= 1 && round <= MAX_ROUNDS, "Unknown round");
         Round storage r = rounds[id][round];
         require(r.openedAt != 0, "Round not opened");
-        return (r.openedAt, r.deadlineAt, r.challenger.sealed,
-            r.defender.sealed, r.resolved, r.finalized, r.packedScore);
+        return (r.openedAt, r.deadlineAt, r.challenger.submitted,
+            r.defender.submitted, r.resolved, r.finalized, r.packedScore);
     }
 
     function publicResultHandle(uint256 id, uint8 round) external view returns (bytes32) {
