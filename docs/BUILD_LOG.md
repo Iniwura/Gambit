@@ -18,7 +18,8 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 - **Implemented:** `.github/workflows/validate.yml` and `.github/workflows/rules.yml` now ignore **documentation-only** pushes/PRs. Recording mandated GitHub progress must not rebuild browser/FHE workspaces on every Markdown edit.
 - `rules.yml` now supersedes stale runs with per-ref concurrency; the expensive quality suite already had per-ref concurrency and retains its full source-code, browser and FHE validation on real code changes. The live read-only proof workflows remain independently configured.
-- This change addresses the burst of cancelled heavyweight runs caused by sequential documentation commits. **Workflow trigger changes themselves are code/CI changes and still trigger checks.** Verify the latest source-commit run before claiming a fully green build.
+- **Draft-PR edge case observed and corrected:** GitHub treated a docs-only PR synchronization as a full PR diff, so a heavyweight PR run still started even with `paths-ignore`. Updated `validate.yml`, `rules.yml` and `architecture-contracts.yml` to skip their jobs on **draft PR events**. The active branch still runs code-change tests on push; ready-for-review PRs still run checks. Workflow edits themselves trigger source checks; confirm the last run before saying all green.
+- This addresses repeated cancelled builds and protects free CI minutes without relaxing code-change validation.
 - **Next:** keep future milestones batched where possible, only report final CI after completion, and continue the core design/functional sequence before artwork.
 
 ## 2026-11-21 — Phase 1: bounded, reorg-aware Commander Profile event discovery
