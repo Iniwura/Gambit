@@ -18,6 +18,21 @@ A separate [v2 headless research rule set](../src/research/blacksite-v2-feasibil
 
 **We have NOT demonstrated** that this is fun, human-solvable, appropriately difficult, economically feasible on Zama, or safe from strategic inference. 13 bits remains entirely brute-forceable offline. No hash of a short secret may be published as a "secure commitment": a dictionary attack would recover it.
 
+## Exact opening information audit — why scans are NOT locked
+
+An exhaustive [information benchmark](../src/research/blacksite-v2-information.mjs) enumerated **all 7,776 possible secrets** under a uniform-secret reference distribution. [CI evidence](https://github.com/Iniwura/Gambit/actions/runs/44923522404) passed **167/167** deterministic tests and recorded the metrics below.
+
+| Action(s) | Expected remaining codes | Worst remaining codes | Average public information |
+| --- | ---: | ---: | ---: |
+| One example guess `[0,1,2,3,4]` | **972.999** | 1,560 | 3.324 bits |
+| One `reactor` class scan | **2,044.444** | 2,560 | 2.091 bits |
+| Class scan + that guess | **276.772** | 624 | 5.245 bits |
+| Two fixed example guesses `[0,1,2,3,4]` and `[5,4,3,2,1]` | **138.722** | 348 | 6.250 bits |
+
+**Decision:** the optional class scan **is NOT approved for competitive BLACKSITE in its present form**. In this representative opening, spending two actions on two guesses gives roughly twice the posterior discrimination (139 remaining codes versus 277) compared with scan+guess. A scan's smaller opening information value raises a genuine risk that it is a dominated tactical choice. This is a **specific, exact information result**, not a proof of universal strategic dominance; adaptive human policies, partial states and actual win rates still need evaluation.
+
+**Next game-design experiment:** either give scans a distinct tactical benefit that justifies their action cost (e.g., a mission-specific hazard/route consequence, not just a weaker static count), or remove them. Compare optimal/adaptive policies and human comprehension before locking a mechanic. Do not hide this negative finding or make graphics for a decision we haven't proven worthwhile.
+
 ## The game design hypothesis
 
 The player is an infiltrator who must decide between **spending a turn learning about the vault** and **spending a turn attempting the actual combination**. Scans cost the same scarce action resource as guesses. Rather than an arbitrary quick Mastermind clone, good play should combine early information, constrained deduction and deliberate risk. A future mission layer adds environmental pressure, objectives and consequences, but no such layer is implemented yet.
@@ -105,7 +120,7 @@ We must resolve abandonment fairness: whether an expired mission is a loss, no-c
 | Decision | State |
 | --- | --- |
 | Keep original 4^4 vault as transparent beginner training | LOCKED |
-| Consider 5×6 code + six-action/scan economy for competitive BLACKSITE | **RESEARCH ONLY** |
+| Consider 5×6 code + six-action/scan economy for competitive BLACKSITE | **RESEARCH ONLY; current class-scan design NOT APPROVED** (inferior opening discrimination in tested two-action comparison) |
 | Publish aggregate hints only, never per-position secret data | DESIGN REQUIREMENT |
 | Make attempts/identities/mission expiry and KMS proof authoritative onchain | DESIGN REQUIREMENT |
 | Fair confidential secret generation, creator incentive model | OPEN / BLOCKING |
