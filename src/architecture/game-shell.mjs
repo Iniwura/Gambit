@@ -14,6 +14,9 @@ export const GAME_SCENES=Object.freeze({
     authority:'none',description:'Public game entry and navigation'}),
   training:Object.freeze({label:'Training',pillar:'training',available:true,
     authority:'local-practice',description:'Five-round cleartext squad practice'}),
+  'blacksite-training':Object.freeze({label:'BLACKSITE Local Training',
+    pillar:'blacksite',available:true,authority:'local-training',
+    description:'Playable four-glyph local deduction mission, five attempts, no FHE'}),
   'arena-spectate':Object.freeze({label:'Verified Arena Result',pillar:'arena',
     available:true,authority:'verified-public-sepolia',
     description:'Public read-only score; no wallet and no secret lane outcomes'}),
@@ -25,7 +28,7 @@ export const GAME_SCENES=Object.freeze({
     description:'Full multi-round match lobby, strategy and rematch system not built'}),
   'blacksite-mission':Object.freeze({label:'BLACKSITE',pillar:'blacksite',
     available:false,authority:'not-implemented',
-    description:'Cipher reference engine exists; playable mission and encrypted contract do not'}),
+    description:'Encrypted competitive BLACKSITE mission and contract are not implemented'}),
   'commander-profile':Object.freeze({label:'Commander Profile',pillar:'profile',
     available:false,authority:'not-implemented',
     description:'Verified history and persistent player progression not implemented'})
