@@ -202,8 +202,8 @@ export function mountBlacksiteGreybox():void{
   }
   function open(){
     if(!backdrop.hidden)return;
-    if(document.getElementById('gambit-squad-dialog')?.getAttribute('aria-hidden')==='false')
-      return; // Never put a practice overlay over a connected wallet dialog.
+    if(document.getElementById('gambit-squad-dialog')?.hidden===false)
+      return; // Never overlay an active wallet-signing interface.
     previousFocus=document.activeElement instanceof HTMLElement?
       document.activeElement:null;
     if(!mission){
