@@ -317,11 +317,17 @@ export function mountSquadSepoliaPanel(
     submitStatus.scrollIntoView({block:'nearest'});
   }
   async function copyOrDisplay(label:string,url:string){
+    const feedback=(message:string)=>{
+      if(verifiedView){
+        shareFeedback.textContent=message;
+        shareFeedback.hidden=false;
+      }else setStatus(message);
+    };
     try{
       await navigator.clipboard.writeText(url);
-      setStatus(label+' copied. The link contains only the public chain ID.');
+      feedback(label+' copied. The link contains only the public duel ID.');
     }catch{
-      setStatus('Copy '+label+' manually: '+url);
+      feedback('Copy '+label+' manually: '+url);
     }
   }
   function setBusy(value:boolean){
@@ -552,6 +558,13 @@ export function mountSquadSepoliaPanel(
   const verifiedActions=document.createElement('section');
   verifiedActions.id='gambit-squad-verified-actions';
   verifiedActions.hidden=true;
+  const shareFeedback=document.createElement('p');
+  shareFeedback.id='gambit-squad-share-feedback';
+  shareFeedback.setAttribute('role','status');
+  shareFeedback.setAttribute('aria-live','polite');
+  shareFeedback.hidden=true;
+  shareFeedback.style.cssText='font:12px/1.5 system-ui;color:#c7edf5;'+
+    'overflow-wrap:anywhere;margin:7px 0';
   function showResult(proof:SquadResult){
     if(proof.authenticated!==true)throw Error('Unauthenticated result rejected.');
     lastResult=proof;
@@ -605,7 +618,7 @@ export function mountSquadSepoliaPanel(
   // Only show transactional controls for a match not yet verified as final.
   if(isInvitedLink)workflow.append(...walletControls,seal,...lifecycle,planner,...completion);
   else workflow.append(...walletControls,planner,seal,...lifecycle,...completion);
-  verifiedActions.append(result,watch,shareResult);
+  verifiedActions.append(result,watch,shareResult,shareFeedback);
   card.append(...start,verifiedActions,workflow);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
