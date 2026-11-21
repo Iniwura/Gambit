@@ -110,6 +110,20 @@ export function commitArenaV3ResearchRound(match,orderA,orderB){
      typeof match.spentA!=='boolean'||typeof match.spentB!=='boolean'||
      !Array.isArray(match.history)||match.history.length!==match.round)
     throw Error('Arena v3 research match is not accepting another round.');
+  // Protect our *local* reducer from accidentally consuming a truncated or
+  // contradictory research transcript. This is NOT an authenticity check:
+  // only a versioned onchain state machine can enforce one-use spends against
+  // hostile transaction submitters.
+  projectArenaV3PublicMatchState(match);
+  for(const historical of match.history){
+    if(!historical.debug||
+       !Object.hasOwn(historical.debug,'gambitRoleA')||
+       !Object.hasOwn(historical.debug,'gambitRoleB'))
+      throw Error('Incomplete private research commitment history.');
+  }
+  if(match.spentA!==match.history.some(r=>r.debug.gambitRoleA!==null)||
+     match.spentB!==match.history.some(r=>r.debug.gambitRoleB!==null))
+    throw Error('Research GAMBIT spend marker and transcript disagree.');
   const A=validateArenaV3Order(orderA),B=validateArenaV3Order(orderB);
   if((match.spentA&&A.gambitRole!==null)||(match.spentB&&B.gambitRole!==null))
     throw Error('Each commander may play their secret GAMBIT only once.');
