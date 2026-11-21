@@ -44,6 +44,10 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
         run: npm run check:squad:live:readonly
+      - name: First live encrypted SquadSealed receipt and onchain state (READ ONLY)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run check:seal:live:readonly
       - name: Upload complete static browser release (works during Vercel cooldown)
         uses: actions/upload-artifact@v4
         with:
