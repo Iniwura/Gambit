@@ -484,10 +484,21 @@ export function mountSquadSepoliaPanel(
   resolveExplainer.style.cssText='font:12px/1.5 system-ui;color:#aec5da;margin:7px 0 9px';
   const finalize=button('6 · Verify KMS score + finalize (one transaction)','gambit-squad-finalize',async()=>{
     const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
-    setStatus('Fetching the public KMS proof. Confirm ONE finalization transaction '+
-      'in your wallet after proof verification.');
-    showResult(await c.finalizeDuel(id));
+    setStatus('Fetching the public KMS proof and checking the finalization gas ceiling. '+
+      'This is read-only until ONE distinct Rabby transaction is requested.');
+    const x=await c.finalizeDuel(id);
+    showResult(x);
+    setStatus('Duel #'+id+' has an authenticated, successful finalization receipt. Tx: '+
+      x.finalizationTx+'. Do NOT finalize again. '+(x.canonicalStateVerified===false
+        ?'Your wallet RPC may lag; the canonical DuelFinalized event is authoritative.'
+        :'The public result is finalized on Sepolia.'));
   });
+  const finalizeExplainer=document.createElement('p');
+  finalizeExplainer.id='gambit-squad-finalize-details';
+  finalizeExplainer.textContent='Finalization is a NEW, separately approved Sepolia transaction. '+
+    'Maximum possible fee 500,000,000 wei (0.0000000005 ETH); live gas is estimated '+ 
+    'after the KMS proof. No auto-retries or additional writes.';
+  finalizeExplainer.style.cssText='font:12px/1.5 system-ui;color:#aec5da;margin:7px 0 9px';
   const watch=document.createElement('button');watch.id='gambit-squad-watch';
   watch.type='button';watch.textContent='VIEW AUTHENTICATED REACTOR RESULT';
   watch.hidden=!onVerified;watch.disabled=true;
@@ -531,7 +542,7 @@ export function mountSquadSepoliaPanel(
     invited.wrap,invited.input];
   const lifecycle=[squad.wrap,squad.input,shareInvite,open,openExplainer,recover,
     duel.wrap,duel.input,publicInspect,inspect];
-  const completion=[submit,submitStatus,submitExplainer,resolve,resolveExplainer,finalize,result,shareResult,watch];
+  const completion=[submit,submitStatus,submitExplainer,resolve,resolveExplainer,finalize,finalizeExplainer,result,shareResult,watch];
   // Keep the private plan editor adjacent to the action that consumes it.
   if(isInvitedLink)card.append(...start,seal,...lifecycle,planner,...completion);
   else card.append(...start,planner,seal,...lifecycle,...completion);
