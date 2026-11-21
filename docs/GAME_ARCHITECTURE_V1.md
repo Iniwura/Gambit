@@ -56,6 +56,8 @@ src/
   profile/
     verified-arena-record.mjs      # BUILT: trusted receipt reader; NOT a Profile UI
     approved-event-discovery.mjs   # BUILT: bounded canonical log candidate indexer, NOT ranked history
+    public-history.mjs             # BUILT: opt-in wallet read-only event + verified receipt loader
+    greybox.ts                     # BUILT: temporary read-only player UI, NOT persistent Profile
     progression.mjs                # PLANNED: validate earned achievements
   chain/                            # EXISTS: squad-lifecycle, Sepolia adapters, proof reader
   research/blacksite-cipher.mjs     # EXISTS: local deduction reference only
@@ -162,7 +164,7 @@ NOT_STARTED → FIRST_MOVE → CONDITIONAL_COUNTER → ROLE_COMPOSITION
 
 **Persistence plan:** read-only chain index (public logs + runtime/code/receipt verification), versioned local UI preferences, optional public profiles only with appropriate consent. No passwords, wallet keys, private ciphertext proofs or decrypted strategy in storage. A disconnected wallet can view a verified public match but cannot write on behalf of the player.
 
-**Profile gate:** an approved-contract [read-only candidate discovery indexer](../src/profile/approved-event-discovery.mjs) and one actual signed Sepolia match are now independently verified. The [focused seven-page live discovery test](https://github.com/Iniwura/Gambit/actions/runs/44924064176) passed 17/17 focused checks; the discovery result is **NOT** itself a verified win. **Profile remains disabled** until durable multi-match history/cursor reconciliation, account privacy and opt-in identity, true restart/reorg invalidation, honest empty/error UI states, and responsive browser QA have passed.
+**Profile gates:** approved-contract [bounded discovery](../src/profile/approved-event-discovery.mjs), [opt-in verified wallet history](../src/profile/public-history.mjs) and [temporary read-only greybox](../src/profile/greybox.ts) now exist. A [live eight-page public Sepolia verification](https://github.com/Iniwura/Gambit/actions/runs/44927551505) passed **23/23** contract tests and derived one genuine Duel #1 defender win; discovered candidate logs are **NOT** themselves verified victories. The shared shell enables only `profile-readonly`; full `commander-profile` remains disabled until durable cross-session history/cursor reconciliation, account privacy and consented identity, actual reorg recovery, achievements and complete browser QA are demonstrated. [Acceptance contract](PROFILE_GREYBOX_ACCEPTANCE.md) covers the bounded UI.
 
 ## 8. Shared state machines and interaction contract
 
