@@ -75,7 +75,7 @@ We have authentic Sepolia **EVM gas** for one deployed v2 submit, resolve and fi
 ## 6. Required tests before locking the candidate
 
 1. Use the existing pure reference to run large strategy samples across formations and adaptivity. Record skill sensitivity, ties, stake exploitation and role balance.
-2. Confirm the target reward/penalty and exactly-once semantics in an independent headless round/match reducer. Test aborts, deadlines, tied scores and replay.
+2. **Partially completed:** the independent headless five-round reducer now tests exactly-once stakes, ordered commits, tied/final score bounds, duplicate refusal and public redaction. **Still open:** aborts, deadlines, human balance and a real encrypted round implementation.
 3. Build a mock FHE Solidity research contract in a new namespace/version, prove exact parity against reference, assess bytecode/HCU estimates and privacy leakage. **Mock FHE is not Sepolia proof.**
 4. Human-playtest the no-art greybox with new players; compare one-round versus five-round sessions, measure attention and comprehension.
 5. If outcomes warrant it, request separate approval for a new testnet deployment and real two-wallet journey. Record authentic fees, latency, HCU if available, receipts and recovery.
