@@ -87,11 +87,11 @@ A feature is not "done" merely because it compiles. All applicable gates need ev
 - [x] Playable practice mode and responsive desktop/mobile controls.
 - [x] A versioned encrypted v2 contract deployed on Sepolia and checked against runtime hash.
 - [x] FHE mock compilation, rules checks, TypeScript build, real Chromium E2E checks green on PR #5 head `0e390e953ebc8040e51d5ba5da4038e8fdbedafd`.
-- [ ] Real v2 full encrypted session complete and independently verifiable.
+- [x] First real v2 encrypted session completed and independently verified on Sepolia (Duel #1, final receipt and KMS proof). See [evidence](STATUS.md). **One match is not a repeatability or security audit.**
 - [ ] Premium original art/audio, first-time-player usability, independent review.
 
 ### G1 — Authentic encrypted session (blocker for production claims)
-- [ ] One **distinct-wallet** seal → open → submit → resolve → KMS-proof finalization, real Sepolia receipts and exact event/state identity.
+- [x] One **distinct-wallet** seal → open → submit → resolve → KMS-proof finalization, real Sepolia receipts and exact event/state identity. Completed for Duel #1 only; [independent evidence](STATUS.md).
 - [ ] Measure real encryption, RPC, FHE processing and KMS wait time plus fees/HCU when observable. Set UI expectations from real evidence.
 - [ ] Test recovery after refresh, failed RPC, wrong wallet, chain switch, expired invitation, cancelled signing, reorg/ambiguous receipt, duplicate attempt.
 - [ ] Verify no private plan or per-lane data in public score reports, events, logs, share links or telemetry.
@@ -115,11 +115,11 @@ A feature is not "done" merely because it compiles. All applicable gates need ev
 - [ ] Explicit network/account/contract version checks; no transactions without deliberate user approval.
 - [ ] Adversarial contract tests, property checks, replay/front-running/griefing model, ACL proof review and independent code/security review.
 - [ ] Incident/error handling, RPC fallback strategy, monitoring without secrets, documented recovery and versioned rollbacks.
-- [ ] Wallet-free read-only verification, verified public deployment metadata, provenance and reproducible build.
+- [x] Wallet-free read-only verification of Duel #1, verified public deployment metadata, provenance and reproducible build. Additional matches and external audits remain open.
 - [ ] No payments/billing/production promotion without the owner's explicit authorization.
 
 ### G5 — Real-world release quality
-- [ ] At least one complete repeatable human-vs-human Sepolia session.
+- [ ] Repeatable human-vs-human Sepolia sessions: **one complete verified match exists**; another independent complete session is still required to demonstrate repeatability.
 - [ ] Five-round aspirations are either supported by verified onchain protocol or clearly labeled as separate practice; not conflated.
 - [ ] Product copy, documentation and demo reflect actual features and tested constraints.
 - [ ] Submission materials meet Zama's current official requirements; 3-minute REAL-PERSON pitch (not AI voice). The hackathon is a milestone, not the definition of the product.
