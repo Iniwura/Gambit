@@ -30,6 +30,7 @@ The rules-only [Arena v3 prototype](../src/research/arena-v3-rules.mjs) gives sc
 - The injected test verifier uses string equality against **explicitly labeled OFFLINE-MOCK-ONLY proofs**; never copy it into a deployed verifier or label any output “onchain verified.”
 - The initial CI run correctly caught a constructor accepting missing timestamps through a default argument. That implicit default was removed. Subsequent deterministic CI passed 92/92 tests on commit `3f8e3a338c1b9af55c5a7854b1f0626694c25652`.
 - No revisions to `fhe/contracts/SquadGambit.sol`, live public deployment metadata, application UI or transaction path were made.
+- Follow-up adversarial audit found a **cross-domain replay gap** in the research model: a prior publicly finalized result handle could be resubmitted as a later order handle. Commit `e129404450b9c091956f884b084af1c113d29d79` closes this by disallowing historical result handles in future commitments, checking spent-order/result-domain disjointness on state validation, and freezing the nested public submission flags. Commit `da79d0b080c78ae5a81e08effb2934c70632c6ce` adds explicit regression tests. These are research-model invariants only, **not deployed FHE protections**; CI status must be checked for this head separately.
 
 ## FHE-specific security questions that remain unanswered
 
