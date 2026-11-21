@@ -41,10 +41,14 @@ export function mountSquadSepoliaPanel(
       // delayed account requests after a synthetic/microtask-only click.
       try{
         Promise.resolve(fn()).catch(error=>{
-          setStatus('Cannot continue: '+(error instanceof Error?error.message:String(error)));
+          const message='Cannot continue: '+(error instanceof Error?error.message:String(error));
+          if(id==='gambit-squad-submit')setSubmitStatus(message);
+          else setStatus(message);
         }).finally(()=>setBusy(false));
       }catch(error){
-        setStatus('Cannot continue: '+(error instanceof Error?error.message:String(error)));
+        const message='Cannot continue: '+(error instanceof Error?error.message:String(error));
+        if(id==='gambit-squad-submit')setSubmitStatus(message);
+        else setStatus(message);
         setBusy(false);
       }
     });
@@ -109,6 +113,15 @@ export function mountSquadSepoliaPanel(
   status.setAttribute('aria-live','polite');status.textContent='Choose a wallet and connect. No transaction is needed.';
   status.style.cssText='padding:11px;background:#192e46;border:1px solid #426985;' +
     'border-radius:8px;overflow-wrap:anywhere;margin:9px 0 14px';
+  // The user can be several screens below this connection status by the
+  // time encrypted submission begins. Mirror submit feedback by its button.
+  const submitStatus=document.createElement('p');
+  submitStatus.id='gambit-squad-submit-status';
+  submitStatus.setAttribute('role','status');
+  submitStatus.setAttribute('aria-live','polite');
+  submitStatus.hidden=true;
+  submitStatus.style.cssText='padding:12px;background:#192e46;border:1px solid #5a9eb1;' +
+    'border-radius:8px;overflow-wrap:anywhere;margin:9px 0 6px;font:13px/1.5 system-ui';
   const walletLabel=document.createElement('label');
   walletLabel.htmlFor='gambit-squad-wallet-choice';
   walletLabel.textContent='Browser wallet';
@@ -167,9 +180,16 @@ export function mountSquadSepoliaPanel(
   function requireClient():Client{if(!client)throw Error('Connect and verify Sepolia wallet first.');return client;}
   function setStatus(message:string){
     status.textContent=message;
-    // Connection errors must be visible beside the Connect control, not
-    // hidden a full panel-scroll below it as before.
+    // Connection errors belong next to Connect. Other wallet actions may
+    // have a different local, live status lower in this scrollable panel.
     status.scrollIntoView({block:'nearest'});
+  }
+  function setSubmitStatus(message:string){
+    submitStatus.hidden=false;
+    submitStatus.textContent=message;
+    status.textContent=message;
+    // Scroll to the nearby status, not the remote Connect banner.
+    submitStatus.scrollIntoView({block:'nearest'});
   }
   async function copyOrDisplay(label:string,url:string){
     try{
@@ -309,14 +329,17 @@ export function mountSquadSepoliaPanel(
     if(x.step==='verified')showResult(await c.verifiedResult(id));
   });
   const submit=button('4 · Encrypt and submit my squad','gambit-squad-submit',async()=>{
+    setSubmitStatus('Validating your connected Sepolia wallet and Duel #1. No transaction has been initiated.');
     const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
+    // The scene must be in practice, with 3 fighter plans chosen. If not,
+    // this throws BEFORE contacting Zama or showing a wallet prompt.
     const draft=readDraft();
-    setStatus('Preparing encrypted tactics and checking the 500,000,000-wei maximum fee. '+
-      'A separate wallet approval is required; no follow-up is automatic.');
-    const x=await c.submitDuel(id,draft.plans,draft.formation);
-    setStatus(x.canonicalStateVerified
+    setSubmitStatus('Validating Duel #'+id+' on Sepolia, then encrypting 10 tactics. '+
+      'This can take time. Rabby will appear only AFTER encryption and the gas quote pass.');
+    const x=await c.submitDuel(id,draft.plans,draft.formation,setSubmitStatus);
+    setSubmitStatus(x.canonicalStateVerified
       ?'Duel #'+id+' encrypted submission confirmed onchain. Tx: '+x.transactionHash+
-        '. No other transaction was initiated.'
+        '. No other transaction was initiated. Do not submit again.'
       :'Duel #'+id+' has a successful DuelSubmitted receipt. Tx: '+x.transactionHash+
         '. Wallet state may be lagging. DO NOT retry; verify the receipt and recover read-only.');
   });
@@ -382,7 +405,7 @@ export function mountSquadSepoliaPanel(
   card.append(heading,caution,identity,walletLabel,walletChoice,connect,status,
     invited.wrap,invited.input,seal,squad.wrap,squad.input,
     shareInvite,open,openExplainer,recover,duel.wrap,duel.input,
-    publicInspect,inspect,submit,submitExplainer,resolve,finalize,result,shareResult,watch);
+    publicInspect,inspect,submit,submitStatus,submitExplainer,resolve,finalize,result,shareResult,watch);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
   const openDialog=()=>{if(busy)return;dialog.hidden=false;setVisibility();close.focus();};
