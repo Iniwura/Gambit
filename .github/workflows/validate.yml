@@ -130,13 +130,14 @@ jobs:
         run: |
           VITE_GAMBIT_CONTRACT_ADDRESS=0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0 npm run dev -- --host 127.0.0.1 --port 4173 >/tmp/gambit-vite.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173 >/dev/null && break; sleep 1; done
+          # Fail fast on the newest interactive surface before expensive regressions.
+          node tests/arena-hotseat-browser-check.mjs
           node tests/browser-check.mjs
           node tests/squad-browser-check.mjs
           node tests/mobile-deck-browser-check.mjs
           node tests/blacksite-greybox-browser-check.mjs
           node tests/profile-greybox-browser-check.mjs
           node tests/training-coach-browser-check.mjs
-          node tests/arena-hotseat-browser-check.mjs
           node tests/deploy-browser-check.mjs
           node tests/sepolia-browser-safety-check.mjs
           # Deliberately fake v2 config is used for NEGATIVE browser cases only.
