@@ -2,6 +2,7 @@ import {createSquadSepoliaClient,type FighterPlan,type SquadResult} from './squa
 import {readVerifiedSquadPublic} from './squad-public-reader';
 import {squadInvitationLink,squadPublicResultLink} from './squad-links.mjs';
 import {discoverInjectedWallets} from './wallet-discovery.mjs';
+import {encodeSquadInputs} from './squad-lifecycle.mjs';
 
 type Client=Awaited<ReturnType<typeof createSquadSepoliaClient>>;
 type SquadDraft={plans:FighterPlan[],formation:number};
@@ -159,6 +160,120 @@ export function mountSquadSepoliaPanel(
   const invited=textbox('Invite this challenger wallet','gambit-squad-invite','0x... different address');
   const squad=textbox('Squad ID (seal, invite or recovery)','gambit-squad-id','e.g. 1');
   const duel=textbox('Duel ID (submit, resolve or continue)','gambit-duel-id','e.g. 1');
+  // A challenger must not be forced into the unrelated local-practice scene.
+  // All 10 plaintext plan values live only in memory while this dialog is open.
+  // They are encrypted through the SDK only after a deliberate user action.
+  const planner=document.createElement('section');
+  planner.id='gambit-squad-planner';
+  planner.setAttribute('aria-label','Configure the private encrypted squad');
+  planner.style.cssText='padding:15px;margin:14px 0;border:1px solid #5c839c;'+
+    'border-radius:12px;background:#13263d';
+  const plannerTitle=document.createElement('h3');
+  plannerTitle.textContent='Your private squad tactics';
+  plannerTitle.style.cssText='font:750 17px/1.3 system-ui;margin:0 0 6px;color:#f1faff';
+  const plannerHint=document.createElement('p');
+  plannerHint.textContent='Choose three plans and a formation here, or load a starter. '+
+    'Opening actions and counters remain private when you encrypt. No Practice match is required.';
+  plannerHint.style.cssText='font:12px/1.5 system-ui;color:#c1d8e9;margin:0 0 11px';
+  const roles=['Scout','Guardian','Striker'];
+  const actions=['STRIKE','GUARD','FLANK'];
+  const fields=['base','trigger','response'] as const;
+  const fieldNames=['Opening move','If opponent opens with','Then counter with'];
+  const plannerChoices:HTMLSelectElement[][]=[];
+  const plannerInputs:HTMLSelectElement[]=[];
+  const choice=(id:string,label:string,values:string[])=>{
+    const wrapper=document.createElement('label');
+    wrapper.htmlFor=id;wrapper.textContent=label;
+    wrapper.style.cssText='display:block;font:600 11px/1.3 system-ui;color:#c0d8e9';
+    const select=document.createElement('select');
+    select.id=id;
+    select.setAttribute('aria-label',label);
+    select.style.cssText='width:100%;min-width:0;min-height:42px;margin-top:5px;'+
+      'border:1px solid #547b96;border-radius:7px;background:#0a1527;'+
+      'color:white;padding:6px;font:12px system-ui';
+    select.append(new Option('Choose…',''));
+    values.forEach((name,i)=>select.append(new Option(name,String(i))));
+    wrapper.append(select);
+    plannerInputs.push(select);
+    select.addEventListener('change',updatePlannerStatus);
+    return {wrapper,select};
+  };
+  planner.append(plannerTitle,plannerHint);
+  for(let i=0;i<roles.length;i++){
+    const group=document.createElement('div');
+    group.style.cssText='padding:9px 0;border-top:1px solid #304b65';
+    const role=document.createElement('div');
+    role.textContent=roles[i];
+    role.style.cssText='font:750 12px system-ui;color:#90e6f1;margin:0 0 7px';
+    const choices=document.createElement('div');
+    choices.style.cssText='display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px';
+    const row:HTMLSelectElement[]=[];
+    for(let j=0;j<fields.length;j++){
+      const item=choice('gambit-plan-'+roles[i].toLowerCase()+'-'+fields[j],
+        roles[i]+' '+fieldNames[j],actions);
+      choices.append(item.wrapper);
+      row.push(item.select);
+    }
+    plannerChoices.push(row);
+    group.append(role,choices);
+    planner.append(group);
+  }
+  const formation=choice('gambit-plan-formation','Deployment formation',['HOLD','PIVOT','FEINT']);
+  const formationWrap=document.createElement('div');
+  formationWrap.style.cssText='border-top:1px solid #304b65;padding-top:9px';
+  formationWrap.append(formation.wrapper);
+  const plannerMessage=document.createElement('p');
+  plannerMessage.id='gambit-squad-plan-status';
+  plannerMessage.setAttribute('role','status');
+  plannerMessage.setAttribute('aria-live','polite');
+  plannerMessage.textContent='Choose all 10 tactics or load a starter to continue.';
+  plannerMessage.style.cssText='font:12px/1.45 system-ui;color:#c4deef;margin:9px 0 0';
+  function updatePlannerStatus(){
+    const complete=plannerInputs.every(item=>/^[012]$/.test(item.value));
+    plannerMessage.textContent=complete
+      ?'Ready: three private fighter plans and one formation. Review before encrypting.'
+      :'Complete all 10 choices or load a starter. No transaction has started.';
+  }
+  function applySquadDraft(draft:SquadDraft){
+    // The canonical contract codec rejects incomplete, out-of-range tactics.
+    encodeSquadInputs(draft.plans,draft.formation);
+    draft.plans.forEach((plan,i)=>{
+      plannerChoices[i][0].value=String(plan.base);
+      plannerChoices[i][1].value=String(plan.trigger);
+      plannerChoices[i][2].value=String(plan.response);
+    });
+    formation.select.value=String(draft.formation);
+    updatePlannerStatus();
+  }
+  function preparedSquadDraft():SquadDraft{
+    if(!plannerInputs.every(item=>/^[012]$/.test(item.value)))
+      throw Error('Choose your private fighter plans and formation above, or load the balanced starter. No transaction sent.');
+    const plans=plannerChoices.map(row=>({
+      base:Number(row[0].value) as 0|1|2,
+      trigger:Number(row[1].value) as 0|1|2,
+      response:Number(row[2].value) as 0|1|2
+    }));
+    const draft={plans,formation:Number(formation.select.value)};
+    encodeSquadInputs(draft.plans,draft.formation);
+    return draft;
+  }
+  const balanced=button('Use balanced starter · 1 click','gambit-squad-balanced',async()=>{
+    applySquadDraft({
+      plans:[
+        {base:2,trigger:0,response:1},
+        {base:1,trigger:2,response:0},
+        {base:0,trigger:1,response:2}
+      ],formation:0
+    });
+  });
+  const importPractice=button('Import my Practice squad','gambit-squad-import-practice',async()=>{
+    try{applySquadDraft(readDraft());}
+    catch{
+      plannerMessage.textContent='Practice has no active plan to import. Choose a starter or customize the ten choices here.';
+    }
+  });
+  planner.append(formationWrap,balanced,importPractice,plannerMessage);
+
   const invitedId=new URLSearchParams(window.location.search).get('squad');
   const isInvitedLink=Boolean(invitedId&&/^[1-9][0-9]{0,77}$/.test(invitedId));
   if(isInvitedLink&&invitedId)squad.input.value=invitedId;
@@ -202,6 +317,7 @@ export function mountSquadSepoliaPanel(
   function setBusy(value:boolean){
     busy=value;
     for(const item of allActions)item.disabled=value;
+    for(const input of plannerInputs)input.disabled=value;
     close.disabled=value;launch.disabled=value;mobileLaunch.disabled=value;
     shareResult.disabled=value||!lastResult;
   }
@@ -273,7 +389,7 @@ export function mountSquadSepoliaPanel(
   });
   const seal=button('2 · Encrypt and seal my three fighter plans','gambit-squad-seal',async()=>{
     const c=requireClient();
-    const draft=readDraft(); // Snapshot at user click, never a stale signed tactic.
+    const draft=preparedSquadDraft(); // Deliberately chosen panel tactics, never a stale scene state.
     setStatus('Preparing ten encrypted Zama inputs. Confirm sealing in your wallet.');
     const x=await c.sealSquad(invited.input.value,draft.plans,draft.formation);
     squad.input.value=String(x.squadId);
@@ -329,11 +445,11 @@ export function mountSquadSepoliaPanel(
     if(x.step==='verified')showResult(await c.verifiedResult(id));
   });
   const submit=button('4 · Encrypt and submit my squad','gambit-squad-submit',async()=>{
-    setSubmitStatus('Validating your connected Sepolia wallet and Duel #1. No transaction has been initiated.');
+    setSubmitStatus('Checking the selected wallet and duel. No transaction has been initiated.');
     const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
-    // The scene must be in practice, with 3 fighter plans chosen. If not,
-    // this throws BEFORE contacting Zama or showing a wallet prompt.
-    const draft=readDraft();
+    // The challenger chooses private plans inside this panel. Never force an
+    // unrelated Practice scene before encrypting and requesting a wallet prompt.
+    const draft=preparedSquadDraft();
     setSubmitStatus('Validating Duel #'+id+' on Sepolia, then encrypting 10 tactics. '+
       'This can take time. Rabby will appear only AFTER encryption and the gas quote pass.');
     const x=await c.submitDuel(id,draft.plans,draft.formation,setSubmitStatus);
@@ -379,7 +495,7 @@ export function mountSquadSepoliaPanel(
       squadPublicResultLink(window.location.href,lastResult.duelId));
   });
   shareResult.disabled=true;
-  const allActions=[connect,seal,shareInvite,open,recover,publicInspect,inspect,submit,resolve,finalize,shareResult];
+  const allActions=[connect,balanced,importPractice,seal,shareInvite,open,recover,publicInspect,inspect,submit,resolve,finalize,shareResult];
   function showResult(proof:SquadResult){
     if(proof.authenticated!==true)throw Error('Unauthenticated result rejected.');
     lastResult=proof;
@@ -402,10 +518,14 @@ export function mountSquadSepoliaPanel(
     seal.hidden=true;
     shareInvite.hidden=true;
   }
-  card.append(heading,caution,identity,walletLabel,walletChoice,connect,status,
-    invited.wrap,invited.input,seal,squad.wrap,squad.input,
-    shareInvite,open,openExplainer,recover,duel.wrap,duel.input,
-    publicInspect,inspect,submit,submitStatus,submitExplainer,resolve,finalize,result,shareResult,watch);
+  const start=[heading,caution,identity,walletLabel,walletChoice,connect,status,
+    invited.wrap,invited.input];
+  const lifecycle=[squad.wrap,squad.input,shareInvite,open,openExplainer,recover,
+    duel.wrap,duel.input,publicInspect,inspect];
+  const completion=[submit,submitStatus,submitExplainer,resolve,finalize,result,shareResult,watch];
+  // Keep the private plan editor adjacent to the action that consumes it.
+  if(isInvitedLink)card.append(...start,seal,...lifecycle,planner,...completion);
+  else card.append(...start,planner,seal,...lifecycle,...completion);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
   const openDialog=()=>{if(busy)return;dialog.hidden=false;setVisibility();close.focus();};
