@@ -127,6 +127,8 @@ function assertConsistent(state){
      state.previousResultHandles.length!==accepted||
      state.previousResultHandles.some((h,i)=>h!==state.history[i].resultHandle))
     throw Error('Protocol match score and proof lineage disagree.');
+  if(state.spentOrderHandles.length!==2*accepted)
+    throw Error('Previous round order commitments are missing or duplicated.');
   const spent=new Set(state.spentOrderHandles);
   if(spent.size!==state.spentOrderHandles.length)
     throw Error('Replayed encrypted order commitment.');
