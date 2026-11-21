@@ -62,7 +62,7 @@ Take command of three distinct fighters, outthink real human opponents with secr
 - Read history from authentic verified receipts/events; **do not seed fictional past opponents or outcomes**.
 - Protect private tactics, wallet addresses and personal data; no speculative rankings without fair repeated matches.
 
-**CURRENT STATUS:** one public Arena finalization is authenticated by [`src/profile/verified-arena-record.mjs`](../src/profile/verified-arena-record.mjs), protected by an immutable approved-deployment registry. A bounded, reorg-aware [`src/profile/approved-event-discovery.mjs`](../src/profile/approved-event-discovery.mjs) indexer was also tested on **seven real Sepolia log pages** and independently linked Duel #1 to its receipt ([CI evidence](https://github.com/Iniwura/Gambit/actions/runs/44924064176)). Discovery candidates are **never counted as wins** without the trusted receipt verifier. **No durable cross-session index, opt-in identity, achievements, progression or player-facing Profile scene yet.**
+**CURRENT STATUS:** one public Arena finalization is authenticated by [`src/profile/verified-arena-record.mjs`](../src/profile/verified-arena-record.mjs), protected by the immutable approved deployment registry. A bounded event indexer and [opt-in history loader](../src/profile/public-history.mjs) now verify public matches for an entered address; [live Sepolia workflow 44927551505](https://github.com/Iniwura/Gambit/actions/runs/44927551505) passed 23/23 tests and found **one authentic defender win** in eight log pages with no signing. The [temporary read-only player-facing greybox](../src/profile/greybox.ts) is implemented and its [desktop/mobile E2E](../tests/profile-greybox-browser-check.mjs) is part of the full suite; final browser acceptance remains pending. **No durable cross-session account history, consented personal identity, achievements, progression or complete Commander Profile yet.**
 
 ## 3. The premium product experience we expect
 
@@ -85,7 +85,7 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 | Latest CI at `2607827264e6acbc55b07952e49b96331351db50` | **Four quality jobs PASS**, rules checks PASS, spectator PASS, GitHub Pages PASS | Tests do not approve art quality, human gameplay or security |
 | Full multi-round confidential Arena, signature GAMBIT intervention, matchmaking and smooth end-to-end UX | **Not yet built / verified** | Requires design, actual implementation and separate live evidence |
 | BLACKSITE | **Playable local training greybox verified desktop/mobile** | Competitive mission/FHE contract not built; proposed scanner not approved; no ranked mission outcomes |
-| Commander Profile, persistent verified history/progression | **Live receipt + bounded candidate discovery verified** | No durable history store, identity/consent, achievements or playable Profile scene |
+| Commander Profile, persistent verified history/progression | **Verified real wallet history backend + functional read-only greybox implemented; browser QA pending** | No durable identity/history store, achievements or full persistent Profile |
 | Premium original sprite art, audio, accessible UX and independent playtesting/security review | **Incomplete / not established** | No 90+/100 or release-ready claim |
 
 ### Real-chain evidence for the completed first duel
