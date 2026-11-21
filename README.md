@@ -2,6 +2,8 @@
 
 **A confidential squad tactics game powered by Zama FHE.**
 
+**Production direction:** [GAMBIT: Sealed Orders — Production Charter](docs/PRODUCTION_CHARTER.md). This is a full-game product standard with explicit acceptance gates; the current public build remains pre-alpha and does not yet satisfy those gates.
+
 **Play the public pre-alpha:** https://iniwura.github.io/Gambit/ — free browser practice, no wallet needed. This is not a verified encrypted multiplayer release.
 
 Program three fighters, choose a hidden deployment and outthink an opponent. The final reactor score is independently verifiable without publishing either squad's encrypted orders.
