@@ -1,12 +1,14 @@
 name: GAMBIT quality gates
 on:
   push:
-    branches: [main, build/verified-first-slice]
+    branches: [main]
     # Documentation does not change compiled game/FHE behaviour. Recording
     # every milestone must not cause repeated 4-job builds or GitHub costs.
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
+  # Draft PRs are build-in-progress. They still require real QA.
+  # Running this on PR rather than feature-branch push avoids duplicate builds.
   pull_request:
     paths-ignore:
       - '**/*.md'
@@ -18,7 +20,6 @@ concurrency:
   cancel-in-progress: true
 jobs:
   reference:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: Deterministic rules
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -33,7 +34,6 @@ jobs:
         run: node --test tests/*.test.mjs
 
   game:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: Phaser install, typecheck and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -71,7 +71,6 @@ jobs:
           retention-days: 7
 
   fhe:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: FHEVM compile (no testnet claims)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -110,7 +109,6 @@ jobs:
           retention-days: 7
 
   browser:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: Browser gameplay — desktop and mobile
     runs-on: ubuntu-latest
     timeout-minutes: 20
