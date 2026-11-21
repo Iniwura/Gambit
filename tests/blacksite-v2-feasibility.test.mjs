@@ -73,6 +73,12 @@ test('actions terminate cleanly at a win or six-action budget, with no fabricate
   });
   assert.equal(success.status,'breached');
   assert.equal(success.candidateCount,1);
+  assert.throws(()=>evaluateV2ResearchAction(code,success.history,{
+    type:'scan',className:'security'
+  }),/already breached/);
+  assert.throws(()=>candidateV2Codes([
+    ...success.history,{type:'scan',className:'transit',count:1}
+  ]),/already breached/);
   let state={status:'active',history:[]};
   for(const guess of [
     [0,0,0,0,0],[0,0,0,0,1],[0,0,0,1,0],
