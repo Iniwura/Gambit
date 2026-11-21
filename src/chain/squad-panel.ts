@@ -467,12 +467,21 @@ export function mountSquadSepoliaPanel(
   submitExplainer.style.cssText='font:12px/1.5 system-ui;color:#aec5da;margin:7px 0 9px';
   const resolve=button('5 · Resolve encrypted match (one transaction)','gambit-squad-resolve',async()=>{
     const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
-    setStatus('Confirm ONE resolution transaction in your wallet. '+
-      'This does not authorize score finalization.');
+    setStatus('Checking live Sepolia state and bounded resolution fee. '+
+      'No signature yet. This is a NEW transaction needing independent wallet approval.');
     const x=await c.resolveDuel(id);
-    setStatus('Duel #'+id+' resolved. Tx: '+x.transactionHash+
-      '. Finalizing the KMS-signed score requires a separate action.');
+    setStatus(x.canonicalStateVerified
+      ?'Duel #'+id+' encrypted resolution confirmed onchain. Tx: '+x.transactionHash+
+        '. Do NOT resolve again. Finalization requires a separate approval.'
+      :'Duel #'+id+' has a successful DuelReady receipt. Tx: '+x.transactionHash+
+        '. Wallet RPC may lag. Do NOT resolve again; inspect the receipt before finalizing.');
   });
+  const resolveExplainer=document.createElement('p');
+  resolveExplainer.id='gambit-squad-resolve-details';
+  resolveExplainer.textContent='A separate explicit wallet approval is required. '+
+    'Maximum transaction fee 500,000,000 Sepolia wei (0.0000000005 ETH). '+
+    'Gas is freshly estimated with a safety buffer. No auto-retries or automatic finalization.';
+  resolveExplainer.style.cssText='font:12px/1.5 system-ui;color:#aec5da;margin:7px 0 9px';
   const finalize=button('6 · Verify KMS score + finalize (one transaction)','gambit-squad-finalize',async()=>{
     const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
     setStatus('Fetching the public KMS proof. Confirm ONE finalization transaction '+
@@ -522,7 +531,7 @@ export function mountSquadSepoliaPanel(
     invited.wrap,invited.input];
   const lifecycle=[squad.wrap,squad.input,shareInvite,open,openExplainer,recover,
     duel.wrap,duel.input,publicInspect,inspect];
-  const completion=[submit,submitStatus,submitExplainer,resolve,finalize,result,shareResult,watch];
+  const completion=[submit,submitStatus,submitExplainer,resolve,resolveExplainer,finalize,result,shareResult,watch];
   // Keep the private plan editor adjacent to the action that consumes it.
   if(isInvitedLink)card.append(...start,seal,...lifecycle,planner,...completion);
   else card.append(...start,planner,seal,...lifecycle,...completion);
