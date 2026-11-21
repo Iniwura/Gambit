@@ -18,7 +18,7 @@ The initial [verified first-round Academy](TRAINING_GUIDED_ROUND_ACCEPTANCE.md) 
 | --- | --- | --- | --- |
 | 1 | Striker opening and conditional response | Current 9-stage guide: choose Striker; FLANK if enemy STRIKE then GUARD; choose FEINT; commit; wait real three-lane result | A guaranteed win |
 | 2 | Scout role as a synergy opportunity | Player actually selects Scout and edits its independent opening/trigger/counter; commits full squad; receives public after-action report | Scout automatically winning, opponent revealing next plans |
-| 3 | Guardian defense and denial | Player actually edits Guardian's tactic; receives verified local round result; observe/publicly explain whether enemy breach bonus was blocked | Invented Guardian block when no block happened |
+| 3 | Guardian defense and denial | Player actually changes Guardian's committed tactic; receives verified local round result; observe/publicly explain whether enemy breach bonus was blocked | Invented Guardian block when no block happened |
 | 4 | Formation as a matchup variable | Player intentionally changes formation from preceding round; commits; sees full three-lane results and genuine score adjustment | Claiming the formation change *caused* a win without counterfactual evidence |
 | 5 | Independent squad control | Player programs all three roles for the final round without tutorial-prescribed values; commits; receives actual round-5 final match debrief and real role performance | Victory requirement, fixed score, fake profile achievement |
 
