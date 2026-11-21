@@ -62,6 +62,12 @@ test('five-round Academy consumes actual local turns and canonical match debrief
   assert.equal(h.coach.step,'complete');
   assert.equal(h.coach.completed,true);
   assert.equal(h.coach.receipts.length,5);
+  assert.ok(Object.isFrozen(h.coach.receipts));
+  assert.ok(Object.isFrozen(h.coach.receipts[4]));
+  assert.ok(Object.isFrozen(h.coach.debrief.stats));
+  assert.ok(h.coach.debrief.stats.every(x=>Object.isFrozen(x)));
+  assert.deepEqual(h.coach.debrief.stats.map(x=>x.role),
+    ['SCOUT','GUARDIAN','STRIKER']);
   assert.equal(h.coach.debrief.scoreline,h.game.scoreA+' : '+h.game.scoreB);
   assert.deepEqual(h.coach.debrief,buildPracticeMatchDebrief(h.game));
   assert.deepEqual(h.coach.receipts.map(r=>r.round),[1,2,3,4,5]);
