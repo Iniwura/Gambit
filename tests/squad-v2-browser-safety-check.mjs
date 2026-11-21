@@ -53,7 +53,14 @@ try{
     .filter({hasText:/Connect and verify Sepolia wallet first/}).waitFor({timeout:6000});
   await noWallet.locator('#gambit-squad-connect').click();
   await noWallet.locator('#gambit-squad-status')
-    .filter({hasText:/browser Ethereum wallet is required/}).waitFor({timeout:10000});
+    .filter({hasText:/No Ethereum wallet found/}).waitFor({timeout:10000});
+  const connectionButton=await noWallet.locator('#gambit-squad-connect').boundingBox();
+  const connectionStatus=await noWallet.locator('#gambit-squad-status').boundingBox();
+  assert.ok(connectionButton&&connectionStatus &&
+    connectionStatus.y>connectionButton.y &&
+    connectionStatus.y-connectionButton.y<130,
+    'wallet connect errors must be immediately visible below the button, not below the panel fold');
+  assert.equal(await noWallet.locator('#gambit-squad-wallet-choice').inputValue(),'');
   assert.equal(await noWallet.locator('#gambit-squad-watch').isDisabled(),true);
   assert.equal(await noWallet.locator('#game-state').getAttribute('data-phase'),'intro');
   assert.deepEqual(errs,[],'negative test must not crash page');
@@ -90,5 +97,52 @@ try{
   assert.deepEqual(mobileErrors,[],'wrong-network refusal must not crash page');
   await wrongNetwork.close();
 
-  console.log('PASS v2 UI gated, inert without deployment settings, no-wallet/wrong-network fail closed');
+  // Multi-wallet regression: the injected global wallet reports MAINNET,
+  // while MetaMask is announced via EIP-6963. The game must select MetaMask,
+  // never whichever extension won the window.ethereum race.
+  const multiWallet=await browser.newPage({viewport:{width:1280,height:820}});
+  await multiWallet.addInitScript(()=>{
+    window.__gambitWalletCalls={global:[],meta:[],sent:false};
+    const globalWallet={request:async({method})=>{
+      window.__gambitWalletCalls.global.push(method);
+      if(method==='eth_chainId')return '0x1';
+      if(method==='eth_sendTransaction'){window.__gambitWalletCalls.sent=true;throw Error('NO_TX');}
+      throw Error('Unexpected legacy wallet method '+method);
+    }};
+    const metaMask={
+      isMetaMask:true,
+      request:async({method})=>{
+        window.__gambitWalletCalls.meta.push(method);
+        if(method==='eth_chainId')return '0xaa36a7';
+        if(method==='eth_requestAccounts'||method==='eth_accounts')
+          return ['0x70d086988706e4f27A53c484570B2a41897dcDD5'];
+        if(method==='eth_getCode')return '0x';
+        if(method==='eth_sendTransaction'){window.__gambitWalletCalls.sent=true;throw Error('NO_TX');}
+        throw Error('Unexpected MetaMask wallet method '+method);
+      }
+    };
+    window.ethereum=globalWallet;
+    window.addEventListener('eip6963:requestProvider',()=>{
+      window.dispatchEvent(new CustomEvent('eip6963:announceProvider',{
+        detail:{info:{uuid:'gambit-metamask-test',name:'MetaMask',rdns:'io.metamask'},provider:metaMask}
+      }));
+    });
+  });
+  const multiErrors=[];multiWallet.on('pageerror',e=>multiErrors.push(e.message));
+  await multiWallet.goto(configured,{waitUntil:'networkidle',timeout:35000});
+  await multiWallet.locator('#gambit-squad-launch').click();
+  await multiWallet.locator('#gambit-squad-wallet-choice')
+    .locator('option',{hasText:'MetaMask'}).waitFor({timeout:6000});
+  assert.equal(await multiWallet.locator('#gambit-squad-wallet-choice option:checked').textContent(),'MetaMask');
+  await multiWallet.locator('#gambit-squad-connect').click();
+  await multiWallet.locator('#gambit-squad-status')
+    .filter({hasText:/runtime fingerprint mismatch/i}).waitFor({timeout:15000});
+  const calls=await multiWallet.evaluate(()=>window.__gambitWalletCalls);
+  assert.ok(calls.meta.includes('eth_chainId'),'the chosen MetaMask provider must be consulted');
+  assert.equal(calls.global.length,0,'legacy global provider must not override chosen MetaMask');
+  assert.equal(calls.sent,false,'failed runtime verification cannot send a transaction');
+  assert.deepEqual(multiErrors,[],'multi-wallet path should not crash the page');
+  await multiWallet.close();
+
+  console.log('PASS v2 UI wallet errors visible, EIP-6963 MetaMask selected; no-wallet/wrong-network blocked without signatures');
 }finally{await browser.close();}
