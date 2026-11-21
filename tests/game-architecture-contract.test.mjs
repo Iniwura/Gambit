@@ -9,7 +9,7 @@ test('master scope retains all four pillars without falsely enabling unfinished 
   assert.deepEqual(PLATFORM_PILLARS,['arena','blacksite','training','profile']);
   const all=gameSceneAvailability();
   assert.deepEqual(new Set(all.map(x=>x.id)),new Set(Object.keys(GAME_SCENES)));
-  for(const id of ['home','training','arena-spectate','arena-wallet-lab']){
+  for(const id of ['home','training','blacksite-training','arena-spectate','arena-wallet-lab']){
     const entry=all.find(x=>x.id===id);
     assert.equal(entry.available,true,id);
   }
@@ -20,7 +20,9 @@ test('master scope retains all four pillars without falsely enabling unfinished 
     assert.match(entry.description,/not|do not/i);
   }
   assert.equal(all.find(x=>x.id==='blacksite-mission').available,false,
-    'headless BLACKSITE research engine is NOT a playable mission');
+    'local training does not enable the missing encrypted mission');
+  assert.equal(all.find(x=>x.id==='blacksite-training').authority,'local-training',
+    'player-facing training must never be labeled encrypted onchain');
 });
 
 test('navigation transitions are immutable, deterministic, bounded and reversible',()=>{
@@ -33,6 +35,12 @@ test('navigation transitions are immutable, deterministic, bounded and reversibl
   assert.deepEqual(training.history,['home']);
   assert.equal(initial.scene,'home','prior snapshot never mutated');
   assert.equal(transitionGameShell(training,{type:'OPEN',scene:'training'}),training);
+  const blacksite=transitionGameShell(training,{
+    type:'OPEN',scene:'blacksite-training'
+  });
+  assert.equal(blacksite.scene,'blacksite-training');
+  assert.deepEqual(blacksite.history,['home','training']);
+  assert.deepEqual(transitionGameShell(blacksite,{type:'BACK'}),training);
   const spectator=transitionGameShell(training,{type:'OPEN',scene:'arena-spectate'});
   assert.equal(spectator.scene,'arena-spectate');
   assert.deepEqual(spectator.history,['home','training']);
@@ -49,7 +57,7 @@ test('unimplemented modes fail closed without mutating the current game',()=>{
     assert.deepEqual(state,createGameShell());
   }
   for(const action of [
-    {type:'OPEN',scene:'blacksite-training'},
+
     {type:'OPEN',scene:'__proto__'},
     {type:'OPEN',scene:'toString'},
     {type:'OPEN',scene:undefined},
