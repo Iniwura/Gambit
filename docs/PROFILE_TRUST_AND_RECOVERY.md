@@ -39,9 +39,13 @@ To resist transient reorganisation mid-verification, it:
 
 **Outstanding:** no durable reorg watcher/canonical-index history store exists yet. A persisted record must be treated as a *candidate only* after restart and freshly verified before ranked display. No UI should label an old cache permanently verified without reconfirmation.
 
-## 4. Trusted public history reader (future protocol)
+## 4. Trusted public history reader (bounded discovery now implemented; persistence still future)
 
-A single verified duel is proven. Building a product history requires a bounded and efficient indexer, not one unrestricted account lookup.
+A single verified duel is proven. **An initial bounded discovery indexer now works:** [`src/profile/approved-event-discovery.mjs`](../src/profile/approved-event-discovery.mjs) reads only the approved contract's `DuelFinalized` logs in capped windows, checks event/block canonical hashes, requires 12 confirmations and verifies cursor identity against the chain head to fail closed on reorganisation. Results are explicitly labeled **UNVERIFIED_CANDIDATES_ONLY** and cannot mint profile wins; each must separately pass `verifyArenaProfileRecord` before being attributed to a player. It does not yet store or revalidate a wallet's full history across sessions.
+
+[Focused unit + live Sepolia workflow](https://github.com/Iniwura/Gambit/actions/runs/44924064176) passed **17/17** tests, scanned seven bounded pages on actual Sepolia, located the unique Duel #1 finalization, checked the matching receipt and confirmed defender one win/challenger one loss, with zero wallet actions. Public RPC provides read-only evidence, not a full independent light-client security guarantee.
+
+Building a production history still requires durable indexing, efficient batch verification, honest partial-history behavior and opt-in account/identity handling.
 
 Planned record identity:
 ```text
@@ -52,7 +56,7 @@ Planned record identity:
 The `DuelFinalized` event indexes duel ID, not the participants. To build a wallet's history, the indexer must discover candidate events from an approved deployment block, then read identities from the canonical contract. Avoid scanning every historical log on every page load.
 
 **Operational requirements before implementation:**
-1. Versioned cursor `{chainId, approvedDeployment, lastScannedBlock, lastScannedHash}` with bounded RPC windows, backoff, rate limits and explicit partial-result/error state.
+1. **Partially implemented:** a versioned cursor with last-scanned block/hash, pinned deployment, bounded max 1,800-block pages (450-block RPC subwindows) and explicit partial/complete status. **Not built:** durable cursor storage, request backoff and production rate-limit/error UX.
 2. Only events from the immutable allowlist and canonical successful receipts count. Verify against live squad/duel statuses.
 3. At least 12 confirmations; do not show recent unconfirmed records as victories.
 4. On startup/resume/reorg, reconcile the cursor and stored block hashes. Roll back orphaned provisional records and revalidate before restoring a player win.
@@ -99,4 +103,4 @@ NO_WALLET_SELECTED
 
 **Exit gate for full Commander Profile:** complete opt-in identity model, robust multi-record indexing and persistent reconciliation with reorg tests, honest empty UI, responsive interaction QA, consent and privacy review, and repeatable verified real matches. The backend authenticity baseline alone does not satisfy that gate.
 
-**Next:** implement a bounded public discovery indexer after architectural review. It will be strictly read-only and may not become an advertised complete Profile merely because one previously proven Duel #1 can be fetched.
+**Next:** implement durable, opt-in indexed history and efficient revalidation on reconnect/reorg, with a functional Profile greybox. Candidate discovery and one real verified record alone **do not** authorize claiming a complete Profile.
