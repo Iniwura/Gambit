@@ -14,6 +14,18 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Phase 2: full five-round Tactical Academy continuation (TRAINING)
+
+**Branch:** build/verified-first-slice, PR #5 remains DRAFT. **Status: IMPLEMENTED, NOT YET FULLY CI/PLAYER VERIFIED.** Pre-art implementation of rounds 2–5 advances the full TRAINING pillar. No contract deployment or wallet signature.
+
+- **New pure continuation controller:** [full-match.mjs](../src/training/full-match.mjs), versioned immutable lesson for real Scout opening/trigger/response (round 2), Guardian opening/trigger/response (round 3), formation change (round 4) and three independent role openings (round 5). Committed plans and formation must match previously observed accepted edits. Actual round number and resolved cumulative score are required; premature irreversible commit fails closed. Duplicate accepted commit during settlement is ignored.
+- **Integrated optional interface:** [coach-ui.ts](../src/training/coach-ui.ts) now presents an explicit CONTINUE FULL MATCH action only after real first-round completion. [Phaser](../src/main.ts) emits accepted local full-squad commit evidence, real scorer bonuses and the canonical finished local match debrief. No tutorial engine simulation, synthetic winner or onchain tactic disclosure.
+- **Added source-level adversarial tests:** [full-match-contract.test.mjs](../tests/training-full-match-contract.test.mjs) using the real existing deterministic practice engine; malformed events, wrong/early commit, forged final winner and duplicate event. [Desktop/mobile E2E](../tests/training-coach-browser-check.mjs) now completes every local round from real keyboard/touch commands and checks final game-over score plus three role breakdowns.
+- **In-process implementation exercise only:** fetched the actual repository engine, squad scorer, match debrief and new reducer, evaluated a genuine five-round local match and saw a real **3 : 6 defeat**, five ordered receipts and matching debrief, with honest graduation. An independent pure-event controller exercise reached all 20 continuation transitions. This is **not** a passed GitHub Actions run nor a browser deployment result.
+- **Quality gate outstanding:** obtain full new 4/4 GitHub Actions verification and real desktop/mobile Chromium proof, then independent novice playtest and focus/accessibility pass. Existing first-round/tablet green run 44935438197 is previous-slice evidence ONLY. Vercel build-rate-limit status does not prove or disprove game integrity.
+
+[Exact acceptance and remaining gates](TRAINING_FULL_MATCH_ACCEPTANCE.md). Still NOT BUILT: competitive confidential BLACKSITE, full encrypted multiplayer Arena, persistent Commander identity/progression, final premium art/audio. **Next functional priority after confirming this QA:** competitive Arena v3 feasibility and multiplayer game loop before visual polish.
+
 ## 2026-11-21 — Tablet navigation reachability QA
 
 - **Found during static responsive review:** GAMBIT now has multiple independently mounted fixed desktop header controls. At widths just over the 700px mobile cutoff, the new Academy button's `right:690px` offset could place it partly off-screen, even though desktop and phone checks were green.
