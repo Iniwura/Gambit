@@ -159,3 +159,47 @@ export function projectArenaV3PublicRoundResult(source){
     scoreA:source.scoreA,scoreB:source.scoreB
   });
 }
+
+
+/**
+ * The ONLY state an independent strategy bot / spectator / public client may
+ * observe between research rounds. Never hand match.history directly to a
+ * policy: research history holds debug lane results and secret GAMBIT roles.
+ *
+ * This is a disclosure projection, not a substitute for onchain proof.
+ */
+export function projectArenaV3PublicMatchState(match){
+  if(!match||match.mode!=='arena-v3-cleartext-research'||
+     !Number.isInteger(match.round)||match.round<0||
+     match.round>ARENA_V3_ROUNDS||
+     typeof match.finished!=='boolean'||
+     match.finished!==(match.round===ARENA_V3_ROUNDS)||
+     !Array.isArray(match.history)||match.history.length!==match.round||
+     !Number.isInteger(match.scoreA)||!Number.isInteger(match.scoreB)||
+     match.scoreA<0||match.scoreB<0||
+     match.scoreA>ARENA_V3_MAX_MATCH_SCORE||
+     match.scoreB>ARENA_V3_MAX_MATCH_SCORE||
+     match.winner!==(match.finished?
+       match.scoreA===match.scoreB?0:match.scoreA>match.scoreB?1:2:null))
+    throw Error('Contradictory Arena v3 match state.');
+  const publicHistory=match.history.map((event,index)=>{
+    if(event.round!==index+1)
+      throw Error('Arena v3 public history is out of sequence.');
+    return projectArenaV3PublicRoundResult(event);
+  });
+  let sumA=0,sumB=0;
+  for(const event of publicHistory){
+    sumA+=event.pointsA;sumB+=event.pointsB;
+    if(sumA!==event.scoreA||sumB!==event.scoreB)
+      throw Error('Arena v3 public match cumulative score mismatch.');
+  }
+  if(sumA!==match.scoreA||sumB!==match.scoreB)
+    throw Error('Arena v3 public match total does not match its history.');
+  return Object.freeze({
+    round:match.round,
+    scoreA:match.scoreA,scoreB:match.scoreB,
+    finished:match.finished,winner:match.winner,
+    nextChargedSector:match.finished?null:chargedSectorForRound(match.round),
+    history:Object.freeze(publicHistory)
+  });
+}
