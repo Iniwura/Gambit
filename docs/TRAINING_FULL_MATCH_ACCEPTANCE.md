@@ -2,7 +2,7 @@
 
 **Phase:** TRAINING · full local match · **21 November 2026**
 **Branch:** build/verified-first-slice · **PR:** #5 (DRAFT)
-**Status:** IMPLEMENTED; browser CI and independent player acceptance must be confirmed before marking VERIFIED.
+**Status:** VERIFIED four quality jobs and real desktop/mobile five-round Academy browser journeys in [run 44938866411](https://github.com/Iniwura/Gambit/actions/runs/44938866411). Independent novice/human acceptance remains pending.
 
 ## Evidence chain (must stay in order)
 
@@ -36,7 +36,7 @@
 
 **Verified in-process (not a CI release claim):** Fetched repository rules and reducer were exercised together. The genuine seeded five-round local simulator ended **3 : 10 (defeat)** with five receipts, matching canonical role debrief, and correct course graduation. A separate pure-event simulation reached the same final state transitions.
 
-**Implemented but requires CI/browser confirmation:** New focused Node tests and desktop/mobile Playwright journeys. Existing first-round Academy and tablet checks had previously passed under [quality run 44935438197](https://github.com/Iniwura/Gambit/actions/runs/44935438197), but this older run does **not** prove the new five-round changes. Do not claim fresh 4/4 green until the new run is confirmed.
+**Verified 4/4 full quality gates [run 44938866411](https://github.com/Iniwura/Gambit/actions/runs/44938866411):** deterministic tests, Phaser/TypeScript build, FHE compilation and desktop/mobile Playwright. Each real five-round journey resolved 15 lanes, finished with a **3 : 10 local defeat**, showed canonical role debrief and reported zero page errors or wallet actions. Tablet 710px/820px native hit-tests also passed. Previous [failed run 44938061007](https://github.com/Iniwura/Gambit/actions/runs/44938061007) and [diagnostic run 44938383394](https://github.com/Iniwura/Gambit/actions/runs/44938383394) exposed the missing native Continue click; stable DOM placement and event delegation fixed it. This does not measure uncoached human understanding or prove onchain multiplayer.
 
 **Still outstanding:** Measured newcomer usability, accessibility audit of the complete five-round lesson, persistent profile progression, full competitive BLACKSITE, encrypted multi-round Arena and original artwork/audio.
 
