@@ -29,6 +29,7 @@ export type SquadResult={
   squadId:bigint;duelId:bigint;pointsChallenger:number;pointsDefender:number;
   outcome:0|1|2;authenticated:true;evidence:'contract-state'|'transaction';
   explorerUrl:string;resolutionTx:string;finalizationTx:string;
+  maximumQuotedFeeWei?:bigint;canonicalStateVerified?:boolean;
 };
 const CHAIN_ID=11155111n;
 const LEGACY=getAddress('0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0');
