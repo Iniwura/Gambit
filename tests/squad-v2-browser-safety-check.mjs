@@ -83,6 +83,9 @@ try{
     'challenger must not see an orphan owner-only field label');
   assert.match(await invitePage.locator('#gambit-squad-open-details').textContent(),
     /200,000,000 Sepolia wei/);
+  assert.match(await invitePage.locator('#gambit-squad-submit-details').textContent(),
+    /500,000,000 Sepolia wei/,
+    'readiness view must disclose the independent per-submission fee cap');
   assert.match(await invitePage.locator('#gambit-squad-open').textContent(),/Open invited squad/);
   await invitePage.locator('#gambit-squad-open').click();
   await invitePage.locator('#gambit-squad-status')
