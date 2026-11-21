@@ -4,6 +4,8 @@ Last revised: 2026-11-21.
 Product: GAMBIT: Sealed Orders — a full, persistent competitive game built with Zama FHE.
 This document defines quality gates independent of any hackathon deadline.
 
+**Full product scope and phase roadmap:** [GAMBIT Master Scope](GAMBIT_MASTER_SCOPE.md). This charter defines production acceptance gates; the master scope records the entire four-pillar vision and current implementation status.
+
 ## Product promise
 
 **Play as a commander, outthink another human, keep your orders secret, and trust the result.**
