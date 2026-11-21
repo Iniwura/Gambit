@@ -2,7 +2,15 @@ name: GAMBIT quality gates
 on:
   push:
     branches: [main, build/verified-first-slice]
+    # Documentation does not change compiled game/FHE behaviour. Recording
+    # every milestone must not cause repeated 4-job builds or GitHub costs.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
 permissions:
   contents: read
 concurrency:
