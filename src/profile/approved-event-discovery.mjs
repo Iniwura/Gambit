@@ -97,8 +97,12 @@ export async function discoverApprovedFinalizedDuels(provider,options={}){
     requireValid(!seen.has(event.duelId),'duplicate duel ID in discovery');
     seen.add(event.duelId);
   }
-  list.sort((a,b)=>a.blockNumber-b.blockNumber||
-    BigInt(a.duelId)<BigInt(b.duelId)?-1:BigInt(a.duelId)>BigInt(b.duelId)?1:0);
+  list.sort((a,b)=>{
+    const byBlock=a.blockNumber-b.blockNumber;
+    if(byBlock!==0)return byBlock;
+    const lhs=BigInt(a.duelId),rhs=BigInt(b.duelId);
+    return lhs<rhs?-1:lhs>rhs?1:0;
+  });
   const checkpointBlock=to>=from?to:cursor?.lastBlock??null;
   let nextCursor=cursor;
   if(checkpointBlock!==null&&to>=from){
