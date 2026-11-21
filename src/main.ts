@@ -676,6 +676,7 @@ class GambitArena extends Phaser.Scene {
        !/^https:\/\/sepolia\.etherscan\.io\/(tx|address)\/0x[0-9a-fA-F]+$/.test(receipt.explorerUrl))return;
     if(this.watchingVerifiedDuel)return;
     this.watchingVerifiedDuel=true;
+    emitLocalPractice({type:'onchain'}); // A local-only tutorial cannot follow FHE result playback.
     this.active=false;
     this.busy=true;
     this.lastDebrief=null;
@@ -731,6 +732,7 @@ class GambitArena extends Phaser.Scene {
        !/^https:\/\/sepolia\.etherscan\.io\/(tx|address)\/0x[0-9a-fA-F]+$/.test(receipt.explorerUrl))return;
     if(this.watchingVerifiedDuel)return;
     this.watchingVerifiedDuel=true;
+    emitLocalPractice({type:'onchain'}); // A local-only tutorial cannot follow FHE result playback.
     this.active=false;
     this.busy=true;
     this.lastDebrief=null;
