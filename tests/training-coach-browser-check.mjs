@@ -94,13 +94,21 @@ async function scenario(viewport,label){
     }));
     // Continue the SAME five-round Phaser game. The mentor cannot settle a
     // round itself; every score and final profile comes from the real engine.
-    await page.locator('#gambit-training-continue').click();
+    // Native pointer interaction is mandatory. A synthetic dispatch would
+    // hide broken responsive layout or a detached/replaced button.
+    const continueButton=page.locator('#gambit-training-continue');
+    await continueButton.evaluate(button=>{
+      button.addEventListener('click',()=>{document.body.dataset.trainingQaClicked='yes'}, {once:true});
+    });
+    await continueButton.click();
+    const nativeClick=await page.locator('body').getAttribute('data-training-qa-clicked');
     const handoff=await panel.getAttribute('data-guide-handoff');
     const afterHandoff=await panel.getAttribute('data-guide-step');
     assert.equal(afterHandoff,'r2-role',
       'continue handoff='+handoff+
       ' phase='+(await page.locator('#game-state').getAttribute('data-phase'))+
       ' round='+(await page.locator('#game-state').getAttribute('data-round'))+
+      ' nativeClick='+nativeClick+
       ' hint='+(await page.locator('#gambit-training-device-hint').textContent())+
       ' pageErrors='+exceptions.join(' | '));
     async function step(id){
