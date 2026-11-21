@@ -1,7 +1,7 @@
 # GAMBIT Training — Real First-Round Academy Acceptance
 
 **Milestone:** Phase 2 first guided local practice encounter, 21 November 2026.  
-**Status:** code integrated, domain/browser acceptance pending.  
+**Status: VERIFIED functional first-round training greybox** — [full quality run 44934706796](https://github.com/Iniwura/Gambit/actions/runs/44934706796) completed 4/4 jobs successfully; 182/182 deterministic tests passed, including real complete desktop and mobile Academy gameplay.  
 **Order of work:** architecture and rules → real responsive interaction → adversarial/browser QA → premium audiovisual production.
 
 ## Actual gameplay, not a tour of disconnected mock cards
@@ -42,6 +42,12 @@ The authoritative engine still resolves the bot match according to the user's fu
 1. `node --test tests/training-coach-contract.test.mjs` passes immutable progression, wrong-plan, wrong-round, reset and forged-event cases.
 2. `node tests/training-coach-browser-check.mjs` passes at both screen sizes, demonstrating real STRIKER, actual conditional input, FEINT, commit, resolved match score and no uncaught browser errors.
 3. Existing Arena, BLACKSITE, Commander Profile, signed-wallet safety and FHE compilation regressions still pass in the same [full four-job quality gate](https://github.com/Iniwura/Gambit/actions/workflows/validate.yml). Retain failed attempts in [the permanent build log](BUILD_LOG.md).
+
+## Actual verified run
+
+[GitHub Actions run 44934706796](https://github.com/Iniwura/Gambit/actions/runs/44934706796) shows real **1280×850 desktop** and **390×844 mobile** Chromium journeys. Each executed the nine sequential accepted actions against actual Phaser local practice, committed STRIKER `FLANK / if STRIKE / then GUARD` with FEINT, waited for match round 1 to settle, and read the true **2 : 1** public score. Both reported no skipped steps, scripted wins, wallet actions, lost Arena state or uncaught browser errors. The full suite passed deterministic rules, Phaser/typecheck/build, FHE mock compile/tests and desktop/mobile browser checks.
+
+**Proof boundary:** this establishes functional deterministic/local tutorial behavior and preserved regression gates, not full curriculum quality, human newcomer comprehension or Zama onchain multiplayer.
 
 ## Still not built
 
