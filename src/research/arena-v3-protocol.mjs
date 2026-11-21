@@ -50,7 +50,7 @@ const clone=t=>({
  * A public "match ID" in this simulator is only a human-legible identifier,
  * not a cryptographic chain domain separator or a deployed contract address.
  */
-export function newArenaProtocolResearchMatch(matchId,playerA,playerB,startedAt=0n){
+export function newArenaProtocolResearchMatch(matchId,playerA,playerB,startedAt){
   if(typeof matchId!=='string'||matchId.length<4||
      matchId.length>100||!/^[a-zA-Z0-9:-]+$/.test(matchId))
     throw Error('Invalid research match ID.');
