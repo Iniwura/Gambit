@@ -86,6 +86,25 @@ try{
   assert.match(await invitePage.locator('#gambit-squad-submit-details').textContent(),
     /500,000,000 Sepolia wei/,
     'readiness view must disclose the independent per-submission fee cap');
+  // Reproduce the real user's failure: the game starts in Intro, yet an
+  // invited challenger must configure a private squad without entering Practice.
+  assert.equal(await invitePage.locator('#game-state').getAttribute('data-phase'),'intro');
+  assert.equal(await invitePage.locator('#gambit-squad-planner').isVisible(),true);
+  assert.equal(await invitePage.locator('#gambit-squad-planner select').count(),10,
+    'three independently controlled conditional plans plus formation');
+  assert.equal(await invitePage.locator('#gambit-plan-scout-base').inputValue(),'',
+    'do not silently use unreviewed default inputs before selection');
+  assert.match(await invitePage.locator('#gambit-squad-plan-status').textContent(),
+    /Choose all 10 tactics/);
+  await invitePage.locator('#gambit-squad-balanced').click();
+  assert.equal(await invitePage.locator('#gambit-plan-scout-base').inputValue(),'2');
+  assert.equal(await invitePage.locator('#gambit-plan-guardian-base').inputValue(),'1');
+  assert.equal(await invitePage.locator('#gambit-plan-striker-base').inputValue(),'0');
+  assert.equal(await invitePage.locator('#gambit-plan-formation').inputValue(),'0');
+  assert.match(await invitePage.locator('#gambit-squad-plan-status').textContent(),
+    /Ready: three private fighter plans/);
+  assert.equal(await invitePage.locator('#game-state').getAttribute('data-phase'),'intro',
+    'configuring private online tactics must not start the local practice scene');
   assert.match(await invitePage.locator('#gambit-squad-open').textContent(),/Open invited squad/);
   await invitePage.locator('#gambit-squad-open').click();
   await invitePage.locator('#gambit-squad-status')
