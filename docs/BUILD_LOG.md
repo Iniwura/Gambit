@@ -14,6 +14,17 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-22 — Versioned pinned-runtime Arena v3 public-state recovery adapter (architecture)
+
+**Status: VERIFIED 4/4 full CI source-level research, NOT verified against a live v3 deployment.** [GitHub run 44962888818](https://github.com/Iniwura/Gambit/actions/runs/44962888818) passed **212/212 Node tests**, 25/25 existing Hardhat FHE mock tests, Phaser/typecheck and the whole desktop/mobile/tablet browser regression. [Exact read-only acceptance](ARENA_V3_PUBLIC_READER_ACCEPTANCE.md).
+
+- [New strict read-only reader](../src/arena/public-match-reader.mjs): requires explicit externally approved `ArenaV3Research` chain/address/runtime hash manifest (no bundled default contract address). Checks Sepolia chain ID, keccak256 of nonempty contract code, and all round/status calls at **one blockTag**, then verifies the same block hash at the end.
+- **Fail closed:** rejects impossible identities, missing historic finality, unauthorized score before KMS proof, contradictory abandoned/complete status, impossible 0..7 scores, incorrect cumulative arithmetic, bad 24-hour round window, changed runtime and reorged blocks. Only a genuinely 5/5 finalized canonical contract state could produce a public winner; expired/abandoned match status is **UNSCORED**, never a free victory. One accepted result handle is available only after resolution for future proof recovery.
+- **Test evidence:** [new adversarial fixture tests](../tests/arena-v3-public-reader.test.mjs) cover all public stages, wrong network, code-hash mismatch, changed block, abort and no signer/transaction. **212/212** Node checks; full browser suite reverified playable two-person local Hotseat on desktop/mobile (five real rounds, **3 : 17** final score), Academy, BLACKSITE, Commander public viewer, both tablet widths and v2 wallet error handling. **No v3 live chain read was attempted** because no approved v3 deployment exists.
+- **Trust boundary:** a caller-provided manifest and single RPC are not independent deployment authentication or light-client finality. The reader returns an explicit research trust-boundary label, not a production `verified=true` achievement. No private order, wallet access, onchain write, signature or hidden sector was processed.
+
+**Next milestone:** read-only-to-wallet intent policy with fresh-state rebinding, explicit per-transaction user consent, fee cap and human approval. Then live v3 HCU/depth and fair two-wallet gameplay feasibility **only with new deployment/transaction authorization**. PR #5 remains DRAFT; full four-pillar functional vision and frozen graphics unchanged.
+
 ## 2026-11-22 — Verified two-commander five-round Arena LOCAL HOTSEAT (functional gameplay)
 
 **Status: VERIFIED 4/4 quality jobs, including actual desktop/mobile/tablet two-human-input greybox acceptance.** [GitHub run 44962022483](https://github.com/Iniwura/Gambit/actions/runs/44962022483). **This is NOT remotely connected or encrypted multiplayer.** [Exact acceptance](ARENA_V3_HOTSEAT_ACCEPTANCE.md). Branch `build/verified-first-slice`; PR #5 remains DRAFT.
