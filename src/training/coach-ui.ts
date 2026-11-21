@@ -11,6 +11,7 @@ import {
 type CoachState=ReturnType<typeof createTrainingCoach>;
 type PracticeEvent={
   type:string,phase?:string,role?:number,field?:string,index?:number,
+  formation?:number,striker?:{base:number,trigger:number,response:number},
   round?:number,lanes?:number,scoreline?:string
 };
 function get<T extends HTMLElement>(root:ParentNode,id:string):T{
@@ -144,8 +145,13 @@ export function mountTrainingCoach():void{
     if(!detail)return;
     if(detail.type==='onchain'){close();return;}
     try{
+      const prior=state;
       state=advanceTrainingCoach(state,detail);
       render();
+      if(prior===state&&prior.step==='commit'&&detail.type==='commit'){
+        get<HTMLElement>(panel,'gambit-training-device-hint').textContent=
+          'The committed round differed from the taught plan. Next round, select STRIKER: FLANK / IF STRIKE / GUARD, then FEINT, and lock again.';
+      }
     }catch(error){
       // Never rewrite the game state, pretend the lesson advanced or reveal
       // private actions when a malformed event reaches this observer.
