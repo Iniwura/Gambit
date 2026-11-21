@@ -36,14 +36,14 @@ Take command of three distinct fighters, outthink real human opponents with secr
 
 ### B. BLACKSITE — confidential missions and codebreaking
 
-**Planned expanded game mode — NOT built or FHE-validated.** This is a separate long-term product experience, not proof contained in the existing `SquadGambit` deployment.
+**Planned player-facing mode — NOT built or FHE-validated.** The local four-symbol deduction reference and headless mission lifecycle exist, but this is a separate experience from the deployed `SquadGambit` contract.
 
 - Tactical infiltration into a sci-fi security facility, limited information and hard choices.
 - Confidential decisions, clues, vault-code/codebreaking mechanics and meaningful tradeoffs; puzzle solutions and hidden data should not be exposed before the rules permit.
 - Original mission environments, progression, tension, clear win/lose conditions and rewarding replay.
 - Design the exact secrecy/fairness model, interaction loop, verification mechanism, privacy boundaries, HCU budget and anti-bruteforce limits **before** implementing or describing a playable encrypted mission.
 
-**CURRENT STATUS:** product concept only. No BLACKSITE game mechanics, mission content, FHE contract, playable mission or real receipt has been verified.
+**CURRENT STATUS:** tested local cipher/deduction engine plus headless briefing → active → breached/locked → debrief/retry controller in [`src/blacksite/mission.mjs`](../src/blacksite/mission.mjs). All 256 code outcomes tested. **No playable Phaser mission scene, mission content, real FHE contract or encrypted receipt.**
 
 ### C. TRAINING — serious game onboarding and tactical mastery
 
@@ -62,7 +62,7 @@ Take command of three distinct fighters, outthink real human opponents with secr
 - Read history from authentic verified receipts/events; **do not seed fictional past opponents or outcomes**.
 - Protect private tactics, wallet addresses and personal data; no speculative rankings without fair repeated matches.
 
-**CURRENT STATUS:** one publicly verifiable match and a wallet-free result viewer; no complete persistent profile, trustworthy cross-match history, achievement system, progression or player dashboard.
+**CURRENT STATUS:** one public Arena finalization has been independently transformed into an authenticated read-only Profile record using [`src/profile/verified-arena-record.mjs`](../src/profile/verified-arena-record.mjs) and [live Sepolia evidence](https://github.com/Iniwura/Gambit/actions/runs/44921548615). **No persistent cross-match index, opt-in identity, achievements, progression or player-facing Profile scene yet.**
 
 ## 3. The premium product experience we expect
 
@@ -84,8 +84,8 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 | No-wallet spectator / first-screen proof shortcut and result view | **Built and Chromium-tested** | Judge-friendly evidence route; not full Create/Join product |
 | Latest CI at `2607827264e6acbc55b07952e49b96331351db50` | **Four quality jobs PASS**, rules checks PASS, spectator PASS, GitHub Pages PASS | Tests do not approve art quality, human gameplay or security |
 | Full multi-round confidential Arena, signature GAMBIT intervention, matchmaking and smooth end-to-end UX | **Not yet built / verified** | Requires design, actual implementation and separate live evidence |
-| BLACKSITE | **Not built** | Concept, distinct mode |
-| Commander Profile, persistent verified history/progression | **Not built** | One match is not a complete system |
+| BLACKSITE | **Headless LOCAL mission controller tested** | No playable scene, confidential contract, missions or real encrypted receipts |
+| Commander Profile, persistent verified history/progression | **One live receipt-backed evidence record verified** | No persistent index, identity/consent, achievements or playable Profile scene |
 | Premium original sprite art, audio, accessible UX and independent playtesting/security review | **Incomplete / not established** | No 90+/100 or release-ready claim |
 
 ### Real-chain evidence for the completed first duel
