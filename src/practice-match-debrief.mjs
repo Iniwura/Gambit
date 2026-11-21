@@ -7,7 +7,7 @@ import {SQUAD_ROLES} from './squad.mjs';
 
 export function buildPracticeMatchDebrief(match){
   if(!match||match.mode!=='local-squad'||!match.finished||
-     !Number.isInteger(match.round)||match.round<1||match.round>5||
+     !Number.isInteger(match.round)||match.round!==5||
      !Array.isArray(match.history)||match.history.length!==match.round||
      !Number.isInteger(match.scoreA)||!Number.isInteger(match.scoreB)||
      match.scoreA<0||match.scoreB<0||
