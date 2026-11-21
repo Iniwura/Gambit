@@ -75,6 +75,10 @@ export function advanceFullMatchCoach(s,e){
   if(s.missed||s.completed)return s;
   const id=s.step;
   const target=Number(id.slice(1,2));
+  // A browser or event bridge may deliver the SAME accepted commit twice.
+  // While awaiting its actual settlement, ignore duplicates; never revoke
+  // already valid learning evidence or count an extra round.
+  if(e.type==='commit'&&e.round===s.committedRound&&id==='r'+target+'-settle')return s;
   if(e.type==='commit'&&e.round===target&&id!=='r'+target+'-commit')
     return miss(s,'This round was committed before its required real inputs. Finish the match and start a fresh Academy.');
   if(id==='r2-role'||id==='r3-role'){
