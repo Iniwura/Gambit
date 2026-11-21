@@ -19,6 +19,16 @@
 
 When asked to "continue," **do not substitute another design/README/onboarding tweak for the current architecture or functionality gate**. Refer to [the master scope](docs/GAMBIT_MASTER_SCOPE.md) and report the real unfinished system before choosing work. Avoid cosmetic-first distractions.
 
+## Mandatory GitHub progress record — owner instruction
+
+After EVERY substantial architecture, gameplay, test or integration milestone, update **[docs/BUILD_LOG.md](docs/BUILD_LOG.md)** on this same branch before closing the work session.
+
+- Append a dated entry with exact changes, affected pillar/phase, commit(s), reproducible CI and onchain references, what is NOT yet built, honest blockers and the next highest-priority action.
+- If CI fails, document the failure and its correction; do not erase failures, fabricate passing evidence or treat a pending workflow as green.
+- Keep **[docs/STATUS.md](docs/STATUS.md)** for canonical deployed/engineering evidence and **[docs/GAMBIT_MASTER_SCOPE.md](docs/GAMBIT_MASTER_SCOPE.md)** for product scope. The build log is the chronological handoff that prevents lost context.
+- Update the active PR description when a meaningful milestone is verified.
+- Do not start final graphics or sound while architecture, working greybox and functional/responsive acceptance gates remain incomplete.
+
 ## Studio workflow for every feature
 1. Define player story, acceptance criteria, failure cases, and verification evidence.
 2. Implement smallest complete end-to-end change; update types, state transitions, UI, and logs together.
