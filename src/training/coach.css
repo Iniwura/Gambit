@@ -50,6 +50,11 @@
   display:block;margin-top:15px;padding-top:12px;
   color:#a8c5da;border-top:1px solid #426783;font:500 10px/1.5 Inter,system-ui,sans-serif
 }
+/* Three other desktop launchers already share the 701–950px header.
+   Move Academy to a second row rather than clipping it off-screen. */
+@media(min-width:701px) and (max-width:950px){
+  #gambit-training-open{top:55px;right:12px;max-width:250px}
+}
 @media(max-width:700px){
   #gambit-training-open{display:none!important}
   #gambit-mobile-deck button#gambit-training-mobile-open{
