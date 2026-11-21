@@ -29,6 +29,27 @@ Without the explicit opt-in environment flag, this last command reads chain ID, 
 
 A genuine seal fee estimate is only available after the official SDK creates the exact ten encrypted inputs and gas estimation succeeds; the existing 0.0005 Sepolia ETH hard ceiling is **not a live quote or a spending authorization**.
 
+## New: unsigned exact-input quote, no wallet or balance check
+
+To obtain a **read-only, real-encrypted-input** `sealSquad` fee estimate before requesting transaction approval, use the separate `quote:squad:sepolia` script. In the original GAMBIT workspace, with Node 22+ and the `fhe` dependencies installed:
+
+```bash
+cd fhe
+GAMBIT_SQUAD_CHALLENGER_ADDRESS=0xYOUR_DISTINCT_CHALLENGER_ADDRESS npm run quote:squad:sepolia
+```
+
+For PowerShell, set the equivalent environment variable in that terminal:
+
+```powershell
+cd fhe
+$env:GAMBIT_SQUAD_CHALLENGER_ADDRESS = '0xYOUR_DISTINCT_CHALLENGER_ADDRESS'
+npm run quote:squad:sepolia
+```
+
+The script uses an ethers `VoidSigner`, not the local mnemonic or wallet key. It checks the Sepolia chain ID and pinned v2 runtime, encrypts ten **known synthetic** values via the public Zama SDK, estimates `sealSquad` using a public `from` account, and reports gas plus a fresh indicative maximum fee and next squad ID. **It does not call `getBalance`, sign, send or save raw input proofs**. The user can fund their wallets independently. A quote can still fail if the RPC/relayer is unavailable.
+
+**Important:** The output is *not* an authorization to spend. Real signing necessarily generates fresh ciphertexts, re-estimates gas, checks sufficient balance locally and enforces the separately approved maximum fee. The script hard ceiling is 0.0005 Sepolia ETH but a smaller fee cap must be explicitly approved based on the fresh quote. If chain state changes or the estimated maximum exceeds the permitted cap, stop and request another quote. Do not set `GAMBIT_APPROVE_ONE_SQUAD_SEAL` during the quote stage.
+
 ## One bounded v2 signing attempt
 
 Only with an owner-controlled, distinct real challenger public wallet address and the checked **exact next squad ID**:
