@@ -191,7 +191,7 @@ export function mountBlacksiteGreybox():void{
     const history=control<HTMLOListElement>(backdrop,'gambit-blacksite-history');
     const empty=section('empty');
     empty.hidden=current.history.length!==0;
-    history.replaceChildren(...current.history.map(event=>
+    history.replaceChildren(...current.history.map((event:{round:number,guess:number[],exact:number,misplaced:number})=>
       makeParagraph('Attempt '+event.round+' · '+event.guess.join(' ')+' · '+
         event.exact+' EXACT · '+event.misplaced+' MISPLACED')));
     // Never render mission.secret or any hidden code; the public mission
