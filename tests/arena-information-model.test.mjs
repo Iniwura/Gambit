@@ -74,3 +74,30 @@ test('aggregate-only FHE output has a measurable but bounded information channel
     repeatedQuerySafetyProven:false
   }));
 });
+
+test('arena currently has only THREE distinct relative formations, not nine independent sector environments',()=>{
+  // Source-of-truth audit: moving BOTH squads together around an identical
+  // three-sector map must not change any aggregate result. This is a genuine
+  // design limit, not a regression to "fix" with misleading artwork.
+  const trios=[];
+  for(let shift=0;shift<27;shift++)
+    trios.push([
+      configured[shift],
+      configured[(shift+9)%configured.length],
+      configured[(shift+17)%configured.length]
+    ]);
+  for(const left of trios)for(const right of trios)
+    for(let af=0;af<3;af++)for(let bf=0;bf<3;bf++){
+      const original=resolvePositionedSquadTurn(left,right,af,bf);
+      for(let sharedRotation=1;sharedRotation<3;sharedRotation++){
+        const rotated=resolvePositionedSquadTurn(left,right,
+          (af+sharedRotation)%3,(bf+sharedRotation)%3);
+        assert.equal(rotated.pointsA,original.pointsA,
+          'shared formation rotation must preserve the current sector-invariant score');
+        assert.equal(rotated.pointsB,original.pointsB);
+      }
+    }
+  // Implication: positions differ as role matchups, but there is no unique
+  // left/center/right sector objective. A production sector-stakes layer is
+  // a candidate v3 design, not a feature of deployed SquadGambit v2.
+});
