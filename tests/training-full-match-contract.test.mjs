@@ -42,8 +42,8 @@ test('five-round Academy consumes actual local turns and canonical match debrief
   h.settle(turn);
   assert.equal(h.coach.step,'r3-role');
   t({type:'role',role:1});
-  h.plans[1]={base:1,trigger:2,response:0};
-  for(const [field,index] of [['base',1],['trigger',2],['response',0]])
+  h.plans[1]={base:0,trigger:0,response:2};
+  for(const [field,index] of [['base',0],['trigger',0],['response',2]])
     t({type:'choose',role:1,field,index});
   turn=h.commit(2);h.settle(turn);
   assert.equal(h.coach.step,'r4-formation');
@@ -140,8 +140,8 @@ test('final graduation rejects a fake or inconsistent game-over debrief',()=>{
     t({type:'choose',role:0,field,index});
   let turn=h.commit(2);h.settle(turn);
   t({type:'role',role:1});
-  h.plans[1]={base:1,trigger:2,response:0};
-  for(const [field,index] of [['base',1],['trigger',2],['response',0]])
+  h.plans[1]={base:0,trigger:0,response:2};
+  for(const [field,index] of [['base',0],['trigger',0],['response',2]])
     t({type:'choose',role:1,field,index});
   turn=h.commit(2);h.settle(turn);
   t({type:'formation',index:0});
