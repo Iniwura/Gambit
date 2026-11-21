@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "check:squad:live:readonly": "node scripts/verify-squad-readonly.mjs",
     "build:contract-artifact": "npm --prefix fhe install --no-audit --no-fund && npm --prefix fhe run compile && node scripts/check-squad-client.mjs && node scripts/export-contract.mjs",
-    "check:seal:live:readonly": "node scripts/verify-first-squad-seal-readonly.mjs"
+    "check:seal:live:readonly": "node scripts/verify-first-squad-seal-readonly.mjs",
+    "quote:duel:open:readonly": "node scripts/quote-first-duel-open-readonly.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1",
