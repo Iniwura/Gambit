@@ -221,13 +221,32 @@ export function mountSquadSepoliaPanel(
     if(isInvitedLink){
       const id=positiveId(squad.input.value,'Invited squad ID');
       const state=await next.readSquad(id);
-      if(!state.active||state.claimed)
-        setStatus('Wallet and contract verified. This invitation is no longer available; no transaction sent.');
-      else if(state.allowedOpponent.toLowerCase()!==next.userAddress.toLowerCase())
+      if(state.allowedOpponent.toLowerCase()!==next.userAddress.toLowerCase()){
         setStatus('Wallet and contract verified, but this wallet is not the invited challenger. No transaction sent.');
-      else
+      }else if(state.claimed){
+        // A consumed one-use invite may have been opened just before a
+        // stale wallet RPC produced a false "recovery mismatch". Recover
+        // the canonical duel via a READ-ONLY call; never prompt to reopen.
+        try{
+          const recovered=await next.recoverDuelId(id);
+          if(recovered===null)
+            setStatus('Squad #'+id+' is already claimed. The RPC may be behind. '+
+              'Do not open again; inspect the opening transaction and recover the duel ID.');
+          else{
+            duel.input.value=String(recovered);
+            setStatus('Duel #'+recovered+' was already opened onchain for Squad #'+id+
+              '. Do NOT open again. You can prepare encrypted plans; submitting requires a separate approval.');
+          }
+        }catch{
+          setStatus('Squad #'+id+' is already claimed. Read-only recovery is temporarily inconsistent. '+
+            'Do not open again; check the transaction receipt before any further action.');
+        }
+      }else if(!state.active){
+        setStatus('Squad #'+id+' is inactive. No transaction sent.');
+      }else{
         setStatus('Verified: this wallet is invited to Squad #'+id+'. '+
           'Opening consumes the invitation and starts a 24-hour submission deadline. No transaction sent.');
+      }
     }else{
       setStatus('Wallet connected and SquadGambit contract fingerprint verified. No transaction sent.');
     }
@@ -256,8 +275,11 @@ export function mountSquadSepoliaPanel(
       'Your wallet must separately approve this Sepolia transaction.');
     const x=await c.openDuel(s);
     duel.input.value=String(x.duelId);
-    setStatus('Duel #'+x.duelId+' opened by invited wallet. Tx: '+x.transactionHash+
-      '. Submit encrypted plans within 24 hours; no other transaction was initiated.');
+    setStatus(x.canonicalStateVerified
+      ?'Duel #'+x.duelId+' confirmed onchain. Tx: '+x.transactionHash+
+        '. Prepare and separately authorize encrypted submission within 24 hours. DO NOT reopen.'
+      :'Duel #'+x.duelId+' has a successful receipt and authenticated DuelOpened event. Tx: '+
+        x.transactionHash+'. Wallet RPC state is lagging: DO NOT retry. Use read-only recovery or inspect Etherscan.');
   });
   const openExplainer=document.createElement('p');
   openExplainer.id='gambit-squad-open-details';
