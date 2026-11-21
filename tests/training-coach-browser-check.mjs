@@ -95,7 +95,14 @@ async function scenario(viewport,label){
     // Continue the SAME five-round Phaser game. The mentor cannot settle a
     // round itself; every score and final profile comes from the real engine.
     await page.locator('#gambit-training-continue').click();
-    assert.equal(await panel.getAttribute('data-guide-step'),'r2-role');
+    const handoff=await panel.getAttribute('data-guide-handoff');
+    const afterHandoff=await panel.getAttribute('data-guide-step');
+    assert.equal(afterHandoff,'r2-role',
+      'continue handoff='+handoff+
+      ' phase='+(await page.locator('#game-state').getAttribute('data-phase'))+
+      ' round='+(await page.locator('#game-state').getAttribute('data-round'))+
+      ' hint='+(await page.locator('#gambit-training-device-hint').textContent())+
+      ' pageErrors='+exceptions.join(' | '));
     async function step(id){
       await page.locator('#gambit-training-panel[data-guide-step="'+id+'"]')
         .waitFor({timeout:12000});
