@@ -14,6 +14,13 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Engineering hygiene: predictable, cost-conscious CI
+
+- **Implemented:** `.github/workflows/validate.yml` and `.github/workflows/rules.yml` now ignore **documentation-only** pushes/PRs. Recording mandated GitHub progress must not rebuild browser/FHE workspaces on every Markdown edit.
+- `rules.yml` now supersedes stale runs with per-ref concurrency; the expensive quality suite already had per-ref concurrency and retains its full source-code, browser and FHE validation on real code changes. The live read-only proof workflows remain independently configured.
+- This change addresses the burst of cancelled heavyweight runs caused by sequential documentation commits. **Workflow trigger changes themselves are code/CI changes and still trigger checks.** Verify the latest source-commit run before claiming a fully green build.
+- **Next:** keep future milestones batched where possible, only report final CI after completion, and continue the core design/functional sequence before artwork.
+
 ## 2026-11-21 — Phase 1: bounded, reorg-aware Commander Profile event discovery
 
 **Verified end-to-end public read-only discovery (no signer, new chain transaction or UI).**
