@@ -199,10 +199,11 @@ export function mountSquadSepoliaPanel(
     // Do not replace the previous connection on a failed attempt.
     const next=await createSquadSepoliaClient(address,hash,selected.provider);
     unbindWallet();
-    connectedProvider=selected.provider;
+    const provider=selected.provider;
+    connectedProvider=provider;
     currentWalletListener=invalidate;
-    connectedProvider.on?.('accountsChanged',currentWalletListener);
-    connectedProvider.on?.('chainChanged',currentWalletListener);
+    provider.on?.('accountsChanged',currentWalletListener);
+    provider.on?.('chainChanged',currentWalletListener);
     client=next;
     identity.textContent='Connected '+next.userAddress+' · Ethereum Sepolia · '+selected.label;
     lastResult=null;
