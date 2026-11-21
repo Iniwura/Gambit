@@ -89,6 +89,74 @@ async function scenario(viewport,label){
       new RegExp('reactor score '+scoreA+' : '+scoreB));
     assert.equal(await page.locator('#game-state').getAttribute('data-round'),'1');
     assert.equal(await page.locator('#game-state').getAttribute('data-practice-seed'),initialSeed);
+    // Continue the SAME five-round Phaser game. The mentor cannot settle a
+    // round itself; every score and final profile comes from the real engine.
+    await page.locator('#gambit-training-continue').click();
+    assert.equal(await panel.getAttribute('data-guide-step'),'r2-role');
+    async function step(id){assert.equal(await panel.getAttribute('data-guide-step'),id)}
+    await action('4',page.locator('.gambit-mobile-role').nth(0));
+    await step('r2-base');
+    await action('1',page.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(0));
+    await step('r2-trigger');
+    await action('w',page.locator('.gambit-mobile-action-group').nth(1).locator('button').nth(1));
+    await step('r2-response');
+    await action('d',page.locator('.gambit-mobile-action-group').nth(2).locator('button').nth(2));
+    await step('r2-commit');
+    await action('Enter',page.locator('#gambit-mobile-lock'));
+    await step('r2-settle');
+    await page.locator('#game-state[data-phase="ready"][data-round="2"]').waitFor({timeout:30000});
+    await step('r3-role');
+
+    await action('5',page.locator('.gambit-mobile-role').nth(1));
+    await step('r3-base');
+    await action('2',page.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(1));
+    await step('r3-trigger');
+    await action('e',page.locator('.gambit-mobile-action-group').nth(1).locator('button').nth(2));
+    await step('r3-response');
+    await action('a',page.locator('.gambit-mobile-action-group').nth(2).locator('button').nth(0));
+    await step('r3-commit');
+    await action('Enter',page.locator('#gambit-mobile-lock'));
+    await step('r3-settle');
+    await page.locator('#game-state[data-phase="ready"][data-round="3"]').waitFor({timeout:30000});
+    await step('r4-formation');
+
+    await action('7',page.locator('.gambit-mobile-formation').nth(0));
+    await step('r4-commit');
+    await action('Enter',page.locator('#gambit-mobile-lock'));
+    await step('r4-settle');
+    await page.locator('#game-state[data-phase="ready"][data-round="4"]').waitFor({timeout:30000});
+    await step('r5-scout');
+
+    await action('4',page.locator('.gambit-mobile-role').nth(0));
+    await action('3',page.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(2));
+    await step('r5-guardian');
+    await action('5',page.locator('.gambit-mobile-role').nth(1));
+    await action('1',page.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(0));
+    await step('r5-striker');
+    await action('6',page.locator('.gambit-mobile-role').nth(2));
+    await action('2',page.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(1));
+    await step('r5-commit');
+    await action('Enter',page.locator('#gambit-mobile-lock'));
+    await step('r5-settle');
+    assert.equal(await panel.getAttribute('data-guide-completed'),'false');
+    await page.locator('#game-state[data-phase="finished"][data-round="5"]').waitFor({timeout:30000});
+    await step('complete');
+    assert.equal(await panel.getAttribute('data-guide-completed'),'true');
+    const finalA=await page.locator('#game-state').getAttribute('data-score-a');
+    const finalB=await page.locator('#game-state').getAttribute('data-score-b');
+    const finalReport=await page.locator('#gambit-training-result').textContent();
+    assert.match(finalReport,/Real five-round LOCAL result/);
+    assert.ok(finalReport.includes(finalA+' : '+finalB));
+    assert.match(finalReport,/SCOUT \d+W\/\d+L\/\d+D/);
+    assert.match(finalReport,/GUARDIAN \d+W\/\d+L\/\d+D/);
+    assert.match(finalReport,/STRIKER \d+W\/\d+L\/\d+D/);
+    assert.equal(await page.locator('#game-state').getAttribute('data-practice-seed'),initialSeed);
+    assert.deepEqual(exceptions,[]);
+    console.log('GAMBIT_TRAINING_FULL_MATCH_BROWSER '+JSON.stringify({
+      viewport:label,rounds:5,verifiedLanes:15,roleTraining:['SCOUT','GUARDIAN','STRIKER'],
+      formationChanged:true,actualMatchScore:finalA+' : '+finalB,
+      matchDebriefVerified:true,scriptedWins:0,walletActions:0,errors:0
+    }));
     await page.locator('#gambit-training-close').click();
     assert.equal(await panel.isVisible(),false);
     assert.equal(await page.locator('#game-state').getAttribute('data-phase'),'ready');
