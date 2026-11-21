@@ -121,10 +121,10 @@ export function mountTrainingCoach():void{
           (last?.bonusA?' · own breach '+last.bonusA.breach+
             ', Scout mark '+last.bonusA.mark+
             ', blocked '+last.bonusA.blocked:''));
-    }else if(view.completed&&view.settled){
-      summary.textContent='Real round '+view.settled.round+
-        ' · reactor score '+view.settled.scoreline+
-        ' · '+view.settled.lanes+' resolved lanes. No tutorial win was invented.';
+    }else if(state.completed&&state.settled){
+      summary.textContent='Real round '+state.settled.round+
+        ' · reactor score '+state.settled.scoreline+
+        ' · '+state.settled.lanes+' resolved lanes. No tutorial win was invented.';
     }else summary.textContent='';
   }
   function open(){
