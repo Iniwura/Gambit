@@ -113,8 +113,10 @@
   #gambit-arena-hotseat-dialog fieldset label{font-size:10px}
   #gambit-arena-hotseat-dialog .ga-score strong{font-size:23px}
 }
+/* At 701–950px the existing Academy owns the second header row at top:55px.
+   Hotseat gets its OWN third row rather than intercepting Academy clicks. */
 @media(min-width:701px) and (max-width:950px){
-  #gambit-arena-hotseat-open{top:61px;right:15px}
+  #gambit-arena-hotseat-open{top:110px;right:15px}
 }
 @media(prefers-reduced-motion:reduce){
   #gambit-arena-hotseat-dialog button:active{transform:none}
