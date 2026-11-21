@@ -7,6 +7,7 @@ import {encodeSquadInputs,decodePackedSquadScore,canOpenSquad,squadDuelStep,vali
 import {boundDuelOpenFee,MAX_DUEL_OPEN_FEE_WEI} from './duel-open-fee.mjs';
 import {boundDuelSubmitFee,MAX_DUEL_SUBMIT_FEE_WEI} from './duel-submit-fee.mjs';
 import {boundDuelResolveFee,MAX_DUEL_RESOLVE_FEE_WEI} from './duel-resolve-fee.mjs';
+import {boundDuelFinalizeFee,MAX_DUEL_FINALIZE_FEE_WEI} from './duel-finalize-fee.mjs';
 
 /**
  * Versioned experimental v2 wallet client for deployed SquadGambit; live encrypted match is NOT VERIFIED.
@@ -469,23 +470,75 @@ export async function createSquadSepoliaClient(
       return verifiedResult(duelId);
     if((await nextDuelStep(duelId)).step!=='finalize')
       throw Error('Duel changed during KMS decryption; refusing to finalize.');
+
+    // Actual KMS result and proof, not an approximation. Simulate the
+    // exact call and cap its *maximum* gas fee before any wallet prompt.
+    const txData=contract.interface.encodeFunctionData('finalizeDuel',[
+      duelId,parsed.packed,proof.decryptionProof
+    ]);
+    const estimate=await provider.estimateGas({
+      from:userAddress,to:contractAddress,data:txData,value:0n
+    });
+    const firstFees=await provider.getFeeData();
+    const initialPrice=firstFees.maxFeePerGas??firstFees.gasPrice;
+    if(initialPrice===null||initialPrice<=0n)
+      throw Error('Cannot quote a bounded KMS finalization fee.');
+    boundDuelFinalizeFee(estimate,initialPrice,MAX_DUEL_FINALIZE_FEE_WEI);
+
+    // Every submitted action requires independently checked, fresh
+    // state + runtime + fee data. Prior submit/resolve consent is not reused.
     await assertWalletStable();
-    const tx=await txSucceeded(()=>contract.finalizeDuel(duelId,parsed.packed,proof.decryptionProof));
+    const current=await nextDuelStep(duelId);
+    if(current.step==='verified')return verifiedResult(duelId);
+    if(current.step!=='finalize')
+      throw Error('Duel changed during finalization fee check. No wallet prompt.');
+    const currentHandle=await contract.publicResultHandle(duelId) as string;
+    if(currentHandle.toLowerCase()!==handle.toLowerCase())
+      throw Error('Onchain KMS result handle changed. No wallet prompt.');
+    const runtime=await provider.getCode(contractAddress);
+    if(runtime==='0x'||keccak256(runtime).toLowerCase()!==expectedRuntimeHash.toLowerCase())
+      throw Error('Pinned finalization contract runtime changed. No wallet prompt.');
+    const fresh=await provider.getFeeData();
+    const freshPrice=fresh.maxFeePerGas??fresh.gasPrice;
+    if(freshPrice===null||freshPrice<=0n)
+      throw Error('Fresh finalization gas quote unavailable. No wallet prompt.');
+    const fee=boundDuelFinalizeFee(estimate,freshPrice,MAX_DUEL_FINALIZE_FEE_WEI);
+    const overrides:Record<string,bigint>={gasLimit:fee.gasLimit};
+    if(fresh.maxFeePerGas!==null&&fresh.maxFeePerGas!==undefined&&
+      fresh.maxPriorityFeePerGas!==null&&fresh.maxPriorityFeePerGas!==undefined){
+      if(fresh.maxPriorityFeePerGas>fresh.maxFeePerGas)
+        throw Error('Unsafe EIP-1559 finalization quote.');
+      overrides.maxFeePerGas=fresh.maxFeePerGas;
+      overrides.maxPriorityFeePerGas=fresh.maxPriorityFeePerGas;
+    }else{
+      overrides.gasPrice=freshPrice;
+    }
+    await assertWalletStable();
+    const tx=await txSucceeded(()=>contract.finalizeDuel(
+      duelId,parsed.packed,proof.decryptionProof,overrides));
     const evt=eventIn(tx.receipt,'DuelFinalized');
     if(BigInt(evt.args.duelId)!==duelId||
        Number(evt.args.pointsChallenger)!==parsed.challenger||
        Number(evt.args.pointsDefender)!==parsed.defender||
        Number(evt.args.outcome)!==parsed.outcome)
-      throw Error('Onchain finalization event disagrees with authenticated FHE score.');
-    const after=await readDuel(duelId);
-    if(!after.finalized||after.squadId!==duel.squadId||
-       Number(after.packedScore)!==parsed.packed)
-      throw Error('Finalized onchain score disagrees with signed KMS proof.');
+      throw Error('Confirmed event differs from KMS score. Do NOT retry.');
+
+    // A successful receipt and authentic finalization event conclusively
+    // establish the write. Some wallet RPCs lag their transaction receipts:
+    // do not display a false failure or ever suggest a second signature.
+    let canonicalStateVerified=false;
+    try{
+      const after=await contract.duelStatus(duelId,{blockTag:tx.receipt.blockNumber});
+      canonicalStateVerified=Boolean(after.finalized)&&
+        BigInt(after.squadId)===duel.squadId&&
+        Number(after.packedScore)===parsed.packed;
+    }catch{canonicalStateVerified=false}
     return {squadId:duel.squadId,duelId,
       pointsChallenger:parsed.challenger,pointsDefender:parsed.defender,
       outcome:parsed.outcome as 0|1|2,authenticated:true,evidence:'transaction',
       explorerUrl:'https://sepolia.etherscan.io/tx/'+tx.hash,
-      resolutionTx:'',finalizationTx:tx.hash};
+      resolutionTx:'',finalizationTx:tx.hash,
+      maximumQuotedFeeWei:fee.maximumQuotedFeeWei,canonicalStateVerified};
   }
   return {contractAddress,userAddress,
     readSquad,readDuel,nextDuelStep,sealSquad,closeSquad,
