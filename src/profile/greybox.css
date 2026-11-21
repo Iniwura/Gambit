@@ -1,0 +1,76 @@
+/* GAMBIT — Profile functional greybox, NOT final product art */
+#gambit-profile-open{
+  position:fixed;top:9px;right:450px;z-index:10008;
+  min-height:38px;padding:8px 11px;
+  background:#172b41;color:#e9f6ff;border:1px solid #7397ad;
+  border-radius:9px;font:750 12px/1.2 Inter,system-ui,sans-serif;
+  cursor:pointer
+}
+#gambit-profile-mobile-open{display:none}
+#gambit-profile-overlay[hidden],#gambit-profile-overlay [hidden]{display:none!important}
+#gambit-profile-overlay{
+  position:fixed;inset:0;z-index:11001;
+  background:#030917ed;overflow-y:auto;overscroll-behavior:contain;
+  display:flex;justify-content:center;align-items:flex-start;
+  padding:clamp(12px,4vh,35px) 12px
+}
+#gambit-profile-dialog{
+  width:min(100%,740px);margin:auto 0;padding:clamp(16px,3vw,30px);
+  background:#101c2f;color:#eef8ff;border:1px solid #557792;
+  border-radius:12px;font:400 15px/1.5 Inter,system-ui,sans-serif;
+  box-shadow:0 12px 45px #000a
+}
+#gambit-profile-dialog .gp-head{display:flex;align-items:center;
+  justify-content:space-between;gap:13px;flex-wrap:wrap;
+  padding-bottom:14px;border-bottom:1px solid #35506a}
+#gambit-profile-heading{font:850 24px Inter,system-ui,sans-serif;letter-spacing:.04em}
+#gambit-profile-dialog .gp-head p{font-size:11px;letter-spacing:.04em;color:#b8d5e5}
+#gambit-profile-dialog p{color:#c9ddea}
+#gambit-profile-dialog label{display:block;font-size:12px;
+  font-weight:800;letter-spacing:.06em;margin-bottom:8px}
+#gambit-profile-address{display:block;width:100%;height:51px;padding:10px 12px;
+  background:#142941;color:#fff;border:1px solid #7291aa;border-radius:8px;
+  font:500 14px Inter,system-ui,sans-serif}
+#gambit-profile-dialog button{min-height:46px;padding:10px 14px;cursor:pointer;
+  border-radius:8px;color:#fff;background:#1b435b;
+  border:1px solid #6f97af;font:750 13px Inter,system-ui,sans-serif}
+#gambit-profile-dialog button:disabled{opacity:.55;cursor:wait}
+#gambit-profile-open:focus-visible,#gambit-profile-dialog button:focus-visible,
+#gambit-profile-dialog input:focus-visible,#gambit-profile-dialog a:focus-visible{
+  outline:3px solid #ffdf9b;outline-offset:3px
+}
+#gambit-profile-form{margin:18px 0}
+#gambit-profile-consent{font-size:12px}
+#gambit-profile-submit{width:100%;background:#155e70!important;
+  border-color:#76e0ed!important;margin-top:8px}
+#gambit-profile-status{min-height:30px;padding:11px 12px;background:#20364f;
+  border:1px solid #527492;border-radius:9px;overflow-wrap:anywhere}
+#gambit-profile-overlay[data-phase="error"] #gambit-profile-status,
+#gambit-profile-overlay[data-phase="invalid"] #gambit-profile-status{
+  background:#482a37;border-color:#be7189;color:#ffe1e8}
+#gambit-profile-overlay[data-phase="partial"] #gambit-profile-status{
+  background:#503c22;border-color:#c4a562;color:#fff3ca}
+#gambit-profile-dialog h2{font-size:15px;margin-top:23px}
+#gambit-profile-dialog .gp-stat-row{display:grid;grid-template-columns:
+  repeat(4,minmax(0,1fr));gap:8px;margin:15px 0}
+#gambit-profile-dialog .gp-stat-row div{border:1px solid #446681;
+  border-radius:8px;padding:12px 8px;background:#182d42;min-width:0}
+#gambit-profile-dialog .gp-stat-row span{display:block;font-size:10px;color:#afd0dd}
+#gambit-profile-dialog .gp-stat-row strong{display:block;margin-top:7px;font-size:23px}
+#gambit-profile-history{padding-left:23px}
+#gambit-profile-history li{padding:12px 0;border-bottom:1px solid #42607a}
+#gambit-profile-history strong{display:block}
+#gambit-profile-history a{display:inline-block;margin-top:7px;font-size:13px}
+#gambit-profile-dialog .gp-boundary{font:600 11px/1.5 Inter,system-ui,sans-serif;
+  border-top:1px solid #35506a;padding-top:12px;margin-top:18px}
+@media(max-width:700px){
+  #gambit-profile-open{display:none!important}
+  #gambit-mobile-deck button#gambit-profile-mobile-open{
+    display:block;width:100%;min-height:46px;flex:none;
+    font-size:12px;color:#eaf6ff;background:#193749;border-color:#76a0b5
+  }
+  #gambit-profile-overlay{padding:9px}
+  #gambit-profile-dialog{padding:15px}
+  #gambit-profile-dialog .gp-stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #gambit-profile-address{font-size:13px}
+}
