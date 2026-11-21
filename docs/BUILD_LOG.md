@@ -22,13 +22,14 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 - **BLACKSITE local mission controller:** `src/blacksite/mission.mjs` wraps the existing four-symbol codebreaker with briefing → active → breached/locked → debrief and a fresh-ID retry. Five bounded attempts; repeated and invalid guesses rejected. Local secret is held outside exported public state in a module-private WeakMap, but **a cleartext browser client is not confidential FHE**. `tests/blacksite-mission-contract.test.mjs` checks all **256** possible codes, invalid actions, retries, state immutability and secret-field redaction.
 - **Commander Profile authenticated evidence boundary:** `src/profile/verified-arena-record.mjs` reads **canonical public Sepolia** contract runtime, the `DuelFinalized` log, mined transaction and KMS-proof calldata, receipt/hash, current contract status and one-use invite linkage. Only successfully verified records are branded within the module. `deriveCommanderArenaProfile` refuses arbitrary JSON, foreign player records and contradictory duplicates; computes actual win/loss/draw totals without local practice results. `tests/profile-evidence-contract.test.mjs` covers forged history, wrong chain/runtime, invalid finality, reorg and owner attribution.
-- **Unit evidence:** [Rules checks run 44921330784](https://github.com/Iniwura/Gambit/actions/runs/44921330784) passed **158/158** root tests on the initial version of this milestone. The focused contract tests also passed in the first [Phase-1 workflow](https://github.com/Iniwura/Gambit/actions/runs/44921435163). All tests are local or mocked RPC unless explicitly identified as a live Sepolia check.
+- **Unit evidence:** [Rules checks run 44921330784](https://github.com/Iniwura/Gambit/actions/runs/44921330784) passed **158/158** root tests on the initial version of this milestone. The [corrected focused workflow](https://github.com/Iniwura/Gambit/actions/runs/44921548615) passed **11/11 targeted contract tests** and a separate actual Sepolia check. Unit tests use local/mock RPC unless explicitly identified as the live Sepolia probe.
 
-### Live read-only Profile proof — verification in progress
+### Live read-only Profile proof — VERIFIED for Duel #1
 
 - Added `scripts/verify-profile-duel1-readonly.mjs` and [focused workflow](https://github.com/Iniwura/Gambit/actions/workflows/game-systems-contracts.yml) to verify **actual Duel #1** and attribute its **0:1 Violet** result to both real wallets without signing.
-- **First attempted live run FAILED** ([run 44921435163](https://github.com/Iniwura/Gambit/actions/runs/44921435163)): the public Sepolia RPC rejected a historical-block `eth_call` with missing revert data. Do not misreport this as a verified profile; the local tests passed but the live probe did not.
-- Corrected architecture: use the successful **canonical mined receipt/event** for historical finalization and independently check **current** onchain status through latest-state RPC, avoiding an unnecessary archive-node requirement while still refusing missing or inconsistent proof. The correction is implemented in `src/profile/verified-arena-record.mjs`. **The new live run must pass before changing this entry to VERIFIED.**
+- **First attempted live run FAILED** ([run 44921435163](https://github.com/Iniwura/Gambit/actions/runs/44921435163)): the public Sepolia RPC rejected a historical-block `eth_call` with missing revert data. This failure is retained in the log rather than hidden.
+- **Correction:** verify the mined canonical receipt/event and independently check current onchain status through latest-state RPC instead of assuming an archive node, while still rejecting missing/contradictory evidence. Committed in `src/profile/verified-arena-record.mjs`.
+- **Re-run PASSED:** [GAMBIT Phase-1 live evidence workflow 44921548615](https://github.com/Iniwura/Gambit/actions/runs/44921548615) completed **11/11 focused contract tests** and independently verified real `finalizeDuel(1)` transaction `0x57a19f25a234eca7db206781a18cc965a09818a04b87a9f30d8d659562a9bdad` on Sepolia, block **12182444**, **375 confirmations at the checked snapshot**. The public contract identifies challenger `0x70d086...dcDD5` (**0:1 loss**) and defender `0x7d567...Ee176` (**1 win**). No wallet connection, signing or writes. **This proves one read-only verified profile record, not a persistent profile or season history.**
 
 ### Still NOT built / approved
 
@@ -37,7 +38,7 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 - No five-round v3 FHE contract, production multi-round Arena lobby or user-validated signature GAMBIT balance.
 - Full four-pillar greybox, multiplayer repeatability and polished graphics are not approved as complete.
 
-**Next:** verify the actual Profile chain record, capture the exact passing workflow, then finish BLACKSITE's secure mission protocol threat model and connect properly gated **functional** game controllers (still temporary presentation). Never unlock unfinished modes by changing a feature flag alone.
+**Next:** finish BLACKSITE's secure mission protocol threat model, finish Commander Profile's durable provenance/reorg and opt-in identity decisions, then connect properly gated **functional** game controllers (still temporary presentation). Never unlock unfinished modes by changing a feature flag alone.
 
 ## 2026-11-21 — Phase 1 baseline: full game architecture and Arena mechanics
 
