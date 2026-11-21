@@ -14,7 +14,7 @@ GAMBIT is a playable 3v3 squad-tactics game with a confidential, asynchronous he
 
 [Play GAMBIT](https://iniwura.github.io/Gambit/) · [Inspect real Duel #1](https://iniwura.github.io/Gambit/?squad=1&duel=1) · [Public Sepolia finalization](https://sepolia.etherscan.io/tx/0x57a19f25a234eca7db206781a18cc965a09818a04b87a9f30d8d659562a9bdad) · [Engineering evidence](docs/STATUS.md)
 
-## Play in two ways
+## Play, train and verify
 
 ### Practice — learn the strategy, no wallet
 
@@ -26,6 +26,12 @@ GAMBIT is a playable 3v3 squad-tactics game with a confidential, asynchronous he
 Practice is **cleartext and deterministic**. The per-fighter reports in this mode are educational and **must not** be represented as onchain decrypted tactics.
 
 Desktop keys: **4/5/6** choose a fighter, **7/8/9** choose formation, **1/2/3** choose the opener, **Q/W/E** the trigger, **A/S/D** the response and **Enter** locks the turn. Mobile uses the on-screen command deck.
+
+### BLACKSITE — playable local codebreaking training, no wallet
+
+Open the game and select **BLACKSITE · LOCAL MISSION** from the desktop header or **BLACKSITE · LOCAL TRAINING** inside the mobile command deck. Start a mission, enter four ordered glyphs (0–3), and use the actual **exact-position** and **misplaced** feedback to deduce the secret within **five guesses**. Duplicate guesses do not consume another attempt. Finish, review the transcript and start a fresh local mission; returning to Arena preserves your current practice session.
+
+**Scope boundary:** this is a functional, wallet-free **cleartext training greybox**. It is not the planned encrypted BLACKSITE competitive mission, not an onchain result and not player ranking/progression. [Architecture and browser acceptance gates](docs/BLACKSITE_GREYBOX_ACCEPTANCE.md) · [Competitive mission research](docs/BLACKSITE_V2_PROTOCOL_DECISION.md).
 
 ### View a genuinely completed encrypted match — no wallet
 
