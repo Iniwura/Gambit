@@ -17,7 +17,15 @@ const CHALLENGER=getAddress('0x70d086988706e4f27A53c484570B2a41897dcDD5');
 const D=1n;
 const SYNTHETIC=[2n,0n,1n,1n,2n,0n,0n,1n,2n,2n] as const;
 
+let quoteStage='initial';
+function reportStage(stage:string){
+  quoteStage=stage;
+  // Non-sensitive markers: no ciphertext, wallet identity secrets or RPC URLs.
+  console.log('GAMBIT_DUEL1_UNSIGNED_STAGE '+stage);
+}
+
 async function main(){
+  reportStage('NETWORK_AND_RUNTIME');
   // Intentional no-wallet scope: no approval flag is ever valid here.
   if(process.env.GAMBIT_APPROVE_ONE_SQUAD_SEAL||
      process.env.GAMBIT_APPROVE_DUEL_SUBMIT){
@@ -52,6 +60,7 @@ async function main(){
       throw Error('Submission deadline already passed');
     return {deadline,latestBlock:latest.number};
   }
+  reportStage('CANONICAL_DUEL_STATE');
   const state=await pending();
   const rpc=(network.config as {url?:string}).url??
     'https://ethereum-sepolia-rpc.publicnode.com';
@@ -64,6 +73,7 @@ async function main(){
   }));
   const start=Date.now();
   try{
+    reportStage('ZAMA_TEN_INPUT_ENCRYPTION');
     const encrypted=await sdk.encrypt({
       contractAddress:address as `0x${string}`,
       userAddress:CHALLENGER as `0x${string}`,
@@ -76,21 +86,25 @@ async function main(){
     const data=contract.interface.encodeFunctionData('submitDuel',[
       D,encrypted.encryptedValues,encrypted.inputProof
     ]);
+    reportStage('EXACT_CALL_GAS_ESTIMATE');
     const gas=await ethers.provider.estimateGas({
       from:CHALLENGER,to:address,data,value:0n
     });
     if(gas<=0n)throw Error('Live unsigned submission gas estimation failed');
     const gasLimit=(gas*120n+99n)/100n;
+    reportStage('FRESH_PUBLIC_FEE_QUOTE');
     const fees=await ethers.provider.getFeeData();
     const maxPerGas=fees.maxFeePerGas??fees.gasPrice;
     if(!maxPerGas||maxPerGas<=0n)
       throw Error('Live Sepolia gas quote unavailable');
     const maxFee=gasLimit*maxPerGas;
+    reportStage('FINAL_CANONICAL_STATE_RECHECK');
     const finalState=await pending();
     if(finalState.deadline!==state.deadline||
        keccak256(await ethers.provider.getCode(address)).toLowerCase()!==
          deployment.runtimeKeccak256.toLowerCase())
       throw Error('Submission state/runtime changed during unsigned encryption');
+    reportStage('COMPLETE');
     console.log('GAMBIT_DUEL1_SUBMIT_UNSIGNED_QUOTE '+JSON.stringify({
       scope:'TEN SYNTHETIC PUBLIC INPUTS, VOID SIGNER, ESTIMATE ONLY',
       chainId:11155111,contract:address,owner:OWNER,challenger:CHALLENGER,
@@ -112,7 +126,7 @@ async function main(){
 }
 main().then(()=>process.stdout.write('',()=>process.exit(0)))
   .catch(error=>{
-    process.stderr.write('GAMBIT_DUEL1_SUBMIT_UNSIGNED_QUOTE_STOPPED '+
+    process.stderr.write('GAMBIT_DUEL1_SUBMIT_UNSIGNED_QUOTE_STOPPED stage='+quoteStage+' code='+
       (error instanceof Error?error.name:'UnknownError')+'\n',
       ()=>process.exit(1));
   });
