@@ -1,6 +1,6 @@
 # GAMBIT — Full Five-Round Tactical Academy Plan
 
-**Status: APPROVED FUNCTIONAL DESIGN TARGET, NOT IMPLEMENTED.**  
+**Status: PROPOSED FUNCTIONAL DESIGN TARGET, NOT IMPLEMENTED OR PLAYER-VALIDATED.**  
 **Date:** 21 November 2026 · **Implementation order:** canonical local rules → actual player interactions → real match evidence → responsive QA → human comprehension → final art/audio.  
 **Source of truth:** [master game scope](GAMBIT_MASTER_SCOPE.md), [complete architecture](GAME_ARCHITECTURE_V1.md), and existing [five-round deterministic engine](../src/squad.mjs).
 
