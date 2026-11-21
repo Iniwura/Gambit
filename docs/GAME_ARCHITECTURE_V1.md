@@ -11,9 +11,9 @@ This specification implements the architecture phase of the [master scope](GAMBI
 
 **Product pillars:**
 - **ARENA:** flagship competitive tactical game. Target evolving multi-round confidential PVP; presently one authentic single-encounter FHE match exists.
-- **TRAINING:** first-use tutorial, deterministic five-round local practice and tactical mastery. Presently a five-round practice core exists.
-- **BLACKSITE:** distinct limited-information codebreaking/infiltration missions. Presently a tested **headless local research reference** exists, not a playable mode.
-- **COMMANDER PROFILE:** persistent account identity, verified match/missions history and earned achievements. Not implemented.
+- **TRAINING:** first-use tutorial, deterministic five-round local practice and tactical mastery. Five-round practice is built; an optional verified first-round real-action Academy coach is also built. The full five-round curriculum and human learning validation remain unbuilt.
+- **BLACKSITE:** distinct limited-information codebreaking/infiltration missions. A responsive **playable four-glyph LOCAL TRAINING** greybox is verified; the confidential competitive mission, fair v2 puzzle economy and contract are not built.
+- **COMMANDER PROFILE:** persistent identity, verified history and earned achievements are the target. A non-persistent opt-in read-only **Commander Records** viewer is verified against actual Sepolia receipts; persistent identity, achievements and progression are not implemented.
 
 **Prohibition:** do not imply that displaying a scene, possessing a reducer, or passing mock/CI checks means the feature is live. All user-facing claims must distinguish `LOCAL CLEAR-TEXT`, `SIGNED SEPOLIA TRANSACTION`, `ONCHAIN VERIFIED` and `PLANNED`.
 
