@@ -211,3 +211,19 @@ test('protocol rejects corrupted history, wiped spend markers and forged final s
   }
   assert.equal(submitArenaResearchOrder(next,A,h(102),2n).round,2);
 });
+
+test('cross-domain handle replay is rejected after finality and public submission flags are immutable',()=>{
+  const first=readyRound(newArenaProtocolResearchMatch(id,A,B,0n),1);
+  const next=finalizeArenaResearchRound(first,evidence(id,1,h(301),3,2),fakeVerifier,1n);
+  assert.throws(()=>submitArenaResearchOrder(next,A,h(301),2n),/Replay/);
+  const corrupted={...next,submissions:{a:h(301),b:null}};
+  assert.throws(()=>publicArenaResearchProtocolState(corrupted),/already used/);
+  const forged={...next,spentOrderHandles:[h(301),h(201)]};
+  assert.throws(()=>publicArenaResearchProtocolState(forged),/domains overlap/);
+  const projected=publicArenaResearchProtocolState(next);
+  assert.equal(Object.isFrozen(projected),true);
+  assert.equal(Object.isFrozen(projected.submissions),true);
+  assert.equal(Object.isFrozen(projected.history),true);
+  assert.throws(()=>{projected.submissions.a=true},TypeError);
+  assert.deepEqual(publicArenaResearchProtocolState(next).submissions,{a:false,b:false});
+});
