@@ -39,8 +39,9 @@ function freezeState(s){
   const debrief=s.debrief?Object.freeze({...s.debrief,
     stats:Object.freeze(s.debrief.stats.map(x=>Object.freeze({...x})))
   }):null;
+  const priorPlans=s.priorPlans?Object.freeze(s.priorPlans.map(p=>Object.freeze({...p}))):null;
   return Object.freeze({...s,edits:Object.freeze(s.edits.map(e=>Object.freeze({...e}))),
-    receipts,debrief});
+    priorPlans,receipts,debrief});
 }
 export function createFullMatchCoach(first){
   check(first&&first.round===1&&first.lanes===3&&validScore(first.scoreline)&&
@@ -49,7 +50,8 @@ export function createFullMatchCoach(first){
   return freezeState({mode:'gambit-full-match-academy',version:FULL_MATCH_COACH_VERSION,
     index:0,step:FULL_MATCH_STEPS[0].id,completed:false,missed:false,
     committedRound:null,formation:2,selectedFormation:null,selectedRole:null,
-    edits:[{},{},{}],receipts:[{round:1,scoreline:first.scoreline,lanes:3}],
+    edits:[{},{},{}],priorPlans:null,
+    receipts:[{round:1,scoreline:first.scoreline,lanes:3}],
     scoreline:first.scoreline,debrief:null});
 }
 function advance(s,opts={}){
@@ -116,9 +118,14 @@ export function advanceFullMatchCoach(s,e){
       target===5?[[0,['base']],[1,['base']],[2,['base']]]:[];
     const matched=required.every(([role,fields])=>
       fields.every(field=>s.edits[role][field]===e.plans[role][field]));
-    if(!matched||target===4&&e.formation!==s.selectedFormation)
-      return miss(s,'Committed tactics did not match the Academy exercise. The round cannot be undone.');
-    return advance(s,{committedRound:target,formation:e.formation});
+    // Guardian must actually change its committed plan, not simply select
+    // an existing default again. Compare to the previous real submission.
+    const guardianChanged=target!==3||s.priorPlans&&
+      ['base','trigger','response'].some(k=>s.priorPlans[1][k]!==e.plans[1][k]);
+    if(!matched||!guardianChanged||target===4&&e.formation!==s.selectedFormation)
+      return miss(s,'Committed tactics did not match the exercise or failed to change Guardian from the preceding round.');
+    return advance(s,{committedRound:target,formation:e.formation,
+      priorPlans:e.plans.map(p=>({...p}))});
   }
   if(id==='r2-settle'||id==='r3-settle'||id==='r4-settle'||id==='r5-settle'){
     if(e.type!=='settled'||e.round!==s.committedRound)return s;
