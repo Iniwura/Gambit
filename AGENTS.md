@@ -3,7 +3,7 @@
 > This is a real game project, not a UI mockup. We aim for the strongest credible first-place Zama Developer Program Season 5 entry. Winning cannot be guaranteed. Never sacrifice truth or working software for a score claim.
 
 ## Source of truth
-- Read **`docs/GAMBIT_MASTER_SCOPE.md` first** (authoritative full scope and locked build order), then `docs/PRODUCTION_PLAN.md`, `docs/GAME_DESIGN.md`, and `docs/RESEARCH_AND_SKILLS.md` before implementing.
+- Read **`docs/GAMBIT_MASTER_SCOPE.md` first** (authoritative full scope and locked build order) and **`docs/GAME_ARCHITECTURE_V1.md`** (gameplay + executable scene contracts), then `docs/PRODUCTION_PLAN.md`, `docs/GAME_DESIGN.md`, and `docs/RESEARCH_AND_SKILLS.md` before implementing.
 - Name: **GAMBIT**. Style: original premium cartoon / top-down 2D sci-fi tactical arena. Existing six fighter characters are approved. **Graphics frozen until end-to-end play works.**
 - Use Phaser 4.2.1 + TypeScript + Vite for the browser game, with scene/render/UI separated from deterministic authoritative rules. Use the official Zama Hardhat plugin, Solidity, and current `@zama-fhe/sdk` (not deprecated Relayer SDK) for confidential onchain decisions. Chain: Sepolia.
 - Do not silently replace Phaser with handmade HTML, Canvas, or procedural WebGL demos. Local practice may use a deterministic cleartext reference engine, visibly labeled local/simulated.
