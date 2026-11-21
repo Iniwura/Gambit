@@ -1,0 +1,24 @@
+name: GAMBIT Duel 1 resolution fee quote (read-only)
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'scripts/quote-first-duel-resolve-readonly.mjs'
+      - '.github/workflows/duel-resolve-quote-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned public RPC dependencies (no wallet)
+        run: npm ci --no-audit --no-fund
+      - name: Confirm actual challenger submission and quote ONE unsigned resolve
+        timeout-minutes: 4
+        run: node scripts/quote-first-duel-resolve-readonly.mjs
