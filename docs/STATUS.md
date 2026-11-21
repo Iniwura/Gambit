@@ -1,14 +1,20 @@
 # GAMBIT — verified engineering status
 
-Updated 2026-11-20. Engineering work is on **draft PR #5** (`build/verified-first-slice`), not merged to main.
+Updated 2026-11-21. Engineering work is in **draft PR #5** (`build/verified-first-slice`), not merged to main.
 
-## Latest: encrypted 3v3 contract deployed (not live-match-verified)
+## Current P0: complete the first genuine encrypted 3v3 duel
 
-- `SquadGambit` deployed on Ethereum Sepolia (chain `11155111`) at `0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134` by `0x7d567Fa1d5fe35737BbF045f47667e13298Ee176`.
-- Deployment [tx](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a), block 12174655, success according to the committed [manifest](../fhe/deployments/sepolia-squad.json). Runtime 10,183 bytes; hash `0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419`.
-- Exactly one deployment tx was reported; 16,291,904 gas used, actual fee 309,546,176 wei. The earlier single-fighter `SealedGambit` deployment is separate.
-- [CI run](https://github.com/Iniwura/Gambit/actions/runs/44719103075) passed the four quality gates at `6ef46b7`, including the static HCU source-drift guard. **Live HCU and KMS proof are NOT measured or verified.**
-- The experimental 3v3 contract is deployed; **no sealed squad, two-wallet signed duel, real FHE resolution or final public KMS proof has been verified**. Continue with [Issue #8](https://github.com/Iniwura/Gambit/issues/8); each testnet write requires its own explicit approval. Do not merge or present an onchain playable match yet.
+- **Contract deployed:** `SquadGambit` at [`0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134`](https://sepolia.etherscan.io/address/0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134) on Ethereum Sepolia (chain `11155111`). [Deployment tx](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a) succeeded in block 12174655. Runtime 10,183 bytes; pinned keccak `0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419`.
+- **Defender sealed Squad #1:** [`sealSquad` tx](https://sepolia.etherscan.io/tx/0x65b1fde92ff899718f4febcdc1597cc9fb05c681b1e05996f306d2a3bae41e0b), block 12181816; exact owner, invited challenger, receipt and event are independently checked by `scripts/verify-first-squad-seal-readonly.mjs`.
+- **Challenger opened Duel #1:** [`openDuel(1)` tx](https://sepolia.etherscan.io/tx/0x632c8eca45b6c4881112ee11516252d20a85cef4fa0507a981766e1c4b4548fe), block 12182024; canonical event, sender and state verified by `scripts/recover-first-duel-readonly.mjs`.
+- **Not yet submitted:** read-only recovery on 21 November at block 12182144 returned `submitted=false`, `resolved=false`, `finalized=false`, `expired=false`. A later receipt or new read is required to make any newer state claim.
+- **Duel #1 challenger submission deadline:** 22 November 2026, 13:07:48 UTC (14:07:48 Lagos). This 24-hour *duel* expiry is distinct from the official Zama submission deadline (14 December 2026).
+- **Live unsigned challenger quote passed:** [workflow](https://github.com/Iniwura/Gambit/actions/runs/44909988544) encrypted ten synthetic inputs with the official SDK, estimated exactly 4,142,942 gas and a buffered maximum quote of 159,088,992 wei as of block 12182183, under the separate 500,000,000 wei transaction ceiling. It used a `VoidSigner`; no wallet, private plan, signature or broadcast. This does not prove real Rabby signing.
+- **Browser-wallet execution:** missing real Rabby prompt remains unconfirmed. A new completely unsigned Chromium test `tests/duel-browser-presign-readonly.mjs` intercepts every signing/broadcast method. Treat its result as unverified until its own GitHub Actions job succeeds.
+- **Outstanding P0:** genuinely submit encrypted challenger plans once with a fresh, separately approved wallet signature, then resolve FHE and finalize a signed public KMS aggregate. Verify canonical receipts, cost/latency, evidence and recovery. See [Issue #8](https://github.com/Iniwura/Gambit/issues/8).
+- [117 root tests and four green quality jobs at `31cc6e0`](https://github.com/Iniwura/Gambit/actions/runs/44909370830) are not proof of a completed onchain multiplayer match. Actual live HCU, KMS proof and final score are still **NOT VERIFIED**.
+
+**Release verdict: KEEP DRAFT / NO-GO for complete live encrypted multiplayer and production-ready claims.** No mainnet writes and no invented FHE evidence.
 
 The sections below are historical work-in-progress notes from before this v2 deployment. Where they describe `SquadGambit` as undeployed, the deployment record above supersedes them.
 
