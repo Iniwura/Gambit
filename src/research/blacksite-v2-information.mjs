@@ -31,13 +31,17 @@ function metrics(partitions){
 export function benchmarkBlacksiteV2Opening(){
   const codeSpace=allV2Codes();
   const fixedGuess=[0,1,2,3,4];
-  const guess=new Map(),scan=new Map(),both=new Map();
+  const secondGuess=[5,4,3,2,1];
+  const guess=new Map(),scan=new Map(),both=new Map(),twoGuesses=new Map();
   for(const secret of codeSpace){
     const hint=scoreV2Guess(secret,fixedGuess);
+    const second=scoreV2Guess(secret,secondGuess);
     const scanCount=scoreV2ClassScan(secret,'reactor');
     const g=hint.exact+':'+hint.misplaced;
     const z=String(scanCount);
     const combo=g+'|'+z;
+    const paired=g+'|'+second.exact+':'+second.misplaced;
+    twoGuesses.set(paired,(twoGuesses.get(paired)||0)+1);
     guess.set(g,(guess.get(g)||0)+1);
     scan.set(z,(scan.get(z)||0)+1);
     both.set(combo,(both.get(combo)||0)+1);
@@ -46,10 +50,12 @@ export function benchmarkBlacksiteV2Opening(){
     scope:'EXACT_LOCAL_RESEARCH_NO_FHE',
     codeSpace:V2_CODE_SPACE,
     guessExample:Object.freeze(fixedGuess),
+    secondGuessExample:Object.freeze(secondGuess),
     scanExample:'reactor (class 0/1)',
     guess:metrics(guess),
     scan:metrics(scan),
     scanPlusGuess:metrics(both),
+    twoGuesses:metrics(twoGuesses),
     fairnessProven:false,optimalPlayerStrategyProven:false,
     signerUsed:false,chainTransactionSent:false
   });
