@@ -41,12 +41,12 @@ const VALID_TYPES=Object.freeze([
 ]);
 const PHASES=Object.freeze(['intro','ready']);
 function check(ok,msg){if(!ok)throw Error('TRAINING_GUIDE_INVALID '+msg)}
-function snapshot(index,startedIn,settled=null){
+function snapshot(index,startedIn,settled=null,committedRound=null){
   return Object.freeze({
     mode:'gambit-training-guide',version:TRAINING_COACH_VERSION,
     step:TRAINING_COACH_STEPS[index].id,index,
     completed:index===TRAINING_COACH_STEPS.length-1,
-    startedIn,
+    startedIn,committedRound,
     settled: settled?Object.freeze({...settled}):null
   });
 }
@@ -57,7 +57,11 @@ function valid(state){
     Number.isInteger(state.index)&&state.index>=0&&
     state.index<TRAINING_COACH_STEPS.length&&
     TRAINING_COACH_STEPS[state.index].id===state.step&&
-    PHASES.includes(state.startedIn),'unrecognized state');
+    PHASES.includes(state.startedIn)&&
+    (state.committedRound===null||
+      Number.isInteger(state.committedRound)&&
+      state.committedRound>=1&&state.committedRound<=5),
+    'unrecognized state');
 }
 export function createTrainingCoach(phase='intro'){
   check(PHASES.includes(phase),'initial practice phase');
@@ -113,16 +117,17 @@ export function advanceTrainingCoach(state,event){
       event.role===2&&event.field==='response'&&event.index===1||
     step==='formation'&&event.type==='formation'&&event.index===2||
     step==='commit'&&event.type==='commit'&&event.round>=1||
-    step==='settled'&&event.type==='settled'&&event.round>=1;
+    step==='settled'&&event.type==='settled'&&
+      event.round===state.committedRound;
   if(!accepted)return state;
   if(step==='settled')
     return snapshot(state.index+1,state.startedIn,
-      {round:event.round,scoreline:event.scoreline,lanes:event.lanes});
+      {round:event.round,scoreline:event.scoreline,lanes:event.lanes},
+      state.committedRound);
   // Committing a turn carries a real round index; store it internally in the
   // guide snapshot so a different round cannot satisfy the settle stage.
   if(step==='commit')
-    return Object.freeze({...snapshot(state.index+1,state.startedIn),
-      committedRound:event.round});
+    return snapshot(state.index+1,state.startedIn,null,event.round);
   if(step==='formation'&&event.type==='formation')
     return snapshot(state.index+1,state.startedIn);
   return snapshot(state.index+1,state.startedIn);
