@@ -32,7 +32,7 @@ Take command of three distinct fighters, outthink real human opponents with secr
 - **Full human PVP:** discover/coordinate a match, Create/Join, invite a distinct opponent, plan, commit, wait, recover, resolve, prove finality, view result and rematch. Every state should be understandable without knowledge of blockchain transaction internals.
 - **Presentation:** one cohesive arena world, intentional camera and combat staging, understandable reactor-control feedback, character identity, hit responses, transitions and satisfying victory/defeat. Do **not** reconstruct secret per-fighter results from an aggregate encrypted score.
 
-**CURRENT STATUS:** playable deterministic three-role/five-round *local practice* and one authentic *single-encounter* confidential 3v3 duel on Sepolia, including independently verified final score. Full multi-round onchain Arena, signature commitment, polished lobby/matchmaking, independent human balance validation, high-end art/audio, and repeated real matches remain unfinished.
+**CURRENT STATUS:** five-round *local practice* and one authentic *single-encounter* confidential 3v3 duel on Sepolia are verified. A separate [five-round encrypted Arena v3 research contract](ARENA_V3_FHE_MOCK_ACCEPTANCE.md) now compiles, passes 25/25 local FHE mock tests including 81 independent formation/sector oracle cases, and has measured mock EVM costs. **It is not deployed, HCU-measured, security-audited or playable between two live wallets.** Full onchain multiplayer, lobby/recovery, signature GAMBIT balance, independent player testing and final art/audio remain unfinished.
 
 ### B. BLACKSITE — confidential missions and codebreaking
 
