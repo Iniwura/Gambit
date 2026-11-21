@@ -66,7 +66,7 @@ test('cannot settle early, resubmit a player, or forge a stake twice',()=>{
 });
 
 test('public allowlist redacts secret plans, formations and private stakes on every stage',()=>{
-  const start=makeArenaV3ResearchMatch('research-private');
+  const start=makeArenaV3ResearchMatch('research-redaction');
   const original=order(2,1);
   const one=submitArenaV3ResearchOrder(start,'challenger',original);
   original.plans[0].base=0;
