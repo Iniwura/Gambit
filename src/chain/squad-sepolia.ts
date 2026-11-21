@@ -4,6 +4,7 @@ import {web} from '@zama-fhe/sdk/web';
 import {sepolia} from '@zama-fhe/sdk/chains';
 import {BrowserProvider,Contract,getAddress,keccak256,ZeroAddress} from 'ethers';
 import {encodeSquadInputs,decodePackedSquadScore,canOpenSquad,squadDuelStep,validateSquadStatus} from './squad-lifecycle.mjs';
+import {boundDuelOpenFee,MAX_DUEL_OPEN_FEE_WEI} from './duel-open-fee.mjs';
 
 /**
  * Versioned experimental v2 wallet client for deployed SquadGambit; live encrypted match is NOT VERIFIED.
@@ -39,6 +40,7 @@ const abi=[
   'function expireUnsubmitted(uint256 duelId)',
   'function squadStatus(uint256 id) view returns(address owner,address allowedOpponent,bool active,bool claimed)',
   'function duelForSquad(uint256 id) view returns(uint256)',
+  'function nextDuelId() view returns(uint256)',
   'function duelStatus(uint256 id) view returns(uint256 squadId,address challenger,bool submitted,bool resolved,bool finalized,bool expired,uint8 packedScore,uint64 openedAt)',
   'function publicResultHandle(uint256 duelId) view returns(bytes32)',
   'event SquadSealed(uint256 indexed squadId,address indexed owner,address indexed allowedOpponent)',
@@ -176,22 +178,74 @@ export async function createSquadSepoliaClient(
     if((await readSquad(squadId)).active)throw Error('Squad was not closed onchain.');
     return {transactionHash:tx.hash};
   }
+  /**
+   * The first write by the invited challenger.
+   * Always quote real call data, cap MAXIMUM possible gas (not just the
+   * estimate), verify the invite hasn't already been claimed, then prompt
+   * exactly once. It never checks wallet balances or initiates follow-up txs.
+   * This software ceiling does not authorize any transaction by itself.
+   */
   async function openDuel(squadId:bigint){
     const squad=await readSquad(squadId);
     if(!canOpenSquad(squad,userAddress))
       throw Error('This squad is not available to the invited challenger.');
+    const previousDuelId=BigInt(await contract.nextDuelId());
+    if(BigInt(await contract.duelForSquad(squadId))!==0n)
+      throw Error('This squad invitation has already been claimed.');
+    // The confirmed Squad #1 trial has exactly one expected duel ID: 1.
+    // Failing closed also prevents signing a stale challenge after another
+    // caller has opened a duel elsewhere.
+    if(squadId===1n&&previousDuelId!==0n)
+      throw Error('Expected Duel #1 has already been consumed.');
+    const txData=contract.interface.encodeFunctionData('openDuel',[squadId]);
+    const estimated=await provider.estimateGas({
+      from:userAddress,to:contractAddress,data:txData,value:0n
+    });
+    const feeData=await provider.getFeeData();
+    const firstPrice=feeData.maxFeePerGas??feeData.gasPrice;
+    const first=boundDuelOpenFee(estimated,firstPrice,MAX_DUEL_OPEN_FEE_WEI);
     await assertWalletStable();
-    const tx=await txSucceeded(()=>contract.openDuel(squadId));
+
+    // Revalidate the exact invite, runtime and one-use nonce before the
+    // wallet gets any transaction prompt.
+    const again=await readSquad(squadId);
+    if(!canOpenSquad(again,userAddress)||
+      BigInt(await contract.duelForSquad(squadId))!==0n||
+      BigInt(await contract.nextDuelId())!==previousDuelId)
+      throw Error('Squad or duel count changed during fee estimation.');
+    const runtime=await provider.getCode(contractAddress);
+    if(runtime==='0x'||keccak256(runtime).toLowerCase()!==expectedRuntimeHash.toLowerCase())
+      throw Error('Deployed runtime changed before challenge signing.');
+
+    const finalFees=await provider.getFeeData();
+    const maxPerGas=finalFees.maxFeePerGas??finalFees.gasPrice;
+    const fee=boundDuelOpenFee(estimated,maxPerGas,MAX_DUEL_OPEN_FEE_WEI);
+    const overrides:Record<string,bigint>={gasLimit:fee.gasLimit};
+    if(finalFees.maxFeePerGas!==null&&finalFees.maxFeePerGas!==undefined&&
+       finalFees.maxPriorityFeePerGas!==null&&finalFees.maxPriorityFeePerGas!==undefined){
+      if(finalFees.maxPriorityFeePerGas>finalFees.maxFeePerGas)
+        throw Error('Invalid Sepolia priority fee quote.');
+      overrides.maxFeePerGas=finalFees.maxFeePerGas;
+      overrides.maxPriorityFeePerGas=finalFees.maxPriorityFeePerGas;
+    }else{
+      overrides.gasPrice=maxPerGas;
+    }
+    if(fee.maxQuotedFeeWei>first.maximumFeeWei)
+      throw Error('New fee exceeds the first verified fee ceiling.');
+
+    await assertWalletStable();
+    const tx=await txSucceeded(()=>contract.openDuel(squadId,overrides));
     const evt=eventIn(tx.receipt,'DuelOpened');
     const duelId=BigInt(evt.args.duelId);
-    if(BigInt(evt.args.squadId)!==squadId||
+    if(duelId!==previousDuelId+1n||
+      BigInt(evt.args.squadId)!==squadId||
       getAddress(evt.args.challenger)!==userAddress)
-      throw Error('Unexpected challenge identity.');
+      throw Error('Unexpected challenge event identity or duel sequence.');
     const status=await readDuel(duelId);
     if(status.squadId!==squadId||getAddress(status.challenger)!==userAddress
-      ||(await contract.duelForSquad(squadId))!==duelId)
+      ||BigInt(await contract.duelForSquad(squadId))!==duelId)
       throw Error('Recovered duel identity mismatch.');
-    return {duelId,transactionHash:tx.hash};
+    return {duelId,transactionHash:tx.hash,maximumQuotedFeeWei:fee.maxQuotedFeeWei};
   }
   async function recoverDuelId(squadId:bigint){
     await readSquad(squadId);
