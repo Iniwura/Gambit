@@ -53,6 +53,31 @@ try{
   await page.locator('#game-state[data-phase="chain-verified-squad"]')
     .waitFor({timeout:15000});
   assert.deepEqual(errors,[],'public verification must not crash the browser');
+  // First-impression judge route: the genuine onchain proof should be
+  // accessible directly from the Phaser welcome screen, with no wallet
+  // and without taking the user through a transaction/invitation form.
+  const quick=await browser.newPage({viewport:{width:1280,height:800}});
+  const quickErrors=[];
+  quick.on('pageerror',error=>quickErrors.push(error.message));
+  await quick.goto('http://127.0.0.1:4177/',{
+    waitUntil:'domcontentloaded',timeout:45000
+  });
+  await quick.locator('#game-state[data-phase="intro"]').waitFor({timeout:20000});
+  const canvas=quick.locator('#app canvas');
+  const rect=await canvas.boundingBox();
+  assert.ok(rect&&rect.width>0&&rect.height>0,'Phaser welcome canvas');
+  await quick.mouse.click(rect.x+rect.width*720/1440,
+    rect.y+rect.height*581/810);
+  await quick.locator('#game-state[data-phase="chain-verified-squad"]')
+    .waitFor({timeout:50000});
+  assert.equal(await quick.locator('#game-state').getAttribute('data-score-a'),'0');
+  assert.equal(await quick.locator('#game-state').getAttribute('data-score-b'),'1');
+  assert.deepEqual(quickErrors,[],'one-click witness must not crash the game');
+  console.log('GAMBIT_ONE_CLICK_PUBLIC_PROOF_READONLY '+JSON.stringify({
+    source:'Phaser intro',verifiedDuel:1,score:'0:1',
+    walletConnected:false,signatureMade:false,transactionSent:false
+  }));
+  await quick.close();
   console.log('GAMBIT_DUEL1_BROWSER_FINAL_RESULT_READONLY '+JSON.stringify({
     duelId:1,score:'0:1',winner:'VIOLET',
     canonicalPublicResult:true,verifiedReactorVisible:true,
