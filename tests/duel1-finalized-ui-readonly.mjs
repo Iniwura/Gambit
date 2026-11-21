@@ -43,6 +43,11 @@ try{
   assert.equal(await page.locator('#gambit-squad-watch').isVisible(),true);
   assert.equal(await page.locator('#gambit-squad-watch').isEnabled(),true);
   assert.equal(await page.locator('#gambit-squad-share-result').isEnabled(),true);
+  await page.locator('#gambit-squad-share-result').click();
+  await page.locator('#gambit-squad-share-feedback').waitFor({state:'visible',timeout:10000});
+  assert.match(await page.locator('#gambit-squad-share-feedback').textContent(),
+    /Verified score link copied|Copy Verified score link manually/,
+    'result link confirmation must remain visible after obsolete workflow is hidden');
   assert.equal(await page.locator('#gambit-squad-wallet-choice').inputValue(),'');
   await page.locator('#gambit-squad-watch').click();
   await page.locator('#game-state[data-phase="chain-verified-squad"]')
