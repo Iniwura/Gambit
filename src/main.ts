@@ -3,6 +3,7 @@ import {makeSquadMatch,commitSquadTurn,startingSquadPlans,SQUAD_ROLES,FORMATIONS
 import {buildPracticeInsight} from './practice-insight.mjs';
 import {buildPracticeMatchDebrief} from './practice-match-debrief.mjs';
 import {createMobileDeck} from './mobile-deck';
+import {mountBlacksiteGreybox} from './blacksite/greybox';
 import {buildPracticeDebrief} from './tactical-report.mjs';
 import {renderReactorDeck} from './visual/arena';
 import {makeFighter} from './visual/characters';
@@ -103,6 +104,7 @@ class GambitArena extends Phaser.Scene {
     this.intro();
     this.keyboardListener=(e:KeyboardEvent)=>{
       if(e.target instanceof HTMLInputElement)return;
+      if(document.body.dataset.gambitFeatureOverlay==='blacksite')return;
       if(!this.active||this.busy||this.finished)return;
       const key=e.key.toLowerCase();
       if(['4','5','6'].includes(key)){this.selectRole(Number(key)-4);return;}
@@ -121,7 +123,7 @@ class GambitArena extends Phaser.Scene {
     this.game.events.on('gambit:verified-squad',this.showVerifiedSquad,this);
     const touchCommand=(e:Event)=>{
       const command=(e as CustomEvent<{action:string,role?:number,formation?:number,field?:Field,value?:number,style?:PracticeStyle}>).detail;
-      if(!command)return;
+      if(!command||document.body.dataset.gambitFeatureOverlay==='blacksite')return;
       if(command.action==='style'&&typeof command.style==='string')this.selectPracticeStyle(command.style);
       else if(command.action==='role'&&typeof command.role==='number')this.selectRole(command.role);
       else if(command.action==='formation'&&typeof command.formation==='number')this.selectFormation(command.formation);
@@ -470,7 +472,7 @@ class GambitArena extends Phaser.Scene {
     overlay.add([watchBg,watchText,proofStatus]);
     let proofLoading=false;
     const begin=()=>{
-      if(this.active||proofLoading)return;
+      if(this.active||proofLoading||document.body.dataset.gambitFeatureOverlay==='blacksite')return;
       overlay.destroy(true);
       this.active=true;
       this.writeState('ready');
@@ -478,13 +480,17 @@ class GambitArena extends Phaser.Scene {
       window.removeEventListener('gambit:mobile-control',touchStart);
     };
     const touchStart=(e:Event)=>{
+      if(document.body.dataset.gambitFeatureOverlay==='blacksite')return;
       if((e as CustomEvent<{action?:string}>).detail?.action==='start')begin();
     };
     window.addEventListener('gambit:mobile-control',touchStart);
-    const enterKey=(e:KeyboardEvent)=>{if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();begin();}};
+    const enterKey=(e:KeyboardEvent)=>{
+      if(document.body.dataset.gambitFeatureOverlay==='blacksite')return;
+      if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();begin();}
+    };
     bg.on('pointerdown',begin);
     watchBg.on('pointerdown',()=>{
-      if(this.active||proofLoading)return;
+      if(this.active||proofLoading||document.body.dataset.gambitFeatureOverlay==='blacksite')return;
       proofLoading=true;
       proofStatus.setText('Checking the real Sepolia result…');
       const address=import.meta.env.VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS;
@@ -771,6 +777,10 @@ class GambitArena extends Phaser.Scene {
     retry.on('pointerdown',()=>this.scene.restart());
   }
 }
+
+// BLACKSITE is a real playable LOCAL training greybox, separate from the
+// Phaser Arena and real onchain squad panel. It never connects a wallet.
+mountBlacksiteGreybox();
 
 const game=new Phaser.Game({
   type:Phaser.AUTO,parent:'app',width:W,height:H,backgroundColor:'#060b16',
