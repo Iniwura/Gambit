@@ -88,9 +88,22 @@ export function publicVaultTrainingState(state){
      !Number.isInteger(state.maxAttempts)||
      !Array.isArray(state.history)||state.history.length!==state.round)
     throw Error('Invalid vault training state.');
+  // EXPLICIT allowlist: never spread arbitrary state or event fields across
+  // the public/private boundary. A hidden 'secret' injected into history must
+  // remain absent from public snapshots and proof material.
+  const publicHistory=state.history.map(item=>{
+    if(!item||typeof item!=='object'||!Number.isInteger(item.round)||
+       !Number.isInteger(item.exact)||!Number.isInteger(item.misplaced)||
+       !Number.isInteger(item.remaining)||
+       !['active','breached','locked'].includes(item.status))
+      throw Error('Invalid vault feedback event.');
+    return Object.freeze({round:item.round,
+      guess:Object.freeze(validateVaultCode(item.guess)),
+      exact:item.exact,misplaced:item.misplaced,
+      status:item.status,remaining:item.remaining});
+  });
   return Object.freeze({round:state.round,remaining:state.maxAttempts-state.round,
-    status:state.status,history:state.history.map(item=>
-      Object.freeze({...item,guess:Object.freeze(item.guess.slice())}))});
+    status:state.status,history:Object.freeze(publicHistory)});
 }
 
 export function submitVaultTrainingGuess(state,guess){
