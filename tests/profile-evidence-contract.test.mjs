@@ -48,13 +48,25 @@ function fixture(duel=7n,packed=1,transaction='0x'+'ab'.repeat(32)){
   };
   const flags={chainId:'0xaa36a7',head:150,code:RUNTIME,
     storedPacked:packed,claimed:true,submitted:true,finalized:true,
-    wrongLink:false,logCopies:1};
+    wrongLink:false,logCopies:1,reorgOnRecheck:false,headReads:0,
+    corruptReceiptBlock:false};
   const methods=[];
   const provider={
     async send(method){methods.push(method);
       assert.equal(method,'eth_chainId');return flags.chainId;},
-    async getBlock(tag){return tag==='latest'?{number:flags.head}:
-      {number:block,timestamp:1795279000};},
+    async getBlock(tag){
+      const headHash='0x'+'ed'.repeat(32);
+      if(tag==='latest')return {number:flags.head,hash:headHash};
+      if(tag===flags.head){
+        flags.headReads++;
+        return {number:flags.head,
+          hash:flags.reorgOnRecheck&&flags.headReads>1
+            ?'0x'+'ef'.repeat(32):headHash};
+      }
+      if(tag===block)return {number:block,timestamp:1795279000,
+        hash:flags.corruptReceiptBlock?'0x'+'ff'.repeat(32):blockHash};
+      throw Error('Unexpected block tag');
+    },
     async getCode(){return flags.code;},
     async getLogs(query){methods.push('eth_getLogs');
       return query.fromBlock<=block&&query.toBlock>=block
@@ -150,7 +162,9 @@ test('fail closed on wrong chain, runtime, reorg, unconfirmed and missing event'
     x=>{x.flags.storedPacked=5;},
     x=>{x.flags.claimed=false;},
     x=>{x.flags.wrongLink=true;},
-    x=>{x.tx.value=1n;}
+    x=>{x.tx.value=1n;},
+    x=>{x.flags.reorgOnRecheck=true;},
+    x=>{x.flags.corruptReceiptBlock=true;}
   ]){
     const x=fixture();
     mutate(x);
