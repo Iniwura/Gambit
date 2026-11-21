@@ -147,7 +147,18 @@ export function mountSquadSepoliaPanel(
   const squad=textbox('Squad ID (seal, invite or recovery)','gambit-squad-id','e.g. 1');
   const duel=textbox('Duel ID (submit, resolve or continue)','gambit-duel-id','e.g. 1');
   const invitedId=new URLSearchParams(window.location.search).get('squad');
-  if(invitedId&&/^[1-9][0-9]{0,77}$/.test(invitedId))squad.input.value=invitedId;
+  const isInvitedLink=Boolean(invitedId&&/^[1-9][0-9]{0,77}$/.test(invitedId));
+  if(isInvitedLink&&invitedId)squad.input.value=invitedId;
+  // An invite URL is a CHALLENGER journey. Avoid displaying the owner's
+  // create-a-new-squad actions or asking the challenger for the owner address.
+  if(isInvitedLink){
+    title.textContent='Encrypted Squad · Invitation';
+    caution.textContent='Accept the one-use encrypted invitation as the invited wallet. '+
+      'Opening starts a 24-hour deadline for your encrypted squad submission. '+
+      'No transaction happens until you explicitly approve it in your wallet.';
+    invited.wrap.hidden=true;invited.input.hidden=true;
+    squad.wrap.textContent='Invited Squad ID';
+  }
   // A shared read-only result link can prefill the canonical duel ID. It
   // must never start RPC, connect a wallet, or present an unverified result.
   const publicId=new URLSearchParams(window.location.search).get('duel');
@@ -207,7 +218,19 @@ export function mountSquadSepoliaPanel(
     client=next;
     identity.textContent='Connected '+next.userAddress+' · Ethereum Sepolia · '+selected.label;
     lastResult=null;
-    setStatus('Wallet connected and SquadGambit contract fingerprint verified. No transaction sent.');
+    if(isInvitedLink){
+      const id=positiveId(squad.input.value,'Invited squad ID');
+      const state=await next.readSquad(id);
+      if(!state.active||state.claimed)
+        setStatus('Wallet and contract verified. This invitation is no longer available; no transaction sent.');
+      else if(state.allowedOpponent.toLowerCase()!==next.userAddress.toLowerCase())
+        setStatus('Wallet and contract verified, but this wallet is not the invited challenger. No transaction sent.');
+      else
+        setStatus('Verified: this wallet is invited to Squad #'+id+'. '+
+          'Opening consumes the invitation and starts a 24-hour submission deadline. No transaction sent.');
+    }else{
+      setStatus('Wallet connected and SquadGambit contract fingerprint verified. No transaction sent.');
+    }
   });
   const seal=button('2 · Encrypt and seal my three fighter plans','gambit-squad-seal',async()=>{
     const c=requireClient();
@@ -226,12 +249,22 @@ export function mountSquadSepoliaPanel(
       throw Error('Only the owner can share an active, unused Sepolia squad.');
     await copyOrDisplay('Squad invitation link',squadInvitationLink(window.location.href,id));
   });
-  const open=button('3 · Open invitation as challenger','gambit-squad-open',async()=>{
+  const open=button(isInvitedLink?'Open invited squad · 1 transaction':
+    '3 · Open invitation as challenger','gambit-squad-open',async()=>{
     const c=requireClient(),s=positiveId(squad.input.value,'Squad ID');
+    setStatus('Checking one-use invitation and capped gas quote. '+
+      'Your wallet must separately approve this Sepolia transaction.');
     const x=await c.openDuel(s);
     duel.input.value=String(x.duelId);
-    setStatus('Duel #'+x.duelId+' opened by invited wallet. Tx: '+x.transactionHash);
+    setStatus('Duel #'+x.duelId+' opened by invited wallet. Tx: '+x.transactionHash+
+      '. Submit encrypted plans within 24 hours; no other transaction was initiated.');
   });
+  const openExplainer=document.createElement('p');
+  openExplainer.id='gambit-squad-open-details';
+  openExplainer.textContent='One-use invitation · maximum transaction fee 200,000,000 Sepolia wei '+
+    '(0.0000000002 ETH). You must approve the wallet prompt. '+
+    'No auto-retries or follow-up transactions.';
+  openExplainer.style.cssText='font:12px/1.5 system-ui;color:#aec5da;margin:7px 0 9px';
   const recover=button('Recover duel from squad ID (read only)','gambit-squad-recover',async()=>{
     const c=requireClient(),s=positiveId(squad.input.value,'Squad ID');
     const id=await c.recoverDuelId(s);
@@ -309,9 +342,13 @@ export function mountSquadSepoliaPanel(
 
   // Keep the most important status and wallet choice within view when the
   // user clicks Connect. The same live status receives every later error.
+  if(isInvitedLink){
+    seal.hidden=true;
+    shareInvite.hidden=true;
+  }
   card.append(heading,caution,identity,walletLabel,walletChoice,connect,status,
     invited.wrap,invited.input,seal,squad.wrap,squad.input,
-    shareInvite,open,recover,duel.wrap,duel.input,
+    shareInvite,open,openExplainer,recover,duel.wrap,duel.input,
     publicInspect,inspect,submit,resolve,finalize,result,shareResult,watch);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
