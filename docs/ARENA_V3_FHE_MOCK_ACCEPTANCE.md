@@ -2,7 +2,7 @@
 
 **Build:** 21 November 2026
 **Branch:** build/verified-first-slice · draft PR #5
-**Status:** an independent Solidity FHE prototype has compiled and completed its initial 5-mock-test run. The later cross-round proof replay and mock EVM gas acceptance checks have been committed and require their own CI confirmation. **No v3 contract is deployed.**
+**Status:** isolated v3 Solidity FHE mock contract COMPILED AND VERIFIED. [Hardhat FHE mock run 44941951287](https://github.com/Iniwura/Gambit/actions/runs/44941951287) passed 25/25 FHE tests, including 81/81 cross-formation and paired secret-sector oracle cases, all five encrypted rounds and signed-proof replay protection. **No v3 contract is deployed; HCU and live cost remain unmeasured.**
 
 ## Scope and precise security boundary
 
@@ -32,8 +32,22 @@ No automated cancellation/signature/transaction occurs. The Solidity code is ent
 5. Invalid participants, duplicate submits, invalid KMS proof/aggregate, repeated resolution.
 6. A repeated **identical public score** in different rounds cannot reuse a previous round's KMS proof.
 7. Compiled runtime and mock-only transaction gas measurements, explicitly not Sepolia/HCU results.
+8. Independent cleartext oracle parity for all nine formation pairs crossed with nine (three-by-three) hidden-sector pairs: **81/81 cases passed**, including conditional counter-programs and both players staking.
 
-The first five test cases passed in [initial FHE job](https://github.com/Iniwura/Gambit/actions/runs/44941549509) after fixing a Solidity reserved-word compile error. Confirm the later tests in their own run before marking the full prototype verified. Existing project deterministic, browser and v2 mock gates must also stay green.
+**Verified latest mock run:** [GitHub Actions 44941951287](https://github.com/Iniwura/Gambit/actions/runs/44941951287), **25/25 Hardhat tests**, including the six v3 tests and 81 oracle combinations. The first attempt failed because a Solidity variable used the reserved word `sealed` ([run 44941481160](https://github.com/Iniwura/Gambit/actions/runs/44941481160)); renaming it to `submitted` restored compilation and mock tests. Separate desktop/mobile regression status is tracked in the build log.
+
+## Measured local mock EVM and bytecode evidence
+
+[Hardhat mock FHE log](https://github.com/Iniwura/Gambit/actions/runs/44941951287) reported:
+- Optimized runtime: **11,851 bytes** (the research v3 contract, **not** the deployed v2 runtime).
+- Deployment: **2,688,796 mock EVM gas**.
+- First participant seal: **1,357,814 mock EVM gas**.
+- Second participant seal: **1,357,958 mock EVM gas**.
+- Resolution: **2,041,149 mock EVM gas**.
+- Signed-proof finalization: **127,045 mock EVM gas**.
+- 11 encrypted 8-bit inputs per side per round; 67-byte mock proof observed.
+
+These are **local mock EVM operation costs**, not actual Sepolia deployment fees, not a measure of privacy/security and emphatically **NOT HCU**. The likely 21 signed actions and user-attention cost remain the central product risk. The mock run validates circuit correctness under the local FHE simulator only.
 
 ## Critical unresolved issues before any live multiplayer
 
