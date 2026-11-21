@@ -14,6 +14,19 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Phase 2: playable BLACKSITE local-training greybox
+
+**Pillar:** BLACKSITE + shared game shell. **Status:** IMPLEMENTED, core/domain tests passed; full desktop/mobile E2E pending as of initial entry. All changes on `build/verified-first-slice`, draft PR #5, with **zero new wallet signatures, transactions or contracts**. Original art/audio remain frozen.
+
+- Added [functional BLACKSITE greybox](../src/blacksite/greybox.ts) and [minimal responsive stylesheet](../src/blacksite/greybox.css), mounted in [Phaser game bootstrap](../src/main.ts) without replacing the existing Arena loop. This is the original local four-glyph, five-attempt codebreaker, explicitly **NOT ENCRYPTED** and not the researched competitive BLACKSITE v2.
+- Players now have actual accessible controls and real game state: briefing → start → select four glyphs → submit → exact/misplaced public feedback → breach/locked → debrief → fresh randomized local retry. Rejects duplicate attempts and post-terminal submissions using the authoritative tested local controller. Close/reopen preserves the in-memory mission and leaves the Arena practice seed untouched.
+- Integrated the [fail-closed game shell](../src/architecture/game-shell.mjs): the new `blacksite-training` scene is available with `local-training` authority; **competitive** `blacksite-mission` stays unavailable. A local modal cannot be opened over the active wallet dialog; underlying Arena input is disabled while local training is shown.
+- Added [real Chromium desktop/mobile E2E](../tests/blacksite-greybox-browser-check.mjs) and wired it into the [full quality gate](https://github.com/Iniwura/Gambit/actions/workflows/validate.yml); domain and shell tests remain in standard Node CI. [Full acceptance notes](BLACKSITE_GREYBOX_ACCEPTANCE.md) cover response, keyboard/touch, failure, persistence boundaries and prohibited proof claims.
+- **Initial integration failure recorded:** the first [GitHub Pages build](https://github.com/Iniwura/Gambit/actions/runs/44925157360) rejected one implicit-any history event (strict TypeScript `TS7006`); corrected by typing public history rendering in commit `8d7937b`. Subsequent Phaser/TypeScript/FHE compile gates passed, but **only a completed browser run can approve the full player journey**.
+- **Current limitation:** local code exists in browser memory, hence not confidential against a user inspecting their own device. No competitive FHE puzzle or mission-world content, no durable restart recovery, no user-validated strategy/balance, and no final graphics. Do not call full BLACKSITE complete.
+
+**Next:** obtain final desktop/mobile browser evidence, fix any observed input/navigation failures, then evaluate a genuinely compelling competitive BLACKSITE mode without hiding the existing scanner weakness.
+
 ## 2026-11-21 — Engineering hygiene: predictable, cost-conscious CI
 
 - **Implemented:** `.github/workflows/validate.yml` and `.github/workflows/rules.yml` now ignore **documentation-only** pushes/PRs. Recording mandated GitHub progress must not rebuild browser/FHE workspaces on every Markdown edit.
