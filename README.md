@@ -8,7 +8,7 @@
 
 Program three fighters, choose a hidden deployment and outthink an opponent. The final reactor score is independently verifiable without publishing either squad's encrypted orders.
 
-> **Release status: pre-alpha.** The 3v3 practice match is playable in Phaser, and both experimental contracts have been deployed to Sepolia. The full encrypted squad contract was deployed on 20 Nov 2026 and passes local mock tests, but no complete real FHE two-wallet match has been verified. **A real two-wallet encrypted 3v3 match is NOT yet verified.** Production visuals and external user testing are outstanding.
+> **Release status: pre-alpha.** The 3v3 practice match is playable in Phaser, and both experimental contracts have been deployed to Sepolia. The full encrypted squad contract was deployed on 20 Nov 2026. On 21 Nov, Squad #1 was genuinely sealed on Sepolia and independently receipt/contract-state verified (ten encrypted squad inputs accepted). No complete two-wallet FHE duel, result resolution or signed KMS finalization has yet been verified. **A real two-wallet encrypted 3v3 match is NOT yet verified.** Production visuals and external user testing are outstanding.
 
 ## Play
 
@@ -41,6 +41,7 @@ The playable practice mode reveals each public lane result for learning. **The e
 | Desktop / mobile controls | Implemented | Real Chromium actions across both screen sizes, visible fighter tactics and post-match role analysis |
 | One-fighter `SealedGambit` | **Deployed, NOT live-match-verified** | Sepolia `0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0` |
 | Encrypted 3v3 `SquadGambit` | **Deployed, NOT live-match-verified** | Sepolia `0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134`; [deployment receipt](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a) |
+| First real 3v3 encrypted squad seal | **Verified on Sepolia; no duel yet** | Squad #1 owner `0x7d567F…8Ee176`, invited challenger `0x70d086…dcDD5`; [seal receipt](https://sepolia.etherscan.io/tx/0x65b1fde92ff899718f4febcdc1597cc9fb05c681b1e05996f306d2a3bae41e0b); [independent public-RPC verifier](https://github.com/Iniwura/Gambit/actions/runs/44904055643) confirmed exact event, active/unclaimed state and 74,851,940 wei fee |
 | Versioned encrypted squad browser adapter | Prepared, **gated** | Exact Sepolia address and independently verified runtime code hash required |
 | No-wallet finalized-score inspector | Implemented, **no real final match to inspect** | Public RPC + runtime fingerprint + finalized state/linkage checks; negative tests |
 | Zama SDK ten-value encryption probe | **Passed, read-only** | Public relayer produced 10 ciphertext handles plus input proof; CI run [44725183567](https://github.com/Iniwura/Gambit/actions/runs/44725183567); no signature or chain write |
@@ -84,13 +85,13 @@ The Hardhat FHE suite uses **local mock encryption and decryption**. Green tests
 - `src/chain/squad-public-reader.ts` — wallet-free verification of finalized 3v3 score from exact deployed contract state
 - `fhe/contracts/` — Solidity FHE candidates, including `SealedGambit.sol` and `SquadGambit.sol`
 - `fhe/test/` — adversarial, parity and proof-replay mock tests
-- `fhe/scripts/seal-squad-sepolia.ts` — guarded real v2 ten-input seal, **not executed**; see [live handoff](docs/LIVE_SQUAD_SEAL_HANDOFF.md)
+- `fhe/scripts/seal-squad-sepolia.ts` — guarded real v2 ten-input seal; **executed once successfully for Squad #1 on 21 Nov**; see [live handoff](docs/LIVE_SQUAD_SEAL_HANDOFF.md)
 
 Detailed design and constraints: [GAME_DESIGN](docs/GAME_DESIGN.md), [FHE Squad Protocol](docs/CONFIDENTIAL_SQUAD_V2.md), [Visual QA](docs/VISUAL_ACCEPTANCE.md), and [Deployment Gate](docs/SQUAD_DEPLOYMENT_GATE.md).
 
 ## What's next
 
-1. The live read-only ten-input SDK encryption probe passed in CI. Next, verify distinct challenger wallet readiness and the exact next squad ID with the [v2 live seal handoff](docs/LIVE_SQUAD_SEAL_HANDOFF.md). The [live verification checklist](https://github.com/Iniwura/Gambit/issues/8) tracks this evidence gate.
+1. The first real ten-input `sealSquad` succeeded and was independently reverified using public Sepolia RPC. **Next: the invited second wallet must separately authorize `openDuel(1)`.** The [live verification checklist](https://github.com/Iniwura/Gambit/issues/8) tracks the rest of the match. No further transaction is authorized by the spent one-seal approval.
 2. Proceed only with one-shot, owner-controlled, **fee-capped testnet transaction flags**. Verify a real two-wallet ten-value encrypted duel, signed aggregate KMS result and recovery. Do not rely on deployment approval or reuse a transaction flag indiscriminately.
 3. Record actual Sepolia gas, HCU if observable, relayer/KMS latency, canonical receipts and user-facing verified results.
 4. Replace provisional fighter graphics with final original sprites and animations, perform beginner playtests, and conduct an independent privacy / gameplay audit.
