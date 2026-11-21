@@ -122,61 +122,39 @@ export async function verifyArenaProfileRecord(provider,duelId,config){
   check(events.length===1&&
     normHash(events[0].transactionHash)===normHash(eventLog.transactionHash),
     'event not unique in canonical receipt');
-  const [duelThen,squadThen,linkedThen,duelNow,squadNow,linkedNow]=
-    await Promise.all([
-      readAt(provider,address,receipt.blockNumber,'duelStatus',[duelId]),
-      // Squad ID comes from the SAME mined block.
-      (async()=>{
-        const d=await readAt(provider,address,receipt.blockNumber,
-          'duelStatus',[duelId]);
-        return readAt(provider,address,receipt.blockNumber,'squadStatus',
-          [d.squadId]);
-      })(),
-      (async()=>{
-        const d=await readAt(provider,address,receipt.blockNumber,
-          'duelStatus',[duelId]);
-        return readAt(provider,address,receipt.blockNumber,'duelForSquad',
-          [d.squadId]);
-      })(),
-      readAt(provider,address,head.number,'duelStatus',[duelId]),
-      (async()=>{
-        const d=await readAt(provider,address,head.number,
-          'duelStatus',[duelId]);
-        return readAt(provider,address,head.number,'squadStatus',[d.squadId]);
-      })(),
-      (async()=>{
-        const d=await readAt(provider,address,head.number,
-          'duelStatus',[duelId]);
-        return readAt(provider,address,head.number,'duelForSquad',[d.squadId]);
-      })()
-    ]);
-  const shapeD=d=>({
-    squadId:BigInt(d.squadId),challenger:d.challenger,
-    submitted:Boolean(d.submitted),resolved:Boolean(d.resolved),
-    finalized:Boolean(d.finalized),expired:Boolean(d.expired),
-    packedScore:BigInt(d.packedScore),openedAt:BigInt(d.openedAt)
-  });
-  const shapeS=s=>({
-    owner:s.owner,allowedOpponent:s.allowedOpponent,
-    active:Boolean(s.active),claimed:Boolean(s.claimed)
-  });
-  const atReceipt=verifyFinalizedSquadSnapshot(
-    duelId,shapeD(duelThen),shapeS(squadThen),BigInt(linkedThen[0]));
-  const atHead=verifyFinalizedSquadSnapshot(
-    duelId,shapeD(duelNow),shapeS(squadNow),BigInt(linkedNow[0]));
-  check(atReceipt.squadId===atHead.squadId&&
-    atHead.pointsChallenger===pointsChallenger&&
-    atHead.pointsDefender===pointsDefender&&
-    atReceipt.pointsChallenger===pointsChallenger&&
-    atReceipt.pointsDefender===pointsDefender&&
-    atReceipt.outcome===outcome&&atHead.outcome===outcome&&
-    same(squadThen.owner,squadNow.owner)&&
-    same(duelThen.challenger,duelNow.challenger),
+  // Canonical receipt + event is proof of the mined finalization; current
+  // views establish that its score and participants still agree. Historical
+  // eth_call at the receipt block is intentionally NOT required: many public
+  // Sepolia RPCs do not provide archival state. This avoids a false negative
+  // without trusting an arbitrary score or skipping receipt/event checks.
+  const duelNow=await readAt(provider,address,'latest','duelStatus',[duelId]);
+  const [squadNow,linkedNow]=await Promise.all([
+    readAt(provider,address,'latest','squadStatus',[duelNow.squadId]),
+    readAt(provider,address,'latest','duelForSquad',[duelNow.squadId])
+  ]);
+  const snapshot=verifyFinalizedSquadSnapshot(
+    duelId,{
+      squadId:BigInt(duelNow.squadId),
+      challenger:duelNow.challenger,
+      submitted:Boolean(duelNow.submitted),
+      resolved:Boolean(duelNow.resolved),
+      finalized:Boolean(duelNow.finalized),
+      expired:Boolean(duelNow.expired),
+      packedScore:BigInt(duelNow.packedScore),
+      openedAt:BigInt(duelNow.openedAt)
+    },{
+      owner:squadNow.owner,
+      allowedOpponent:squadNow.allowedOpponent,
+      active:Boolean(squadNow.active),
+      claimed:Boolean(squadNow.claimed)
+    },BigInt(linkedNow[0]));
+  check(snapshot.pointsChallenger===pointsChallenger&&
+    snapshot.pointsDefender===pointsDefender&&snapshot.outcome===outcome,
     'canonical state and event disagree');
   const record=Object.freeze({
     version:1,chainId:11155111,
     contractAddress:address,runtimeHash:normHash(config.runtimeHash),
-    squadId:atHead.squadId.toString(),duelId:duelId.toString(),
+    squadId:snapshot.squadId.toString(),duelId:duelId.toString(),
     transactionHash:receipt.hash,blockNumber:receipt.blockNumber,
     blockHash:receipt.blockHash,
     defender:getAddress(squadNow.owner),
