@@ -36,14 +36,14 @@ Take command of three distinct fighters, outthink real human opponents with secr
 
 ### B. BLACKSITE — confidential missions and codebreaking
 
-**Planned player-facing mode — NOT built or FHE-validated.** The local four-symbol deduction reference and headless mission lifecycle exist, but this is a separate experience from the deployed `SquadGambit` contract.
+**Local training mode is now implemented as a functional greybox; competitive BLACKSITE is NOT built or FHE-validated.** The tested four-symbol tutorial has actual browser controls, but the intended confidential mission world remains a separate experience from the deployed `SquadGambit` contract.
 
 - Tactical infiltration into a sci-fi security facility, limited information and hard choices.
 - Confidential decisions, clues, vault-code/codebreaking mechanics and meaningful tradeoffs; puzzle solutions and hidden data should not be exposed before the rules permit.
 - Original mission environments, progression, tension, clear win/lose conditions and rewarding replay.
 - Design the exact secrecy/fairness model, interaction loop, verification mechanism, privacy boundaries, HCU budget and anti-bruteforce limits **before** implementing or describing a playable encrypted mission.
 
-**CURRENT STATUS:** tested local cipher/deduction engine plus headless briefing → active → breached/locked → debrief/retry controller in [`src/blacksite/mission.mjs`](../src/blacksite/mission.mjs). All 256 code outcomes tested. **No playable Phaser mission scene, mission content, real FHE contract or encrypted receipt.**
+**CURRENT STATUS:** [`src/blacksite/greybox.ts`](../src/blacksite/greybox.ts) now exposes an actual local-training flow (briefing, inputs, clues, breach/lock, debrief, retry), backed by the complete [256-code headless reference](../src/blacksite/mission.mjs). It is connected to the fail-closed `blacksite-training` scene and has [desktop/mobile E2E](../tests/blacksite-greybox-browser-check.mjs) in CI. **Browser acceptance requires a completed passing run.** The separate v2 research has 7,776 codes but no approved competitive scanner; **no encrypted FHE mission, cinematic infiltration, content, rankings or real mission receipt.**
 
 ### C. TRAINING — serious game onboarding and tactical mastery
 
@@ -84,7 +84,7 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 | No-wallet spectator / first-screen proof shortcut and result view | **Built and Chromium-tested** | Judge-friendly evidence route; not full Create/Join product |
 | Latest CI at `2607827264e6acbc55b07952e49b96331351db50` | **Four quality jobs PASS**, rules checks PASS, spectator PASS, GitHub Pages PASS | Tests do not approve art quality, human gameplay or security |
 | Full multi-round confidential Arena, signature GAMBIT intervention, matchmaking and smooth end-to-end UX | **Not yet built / verified** | Requires design, actual implementation and separate live evidence |
-| BLACKSITE | **Headless LOCAL mission controller + 7,776-code research tested** | Proposed class scanner failed an initial value test; no playable scene, confidential contract or real encrypted receipts |
+| BLACKSITE | **Playable local training greybox implemented; browser QA pending** | Competitive mission/FHE contract not built; proposed scanner not approved; no ranked mission outcomes |
 | Commander Profile, persistent verified history/progression | **Live receipt + bounded candidate discovery verified** | No durable history store, identity/consent, achievements or playable Profile scene |
 | Premium original sprite art, audio, accessible UX and independent playtesting/security review | **Incomplete / not established** | No 90+/100 or release-ready claim |
 
