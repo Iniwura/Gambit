@@ -76,6 +76,16 @@ async function main(){
     ]);
     console.log('GAMBIT_KMS_PUBLIC_STAGE SIMULATING_FINALIZATION_VIA_ETH_CALL');
     await ethers.provider.call({from:CHALLENGER,to:CONTRACT,data,value:0n});
+    const estimated=await ethers.provider.estimateGas({
+      from:CHALLENGER,to:CONTRACT,data,value:0n
+    });
+    check(estimated>0n,'zero gas estimate');
+    const fees=await ethers.provider.getFeeData();
+    const price=fees.maxFeePerGas??fees.gasPrice;
+    check(price!==null&&price>0n,'no public Sepolia fee quote');
+    const bufferedGas=(estimated*120n+99n)/100n;
+    const maximumQuote=bufferedGas*price;
+    check(maximumQuote<=500000000n,'exceeds separate finalization software ceiling');
     const post=await read('duelStatus');
     check(post.resolved===true&&post.finalized===false,
       'public eth_call unexpectedly changed onchain state');
@@ -83,6 +93,10 @@ async function main(){
       chainId:11155111,contractAddress:CONTRACT,duelId:'1',
       publicHandle:handle,publicKmsProofPresent:true,
       onchainProofSimulation:'PASSED',
+      estimatedGas:estimated.toString(),
+      bufferedGasLimit:bufferedGas.toString(),
+      maximumQuotedFeeWei:maximumQuote.toString(),
+      quotedFeePerGasWei:price.toString(),
       packedAggregate:packed,
       challengerPoints,defenderPoints,
       outcome:challengerPoints===defenderPoints?'DRAW':
