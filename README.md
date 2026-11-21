@@ -6,6 +6,8 @@ GAMBIT is a playable 3v3 squad-tactics game with a confidential, asynchronous he
 
 **Master product plan:** [Full four-pillar game scope, roadmap and progress](docs/GAMBIT_MASTER_SCOPE.md) — ARENA, BLACKSITE, TRAINING and COMMANDER PROFILE. This governs what we're building beyond the first verified duel.
 
+**Permanent development history:** [GAMBIT Build Log](docs/BUILD_LOG.md) records every verified milestone, failed/passed CI check, unresolved system and next priority.
+
 **Current engineering phase:** [Phase-1 Game Architecture and Mechanics v1](docs/GAME_ARCHITECTURE_V1.md) — functional design, state ownership, four-pillar integration, and pre-graphics gates. **Not a claim that all four modes are playable.**
 
 **Release status:** a genuine two-wallet encrypted match has been completed and independently verified on Sepolia. The game remains a **pre-release candidate** pending newcomer playtests, full product/visual polish and independent security review. We do not claim production readiness or a security audit.
