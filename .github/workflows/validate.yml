@@ -134,6 +134,7 @@ jobs:
           node tests/squad-browser-check.mjs
           node tests/mobile-deck-browser-check.mjs
           node tests/blacksite-greybox-browser-check.mjs
+          node tests/profile-greybox-browser-check.mjs
           node tests/deploy-browser-check.mjs
           node tests/sepolia-browser-safety-check.mjs
           # Deliberately fake v2 config is used for NEGATIVE browser cases only.
