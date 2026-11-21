@@ -5,6 +5,7 @@ import {sepolia} from '@zama-fhe/sdk/chains';
 import {BrowserProvider,Contract,getAddress,keccak256,ZeroAddress} from 'ethers';
 import {encodeSquadInputs,decodePackedSquadScore,canOpenSquad,squadDuelStep,validateSquadStatus} from './squad-lifecycle.mjs';
 import {boundDuelOpenFee,MAX_DUEL_OPEN_FEE_WEI} from './duel-open-fee.mjs';
+import {boundDuelSubmitFee,MAX_DUEL_SUBMIT_FEE_WEI} from './duel-submit-fee.mjs';
 
 /**
  * Versioned experimental v2 wallet client for deployed SquadGambit; live encrypted match is NOT VERIFIED.
@@ -284,19 +285,74 @@ export async function createSquadSepoliaClient(
     if(duel.squadId!==squadId)throw Error('Recovery index points to another squad.');
     return duelId;
   }
+  /**
+   * ONE freshly authorized challenger submit transaction. Encryption uses
+   * current public SDK and the player's private tactics, but the fee cap
+   * binds buffered gasLimit × maxFeePerGas BEFORE ANY wallet prompt.
+   * The UI must separately obtain approval; this code never auto-retries.
+   */
   async function submitDuel(duelId:bigint,plans:FighterPlan[],formation:number){
     const {step}=await nextDuelStep(duelId);
     if(step!=='submit')throw Error('Duel is not awaiting an invited squad submission.');
     const input=await encryptedSquad(plans,formation);
     if((await nextDuelStep(duelId)).step!=='submit')
       throw Error('Onchain duel changed or expired during encryption.');
+    const txData=contract.interface.encodeFunctionData('submitDuel',[
+      duelId,input.encryptedValues,input.inputProof
+    ]);
+    const estimate=await provider.estimateGas({
+      from:userAddress,to:contractAddress,data:txData,value:0n
+    });
+    const originalFees=await provider.getFeeData();
+    const originalPrice=originalFees.maxFeePerGas??originalFees.gasPrice;
+    if(originalPrice===null||originalPrice<=0n)
+      throw Error('Cannot estimate bounded submission fee on Sepolia.');
+    boundDuelSubmitFee(estimate,originalPrice,MAX_DUEL_SUBMIT_FEE_WEI);
+
     await assertWalletStable();
-    const tx=await txSucceeded(()=>contract.submitDuel(duelId,input.encryptedValues,input.inputProof));
+    if((await nextDuelStep(duelId)).step!=='submit')
+      throw Error('Submission state changed while checking gas; no wallet prompt.');
+    const runtime=await provider.getCode(contractAddress);
+    if(runtime==='0x'||keccak256(runtime).toLowerCase()!==expectedRuntimeHash.toLowerCase())
+      throw Error('Pinned SquadGambit runtime changed; cannot submit.');
+    const fresh=await provider.getFeeData();
+    const freshPrice=fresh.maxFeePerGas??fresh.gasPrice;
+    if(freshPrice===null||freshPrice<=0n)
+      throw Error('Fresh submission gas price unavailable; no wallet prompt.');
+    const fee=boundDuelSubmitFee(estimate,freshPrice,MAX_DUEL_SUBMIT_FEE_WEI);
+    const overrides:Record<string,bigint>={gasLimit:fee.gasLimit};
+    if(fresh.maxFeePerGas!==null&&fresh.maxFeePerGas!==undefined&&
+      fresh.maxPriorityFeePerGas!==null&&fresh.maxPriorityFeePerGas!==undefined){
+      if(fresh.maxPriorityFeePerGas>fresh.maxFeePerGas)
+        throw Error('Unsafe EIP-1559 fee quote');
+      overrides.maxFeePerGas=fresh.maxFeePerGas;
+      overrides.maxPriorityFeePerGas=fresh.maxPriorityFeePerGas;
+    }else{
+      overrides.gasPrice=freshPrice;
+    }
+    await assertWalletStable();
+    const tx=await txSucceeded(()=>contract.submitDuel(
+      duelId,input.encryptedValues,input.inputProof,overrides));
     const e=eventIn(tx.receipt,'DuelSubmitted');
-    if(BigInt(e.args.duelId)!==duelId)throw Error('Submission event ID mismatch.');
-    const d=await readDuel(duelId);
-    if(!d.submitted||d.expired||d.finalized)throw Error('Submission state mismatch.');
-    return {transactionHash:tx.hash};
+    if(BigInt(e.args.duelId)!==duelId)
+      throw Error('Confirmed submission event ID mismatch. Do not retry.');
+    // Receipt + authentic DuelSubmitted event are already conclusive that
+    // one submission was accepted. A lagging wallet RPC must not turn this
+    // into a false "failed transaction" or invite a second signature.
+    let canonicalStateVerified=false;
+    try{
+      const stored=await contract.duelStatus(duelId,{
+        blockTag:tx.receipt.blockNumber
+      });
+      canonicalStateVerified=BigInt(stored.squadId)>0n&&
+        getAddress(stored.challenger)===userAddress&&
+        Boolean(stored.submitted)&&!Boolean(stored.expired);
+    }catch{canonicalStateVerified=false}
+    return {
+      transactionHash:tx.hash,
+      duelId,maximumQuotedFeeWei:fee.maximumFeeWei,
+      receiptVerified:true as const,canonicalStateVerified
+    };
   }
   async function verifiedResult(duelId:bigint):Promise<SquadResult>{
     const d=await readDuel(duelId);
