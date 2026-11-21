@@ -51,10 +51,10 @@ src/
   training/
     tutorial.mjs                   # PLANNED: guided first actions and mastery
   blacksite/
-    mission.mjs                    # PLANNED: real mission controller and failure states
+    mission.mjs                    # BUILT: headless local mission; NOT playable or FHE
     private-mission-adapter.mjs    # PLANNED: entirely separate FHE protocol, after feasibility approval
   profile/
-    evidence-indexer.mjs           # PLANNED: authenticate events/receipts and derive stats
+    verified-arena-record.mjs      # BUILT: signed-event receipt reader; NOT a Profile UI
     progression.mjs                # PLANNED: validate earned achievements
   chain/                            # EXISTS: squad-lifecycle, Sepolia adapters, proof reader
   research/blacksite-cipher.mjs     # EXISTS: local deduction reference only
@@ -125,7 +125,7 @@ The existing `src/research/blacksite-cipher.mjs` and `tests/blacksite-cipher.tes
 - Repeated guesses are rejected; a correct four-exact answer ends in `breached`; running out of attempts ends in `locked`. Feedback history is immutable and the public snapshot explicitly excludes the local secret.
 - Reference exhaustive tests show a perfect offline minimax solver can find all 256 codes in at most four feedback queries. **That is a mathematical observation, NOT a fun game, human skill result, or encrypted proof.**
 
-**Proposed full mission flow (NOT IMPLEMENTED):** briefing → enter infiltration → view limited clues/tools → choose code and consume one attempt → see bounded aggregate hint/mission consequence → breached/locked outcome → optionally restart a genuinely new mission. Mission objectives, map constraints, rewards and deduction difficulty remain to be designed and playtested.
+**Headless local mission lifecycle IMPLEMENTED (not playable):** [`src/blacksite/mission.mjs`](../src/blacksite/mission.mjs) enforces briefing → active → at most five guesses → breached/locked → debrief → restart with a distinct local ID. The training secret is held outside exported public state in a module WeakMap; **this does not provide cryptographic privacy in a browser**. [Tests](../tests/blacksite-mission-contract.test.mjs) cover all 256 secrets, state immutability, duplicate/invalid guesses, terminal lock, retry and public-field allowlisting. **The Phaser mode, missions, responsive controls, secure creator/solver protocol and encrypted contract remain unbuilt.**
 
 **Critical feasibility decision:** 256 codes ≈ 8 bits of entropy, and five attempts plus aggregate clues may leak enough to solve the puzzle predictably. Do not assert robust secrecy, uniqueness or resistance to brute-force. Before making a Zama contract: design one-use mission IDs, creator versus solver authority, cryptographically acceptable secret sourcing/commitment, FHE comparison and hint budget, anti-grief/anti-replay, HCU/latency, public reveal policy and recovery. Never emit or locally log a hidden mission code in onchain mode. The local training prototype is cleartext only.
 
@@ -151,7 +151,7 @@ NOT_STARTED → FIRST_MOVE → CONDITIONAL_COUNTER → ROLE_COMPOSITION
 
 **Public identity model (future):** `{version,identityId,displayName?,linkedWallets[],verifiedGameRecords[],practiceMilestones[],achievements[]}`. Player names/profile links are opt-in; a wallet address alone is not a game achievement.
 
-**Verified Arena record:** `{chainId,contractAddress,runtimeHash,squadId,duelId,finalizationTx,blockNumber,challenger,defender,packedScore,outcome,verificationVersion}`. Each is derived from a canonical receipt/event+state, not user-provided claims. Resolve duplicate duel IDs by `(chainId,contractAddress,duelId)`; never double-count a transaction. Reorg/rollback invalidates provisional entries until reconfirmed.
+**Verified Arena record — INITIAL READER BUILT:** [`src/profile/verified-arena-record.mjs`](../src/profile/verified-arena-record.mjs) checks the caller-supplied trusted deployment manifest, Sepolia chain, matching runtime, mined canonical receipt/event and signed KMS-proof calldata, current contract status, one-use identity and ≥12 confirmations. A module-branded record is required to derive win/loss/draw; arbitrary JSON fails closed. Avoids archival-state RPC dependence while checking canonical receipts and latest status. Record includes chain/contract/runtime, squad/duel IDs, tx/block hash, participants, aggregate, confirmations and evidence/version. Reverify after reorgs. **Duel #1 live read-only verification passed:** [CI](https://github.com/Iniwura/Gambit/actions/runs/44921548615). Complete trusted deployment registry, persistent multi-match indexing, opt-in identity and player-facing Profile remain unfinished.
 
 **BLACKSITE record:** until a real confidential mission contract exists, only label results `LOCAL TRAINING`. Future onchain mission proofs must be independently verified against their own contract and disclosure policy; do not convert local success into public rank.
 
@@ -159,7 +159,7 @@ NOT_STARTED → FIRST_MOVE → CONDITIONAL_COUNTER → ROLE_COMPOSITION
 
 **Persistence plan:** read-only chain index (public logs + runtime/code/receipt verification), versioned local UI preferences, optional public profiles only with appropriate consent. No passwords, wallet keys, private ciphertext proofs or decrypted strategy in storage. A disconnected wallet can view a verified public match but cannot write on behalf of the player.
 
-**Profile gate:** show a real profile only after complete data/provenance schema, duplicate and reorg handling, honest empty state, reliable browser recovery and user privacy controls are tested.
+**Profile gate:** one actual signed Sepolia match is now independently attributable in a read-only record, with mock forged/reorg tests. **Profile remains disabled** until the trusted deployment allowlist, multi-match persistence/indexing, account privacy and opt-in identity, reorg invalidation, an honest empty state, and responsive browser QA have passed.
 
 ## 8. Shared state machines and interaction contract
 
