@@ -10,7 +10,7 @@ This specification implements the architecture phase of the [master scope](GAMBI
 **Player fantasy:** command Scout, Guardian and Striker, secretly program conditional orders, anticipate an opponent's formation, control the reactor, attempt confidential BLACKSITE missions and grow a commander identity across real, verifiable achievements.
 
 **Product pillars:**
-- **ARENA:** flagship competitive tactical game. Target evolving multi-round confidential PVP; presently one authentic single-encounter FHE match exists.
+- **ARENA:** flagship competitive tactical game. Target evolving multi-round confidential PVP; currently one authentic single-encounter Sepolia FHE match, one isolated **local FHE mock five-round contract**, and a [verified playable two-person **LOCAL CLEAR-TEXT hotseat**](ARENA_V3_HOTSEAT_ACCEPTANCE.md) exist. Neither new v3 milestone is live online PVP.
 - **TRAINING:** first-use tutorial and complete five-round local Tactical Academy are implemented and verified by [real desktop/mobile five-round browser playthrough and 4/4 full CI](https://github.com/Iniwura/Gambit/actions/runs/44938866411). Independent novice comprehension and saved progression are unverified/unbuilt.
 - **BLACKSITE:** distinct limited-information codebreaking/infiltration missions. A responsive **playable four-glyph LOCAL TRAINING** greybox is verified; the confidential competitive mission, fair v2 puzzle economy and contract are not built.
 - **COMMANDER PROFILE:** persistent identity, verified history and earned achievements are the target. A non-persistent opt-in read-only **Commander Records** viewer is verified against actual Sepolia receipts; persistent identity, achievements and progression are not implemented.
@@ -31,7 +31,7 @@ The official Season 5 judging emphasises gameplay/UX, confidentiality that mater
 | **Persistence** (future data adapter) | Versioned local tutorial preferences/continuation; immutable indexed public receipts for profile | Storing cleartext player secrets, inventing opponents or achievements |
 | **Accessible UI surface** (DOM command deck and dialogs) | Input focus, visible wait/errors, touch targets, retry guidance, screen-reader feedback | Bypassing authoritative rule validation or merging local practice with onchain evidence |
 
-**Immediate source contract:** `src/architecture/game-shell.mjs` exports a pure, deterministic, immutable scene model with named available/unavailable scenes. It deliberately refuses to navigate to unfinished Competitive Arena, BLACKSITE Mission or Commander Profile. This is **architectural scaffolding**, not a functional multi-screen game. See `tests/game-architecture-contract.test.mjs`.
+**Immediate source contract:** `src/architecture/game-shell.mjs` exports a pure, deterministic, immutable scene model with named available/unavailable scenes. It now explicitly enables `arena-v3-hotseat` as a same-device **local-two-player-cleartext** scene; it still refuses to navigate to unfinished encrypted Competitive Arena, BLACKSITE Mission or Commander Profile. This is **architectural scaffolding**, not a functional multi-screen game. See `tests/game-architecture-contract.test.mjs`.
 
 **Dependency rule:** UI → application/command handlers → domain and adapters; renderer observes validated public state. The Solidity contract is the authoritative source for real FHE match status and outcomes. Pure domain modules must import neither renderer nor wallet SDK.
 
