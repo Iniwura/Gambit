@@ -14,6 +14,27 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Phase 1: verified deployment trust, reorg safety and BLACKSITE difficulty study
+
+**Branch:** `build/verified-first-slice`; draft PR #5. **Graphics frozen. No blockchain writes, new contracts, or wallet signatures.**
+
+### Commander Profile security — VERIFIED, not a shipped profile
+
+- **P0 vulnerability corrected:** previous `verifyArenaProfileRecord` could accept an arbitrary caller-supplied contract address and a matching user-supplied runtime hash, then treat those self-consistent logs as ranked evidence. Added exact [approved deployment registry](../src/profile/trusted-deployments.mjs); the production verifier now **rejects unknown deployments before reading results**. Mock research receipts use a separate trust brand and cannot become real player victories.
+- **Reorg consistency hardened:** real verification pins contract runtime and state reads to one block, checks the receipt's canonical event block hash and reconfirms that same head before minting a trusted record. Source: [Profile verifier](../src/profile/verified-arena-record.mjs). [Adversarial tests](../tests/profile-evidence-contract.test.mjs) cover wrong chain/hash/runtime, counterfeit self-pinning, competing receipts, head reorg and orphaned blocks.
+- **Regression repaired transparently:** the initial head-reorg mutation test [failed](https://github.com/Iniwura/Gambit/actions/runs/44923275731) because its fixture changed the simulated hash only on a second numeric head read. The fixture was corrected to mutate the *first* canonical recheck. No production validation was weakened.
+- **Independent live Sepolia verification PASSED after fix:** [focused run 44923354217](https://github.com/Iniwura/Gambit/actions/runs/44923354217) passed **13/13** focused tests, independently authenticated Duel #1 on the **approved** pinned deployment and correctly attributed one Violet defender win and one Cyan challenger loss. Read-only snapshot reported 475 confirmations. This is **one verifiable record**, not durable player history or a profile UI.
+- Architecture decision: [Profile Trust and Recovery](PROFILE_TRUST_AND_RECOVERY.md) documents bounded indexing, opt-in privacy, confirmation/reorg policy, honest empty/error states and release acceptance. Persistence and user-facing Profile remain **NOT BUILT**.
+
+### BLACKSITE difficulty research — VERIFIED math, competitive policy NOT approved
+
+- [v2 research rules](../src/research/blacksite-v2-feasibility.mjs): separate 5-glyph/6-symbol model (`6^5=7776`), six total actions, five guess cap, two optional class scans, duplicate/terminal/contradiction refusal. The original easy `4^4=256` tutorial remains unchanged. **Neither is currently encrypted onchain.**
+- [Exact information benchmark](../src/research/blacksite-v2-information.mjs) exhaustively evaluates all 7,776 secrets rather than estimating from a handful of samples. [Passing rules CI 44923522404](https://github.com/Iniwura/Gambit/actions/runs/44923522404): **167/167** root tests, including transcript, action-budget, candidate and clue-information invariants.
+- **Negative result retained:** one reference guess gives 3.324 bits (973 expected remaining codes), a class scan 2.091 bits (2,044 remaining), scan+guess 5.245 bits (277 remaining), and two fixed guesses 6.250 bits (139 remaining). **As designed, the scan is NOT accepted for the competitive mode** because it appears inefficient against another guess in the tested opening; global dominance and actual player win rates are not yet proven.
+- [BLACKSITE Protocol and Threat Model](BLACKSITE_V2_PROTOCOL_DECISION.md) defines mission identity, anti-replay, solver/creator privilege, finite query budget, privacy leakage, KMS-proof binding, expiry, collusion risks and FHE/HCU feasibility. A secret chosen or known by a creator is **not** fairness-proof; an 7,776-code space is not cryptographic entropy. **No competitive mode, encrypted mission or graphics approved.**
+
+**Remaining blockers:** resolve BLACKSITE game difficulty and fair secret generation, implement actual local mission player interactions, design/verify persistent Profile indexing and opt-in identity, settle Arena v3 game rules and evaluate actual FHE costs. The four-pillar functional greybox is incomplete. **Next:** test better BLACKSITE action/mission policies with game-balance evidence, then implement state-driven functional BLACKSITE greybox and true Profile history/controller under verified feature gates.
+
 ## 2026-11-21 — Phase 1: BLACKSITE mission + authenticated Profile evidence boundaries
 
 **Branch:** `build/verified-first-slice`; draft [PR #5](https://github.com/Iniwura/Gambit/pull/5). **No blockchain writes, wallet signature, deployments, new graphics or media.**
