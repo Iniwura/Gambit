@@ -104,7 +104,51 @@ async function scenario(viewport,label){
     }));
   }finally{await context.close()}
 }
+async function tabletNavigation(width){
+  const context=await browser.newContext({viewport:{width,height:900}});
+  try{
+    const page=await context.newPage();
+    const errors=[];
+    page.on('pageerror',err=>errors.push(err.message));
+    const r=await page.goto(ROOT,{waitUntil:'networkidle',timeout:45000});
+    assert.equal(r.status(),200);
+    await page.locator('#game-state[data-phase="intro"]').waitFor({timeout:15000});
+    const buttons=[
+      'gambit-profile-open','gambit-blacksite-open',
+      'gambit-chain-launch','gambit-training-open'
+    ];
+    for(const id of buttons){
+      const locator=page.locator('#'+id);
+      assert.equal(await locator.isVisible(),true,id+' must be visible');
+      const rect=await locator.boundingBox();
+      assert.ok(rect,id+' must have a real hit target');
+      assert.ok(rect.x>=0&&rect.x+rect.width<=width,
+        id+' must fit inside the '+width+'px tablet viewport');
+      const hit=await page.evaluate(({x,y})=>{
+        return document.elementFromPoint(x,y)?.closest('button')?.id??null;
+      },{x:rect.x+rect.width/2,y:rect.y+rect.height/2});
+      assert.equal(hit,id,id+' must be physically clickable, not overlapped');
+    }
+    await page.locator('#gambit-training-open').click();
+    assert.equal(await page.locator('#gambit-training-panel').isVisible(),true);
+    await page.locator('#gambit-training-close').click();
+    await page.locator('#gambit-blacksite-open').click();
+    assert.equal(await page.locator('#gambit-blacksite-overlay').isVisible(),true);
+    await page.locator('#gambit-blacksite-back').click();
+    await page.locator('#gambit-profile-open').click();
+    assert.equal(await page.locator('#gambit-profile-overlay').isVisible(),true);
+    await page.locator('#gambit-profile-close').click();
+    assert.equal(await page.locator('#game-state').getAttribute('data-phase'),'intro');
+    assert.deepEqual(errors,[]);
+    console.log('GAMBIT_TABLET_NAVIGATION '+JSON.stringify({
+      width,visibleLaunchers:buttons.length,occludedControls:0,
+      launchesOpenedAndClosed:3,arenaPreserved:true,signatures:0,errors:0
+    }));
+  }finally{await context.close()}
+}
 try{
   await scenario({width:1280,height:850},'desktop');
   await scenario({width:390,height:844},'mobile');
+  await tabletNavigation(820);
+  await tabletNavigation(710);
 }finally{await browser.close()}
