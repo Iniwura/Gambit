@@ -17,7 +17,10 @@ async function runScenario(label,viewport){
     await page.locator('#game-state[data-phase="intro"]').waitFor({
       timeout:20000
     });
-    const launch=page.locator('#gambit-blacksite-open');
+    // Both launchers exist, but only the in-flow touch control is clickable
+    // on mobile. Never force-click through a wallet-control overlay.
+    const launch=page.locator(viewport.width<700
+      ?'#gambit-blacksite-mobile-open':'#gambit-blacksite-open');
     await launch.waitFor({state:'visible'});
     assert.match(await launch.textContent(),/BLACKSITE.*LOCAL/);
     const initialPracticeSeed=await page.locator('#game-state')
@@ -28,6 +31,12 @@ async function runScenario(label,viewport){
     assert.equal(await launch.getAttribute('aria-expanded'),'true');
     assert.equal(await overlay.getAttribute('data-phase'),'briefing');
     assert.equal(await overlay.getAttribute('data-scene'),'blacksite-training');
+    if(viewport.width<700){
+      assert.equal(await page.locator('#gambit-blacksite-open').isVisible(),false,
+        'fixed desktop BLACKSITE launcher must not collide with mobile wallet controls');
+      assert.equal(await page.locator('#gambit-chain-launch').isVisible(),true,
+        'legacy Sepolia access must remain available while Arena is active');
+    }
     assert.match(await overlay.textContent(),/NOT ENCRYPTED/);
     assert.match(await overlay.textContent(),/NO WALLET/);
     await page.locator('#gambit-blacksite-begin').click();
