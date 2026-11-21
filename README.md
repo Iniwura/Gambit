@@ -33,6 +33,12 @@ Open the game and select **BLACKSITE · LOCAL MISSION** from the desktop header 
 
 **Scope boundary:** this is a functional, wallet-free **cleartext training greybox**. It is not the planned encrypted BLACKSITE competitive mission, not an onchain result and not player ranking/progression. [Architecture and browser acceptance gates](docs/BLACKSITE_GREYBOX_ACCEPTANCE.md) · [Competitive mission research](docs/BLACKSITE_V2_PROTOCOL_DECISION.md).
 
+### COMMANDER — opt-in read-only match records
+
+Choose **COMMANDER · PUBLIC RECORDS** from the game (desktop header or mobile command deck). Enter a public Ethereum wallet address voluntarily to scan the approved GAMBIT Sepolia contract. The app checks canonical `DuelFinalized` receipts, current contract state and the exact pinned runtime **before** counting a win. A partial RPC scan is labeled partial; failed lookups never invent results. You can close the viewer without changing your current Practice or BLACKSITE session. No wallet connection, transaction, private key or local profile storage is required.
+
+The first [real wallet history workflow](https://github.com/Iniwura/Gambit/actions/runs/44927551505) passed 23/23 focused tests, verified **one actual Duel #1 defender victory** from eight bounded Sepolia log pages, and made no writes. **This is not yet a persistent full Commander Profile:** verified cross-session indexing, nicknames/opt-in identity, achievements and progression remain to be built. [Functional viewer acceptance](docs/PROFILE_GREYBOX_ACCEPTANCE.md).
+
 ### View a genuinely completed encrypted match — no wallet
 
 Open [Duel #1](https://iniwura.github.io/Gambit/?squad=1&duel=1), choose **Encrypted Squad Lab** and click **Recover verified match result · no wallet**. You can read the canonical finalized score and open **View Authenticated Reactor Result**. No extension, gas or signing is needed.
