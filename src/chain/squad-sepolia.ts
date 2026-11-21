@@ -6,6 +6,7 @@ import {BrowserProvider,Contract,getAddress,keccak256,ZeroAddress} from 'ethers'
 import {encodeSquadInputs,decodePackedSquadScore,canOpenSquad,squadDuelStep,validateSquadStatus} from './squad-lifecycle.mjs';
 import {boundDuelOpenFee,MAX_DUEL_OPEN_FEE_WEI} from './duel-open-fee.mjs';
 import {boundDuelSubmitFee,MAX_DUEL_SUBMIT_FEE_WEI} from './duel-submit-fee.mjs';
+import {boundDuelResolveFee,MAX_DUEL_RESOLVE_FEE_WEI} from './duel-resolve-fee.mjs';
 
 /**
  * Versioned experimental v2 wallet client for deployed SquadGambit; live encrypted match is NOT VERIFIED.
@@ -380,24 +381,71 @@ export async function createSquadSepoliaClient(
    * Exactly ONE authorized resolution transaction per call. Finalization is
    * deliberately a different user action, with a different wallet signature.
    */
+  /**
+   * ONE newly authorized resolve transaction. Estimate the real call,
+   * enforce buffered gasLimit × current maxFeePerGas <= safety ceiling,
+   * and verify a new quote, contract runtime, signer and state immediately
+   * before requesting the wallet signature. No auto retry/finalization.
+   */
   async function resolveDuel(duelId:bigint){
     const {step}=await nextDuelStep(duelId);
     if(step!=='resolve')throw Error('Duel is not awaiting encrypted resolution.');
     await assertWalletStable();
-    const tx=await txSucceeded(()=>contract.resolveDuel(duelId));
+    const data=contract.interface.encodeFunctionData('resolveDuel',[duelId]);
+    const estimate=await provider.estimateGas({
+      from:userAddress,to:contractAddress,data,value:0n
+    });
+    const initial=await provider.getFeeData();
+    const initialPrice=initial.maxFeePerGas??initial.gasPrice;
+    if(initialPrice===null||initialPrice<=0n)
+      throw Error('Cannot quote bounded encrypted resolution fee.');
+    boundDuelResolveFee(estimate,initialPrice,MAX_DUEL_RESOLVE_FEE_WEI);
+
+    await assertWalletStable();
+    if((await nextDuelStep(duelId)).step!=='resolve')
+      throw Error('Duel state changed during resolution fee check. No wallet prompt.');
+    const runtime=await provider.getCode(contractAddress);
+    if(runtime==='0x'||keccak256(runtime).toLowerCase()!==expectedRuntimeHash.toLowerCase())
+      throw Error('Deployed runtime changed. No resolution wallet prompt.');
+    const fresh=await provider.getFeeData();
+    const freshPrice=fresh.maxFeePerGas??fresh.gasPrice;
+    if(freshPrice===null||freshPrice<=0n)
+      throw Error('Fresh resolution gas quote unavailable. No wallet prompt.');
+    const fee=boundDuelResolveFee(estimate,freshPrice,MAX_DUEL_RESOLVE_FEE_WEI);
+    const overrides:Record<string,bigint>={gasLimit:fee.gasLimit};
+    if(fresh.maxFeePerGas!==null&&fresh.maxFeePerGas!==undefined&&
+      fresh.maxPriorityFeePerGas!==null&&fresh.maxPriorityFeePerGas!==undefined){
+      if(fresh.maxPriorityFeePerGas>fresh.maxFeePerGas)
+        throw Error('Unsafe EIP-1559 resolution fee quote.');
+      overrides.maxFeePerGas=fresh.maxFeePerGas;
+      overrides.maxPriorityFeePerGas=fresh.maxPriorityFeePerGas;
+    }else{
+      overrides.gasPrice=freshPrice;
+    }
+    await assertWalletStable();
+    const tx=await txSucceeded(()=>contract.resolveDuel(duelId,overrides));
     const evt=eventIn(tx.receipt,'DuelReady');
     if(BigInt(evt.args.duelId)!==duelId)
-      throw Error('Resolution event references another duel.');
+      throw Error('Resolution event references another duel. Do not retry.');
     const handle=evt.args.resultHandle as string;
     if(!/^0x[a-fA-F0-9]{64}$/.test(handle))
-      throw Error('Invalid encrypted result handle.');
-    const onchain=await contract.publicResultHandle(duelId) as string;
-    if(onchain.toLowerCase()!==handle.toLowerCase())
-      throw Error('Resolution event and canonical contract handle disagree.');
-    const after=await nextDuelStep(duelId);
-    if(after.step!=='finalize'||!after.duel.resolved)
-      throw Error('Confirmed resolution is not finalizable onchain.');
-    return {transactionHash:tx.hash,resultHandle:handle};
+      throw Error('Invalid encrypted result handle. Do not retry.');
+    // Canonical receipt+event confirm the write even if the selected wallet
+    // RPC is lagging. Never turn a successful resolution into a false
+    // failure inviting a second FHE transaction.
+    let canonicalStateVerified=false;
+    try{
+      const [onchain,state]=await Promise.all([
+        contract.publicResultHandle(duelId,{blockTag:tx.receipt.blockNumber}),
+        contract.duelStatus(duelId,{blockTag:tx.receipt.blockNumber})
+      ]);
+      canonicalStateVerified=
+        String(onchain).toLowerCase()===handle.toLowerCase()&&
+        Boolean(state.submitted)&&Boolean(state.resolved)&&!Boolean(state.expired);
+    }catch{canonicalStateVerified=false}
+    return {transactionHash:tx.hash,resultHandle:handle,
+      maximumQuotedFeeWei:fee.maximumQuotedFeeWei,
+      receiptVerified:true as const,canonicalStateVerified};
   }
 
   /**
