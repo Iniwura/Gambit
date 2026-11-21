@@ -93,7 +93,11 @@ async function scenario(viewport,label){
     // round itself; every score and final profile comes from the real engine.
     await page.locator('#gambit-training-continue').click();
     assert.equal(await panel.getAttribute('data-guide-step'),'r2-role');
-    async function step(id){assert.equal(await panel.getAttribute('data-guide-step'),id)}
+    async function step(id){
+      await page.locator('#gambit-training-panel[data-guide-step="'+id+'"]')
+        .waitFor({timeout:12000});
+      assert.equal(await panel.getAttribute('data-guide-step'),id);
+    }
     await action('4',page.locator('.gambit-mobile-role').nth(0));
     await step('r2-base');
     await action('1',page.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(0));
