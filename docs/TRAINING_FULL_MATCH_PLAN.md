@@ -1,10 +1,10 @@
 # GAMBIT — Full Five-Round Tactical Academy Plan
 
-**Status: FUNCTIONAL IMPLEMENTATION COMMITTED; FRESH CI, FULL BROWSER QA AND HUMAN PLAYER VALIDATION PENDING.**  
+**Status: FIVE-ROUND LOCAL ACADEMY IMPLEMENTED AND 4/4 FULL CI + DESKTOP/MOBILE VERIFIED; INDEPENDENT NOVICE VALIDATION PENDING.**  
 **Date:** 21 November 2026 · **Implementation order:** canonical local rules → actual player interactions → real match evidence → responsive QA → human comprehension → final art/audio.  
 **Source of truth:** [master game scope](GAMBIT_MASTER_SCOPE.md), [complete architecture](GAME_ARCHITECTURE_V1.md), and existing [five-round deterministic engine](../src/squad.mjs).
 
-**Implementation and exact acceptance:** [Five-round Academy acceptance](TRAINING_FULL_MATCH_ACCEPTANCE.md). The local-match reducer, accepted command bridge, responsive continuation, adversarial tests and desktop/mobile browser test paths are now present. The original first-round Academy remains independently tested; do not confuse a committed test with a passing CI run. No graphics work.**
+**Implementation and exact acceptance:** [Five-round Academy acceptance](TRAINING_FULL_MATCH_ACCEPTANCE.md). The local-match reducer, command bridge, responsive continuation, adversarial tests and actual desktop/mobile five-round browser journeys are VERIFIED in [run 44938866411](https://github.com/Iniwura/Gambit/actions/runs/44938866411). No graphics work.**
 
 ## Why this phase exists
 
@@ -36,7 +36,7 @@ If the player deviates or is defeated, the coach still explains what **actually*
 
 ## Delivery gates
 
-Implementation has been submitted on the build branch. The new five-round browser scenarios, independent novice evaluation and accessibility sign-off are **not** marked verified until their evidence is available.
+New five-round desktop/mobile journeys, tablet 710px/820px navigation and all 4 quality jobs are **VERIFIED** by [run 44938866411](https://github.com/Iniwura/Gambit/actions/runs/44938866411). Independent novice evaluations and a full accessibility sign-off remain open.
 
 - A coherent five-round finite-state machine and explicit event protocol with step rollback/recovery.
 - Deterministic adversarial tests: duplicate/forged events, wrong fighter, wrong round, changed formation, early match finish, rematch, uncompleted objectives and mismatched score.
