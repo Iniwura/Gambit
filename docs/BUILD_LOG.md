@@ -14,6 +14,18 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Phase 2: real first-round Tactical Academy (TRAINING)
+
+**Scope:** new optional functional tutorial for the existing `GambitArena` LOCAL PRACTICE, preserving all signed FHE contract behavior, gameplay rules and current original-art freeze. **Status: IMPLEMENTED, full browser CI still pending.**
+
+- **Built pure deterministic lesson controller** [`src/training/coach.mjs`](../src/training/coach.mjs). Nine progression stages (enter, choose Striker, set FLANK opening, STRIKE trigger, GUARD counter, FEINT formation, actually commit, wait for exact matching three-lane report, review actual scoreboard). The immutable reducer ignores out-of-order or mismatched valid events and rejects malformed inputs. It **binds graduation to the committed actual Striker plan and FEINT formation**, not simply clicks before submission, and to the exact resolved round. No local tutorial win becomes onchain progress.
+- **Built real responsive coach UI** [`src/training/coach-ui.ts`](../src/training/coach-ui.ts), [temporary CSS](../src/training/coach.css), and tapped accepted local commands from [Phaser entrypoint](../src/main.ts). Desktop coach is optional and non-modal; mobile appears in the real touch command deck, not atop wallet controls. Leaving the coach does not restart or rewrite the local match. Displaying authenticated FHE playback closes any active LOCAL tutorial.
+- **Critical integration correction before approval:** `buildPracticeDebrief().scoreline` is a human-readable **round delta** (`CYAN +n / VIOLET +n`), not the canonical cumulative local match scoreboard. The coach now receives the authentic `this.match.scoreA+' : '+this.match.scoreB` upon actual `showBattleReport` completion. This avoids accepting a mislabeled score or falsely graduating before an actual round.
+- **Tests implemented:** [pure reducer adversarial cases](../tests/training-coach-contract.test.mjs) and [desktop/mobile real gameplay browser test](../tests/training-coach-browser-check.mjs), now mandatory in [four-gate full CI](https://github.com/Iniwura/Gambit/actions/workflows/validate.yml). Real browser test selects a wrong role first (must not progress), then completes all 9 stages via accepted Phaser keyboard/touch input, waits for actual lane report and matches rendered score to actual game state. **Do not mark verified until a completed pass is observed.**
+- **Quality gate and future scope:** [full acceptance spec](TRAINING_GUIDED_ROUND_ACCEPTANCE.md). This is **one authentic round**, not full beginner progression, skill mastery, five-round tutorial, persistent achievements or production audiovisual work. No new RPC, wallet interaction or contract writes.
+
+**Next:** independently verify full test results, retain any failures and fixes, then decide the next core game mechanic/multiround functional upgrade before graphics.
+
 ## 2026-11-21 — Phase 2: opt-in Commander public-record viewer and real wallet history
 
 **Branch:** `build/verified-first-slice`; draft PR #5. This is a *functional read-only profile evidence viewer*, **not** the complete persistent Commander Profile. **No wallet signature, transaction, FHE contract changes or production graphics.**
