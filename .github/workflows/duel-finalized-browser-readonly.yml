@@ -1,0 +1,35 @@
+name: GAMBIT verified Duel 1 spectator browser (no wallet)
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'src/chain/squad-panel.ts'
+      - 'src/chain/squad-public-reader.ts'
+      - 'tests/duel1-finalized-ui-readonly.mjs'
+      - '.github/workflows/duel-finalized-browser-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  spectator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Vite and locked browser test runner
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.65.1
+          npx playwright install chromium
+      - name: Start real verified Sepolia deployment page
+        run: |
+          VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS=0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134 VITE_GAMBIT_SQUAD_RUNTIME_HASH=0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419 npm run dev -- --host 127.0.0.1 --port 4177 >/tmp/gambit-finalized-public.log 2>&1 &
+          for i in $(seq 1 45); do curl -fsS http://127.0.0.1:4177/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/gambit-finalized-public.log
+          exit 1
+      - name: Verify actual onchain final score in Chromium without wallet
+        timeout-minutes: 3
+        run: node tests/duel1-finalized-ui-readonly.mjs
