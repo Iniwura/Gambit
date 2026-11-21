@@ -8,7 +8,7 @@
 
 1. Existing first-round reducer requires a real STRIKER plan, FEINT and actual three-lane result, with original score. Nothing bypasses the existing verified nine-stage lesson.
 2. The player explicitly chooses CONTINUE FULL MATCH on the same active round-1 practice session. This action cannot mint a new score or simulate a turn. It refuses to continue if the match already moved beyond round 1.
-3. The new full-match reducer observes only accepted Phaser role, choose, formation, commit and settled messages. Round 2 requires real Scout opening/trigger/response and matching committed plan. Round 3 requires the same for Guardian.
+3. The new full-match reducer observes only accepted Phaser role, choose, formation, commit and settled messages. Round 2 requires real Scout opening/trigger/response and matching committed plan. Round 3 requires the same for Guardian and rejects a nominal command sequence that leaves Guardian's prior committed plan unchanged.
 4. Round 4 requires a formation different from the prior committed formation. Its committed formation must match the new selection.
 5. Round 5 requires an independent opening choice for Scout, Guardian and Striker. The submitted squad must match all three choices.
 6. A complete lesson requires five actual local practice receipts, the exact five-round cumulative score, the genuine finished-match signal and the canonical buildPracticeMatchDebrief role breakdown. A defeat or draw still qualifies.
@@ -34,7 +34,7 @@
 
 ## Acceptance status and remaining work
 
-**Verified in-process (not a CI release claim):** Fetched repository rules and reducer were exercised together. The genuine seeded five-round local simulator ended **3 : 6 (defeat)** with five receipts, matching canonical role debrief, and correct course graduation. A separate pure-event simulation reached the same final state transitions.
+**Verified in-process (not a CI release claim):** Fetched repository rules and reducer were exercised together. The genuine seeded five-round local simulator ended **3 : 10 (defeat)** with five receipts, matching canonical role debrief, and correct course graduation. A separate pure-event simulation reached the same final state transitions.
 
 **Implemented but requires CI/browser confirmation:** New focused Node tests and desktop/mobile Playwright journeys. Existing first-round Academy and tablet checks had previously passed under [quality run 44935438197](https://github.com/Iniwura/Gambit/actions/runs/44935438197), but this older run does **not** prove the new five-round changes. Do not claim fresh 4/4 green until the new run is confirmed.
 
