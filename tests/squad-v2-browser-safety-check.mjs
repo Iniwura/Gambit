@@ -90,6 +90,20 @@ try{
   await invitePage.locator('#gambit-squad-open').click();
   await invitePage.locator('#gambit-squad-status')
     .filter({hasText:/Connect and verify Sepolia wallet first/}).waitFor({timeout:6000});
+  // A failed submission must explain itself BESIDE the submit button even
+  // when the user has scrolled to the bottom of the long wallet dialog.
+  await invitePage.locator('#gambit-duel-id').fill('1');
+  await invitePage.locator('#gambit-squad-submit').click();
+  await invitePage.locator('#gambit-squad-submit-status')
+    .filter({hasText:/Cannot continue: Connect and verify Sepolia wallet first/})
+    .waitFor({timeout:6000});
+  assert.equal(await invitePage.locator('#gambit-squad-submit-status').isVisible(),true);
+  const submitButton=await invitePage.locator('#gambit-squad-submit').boundingBox();
+  const submitFeedback=await invitePage.locator('#gambit-squad-submit-status').boundingBox();
+  assert.ok(submitButton&&submitFeedback &&
+    submitFeedback.y>submitButton.y &&
+    submitFeedback.y-submitButton.y<130,
+    'missing wallet prompt must show a concrete local error immediately below the submit button');
   assert.deepEqual(inviteErrors,[],'opening an unsigned invitation page cannot crash the game');
   await invitePage.close();
 
