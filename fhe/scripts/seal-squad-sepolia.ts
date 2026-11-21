@@ -3,7 +3,7 @@ import { ZamaSDK, memoryStorage } from '@zama-fhe/sdk';
 import { createConfig } from '@zama-fhe/sdk/ethers';
 import { node } from '@zama-fhe/sdk/node';
 import { sepolia } from '@zama-fhe/sdk/chains';
-import { formatEther, getAddress, keccak256, ZeroAddress } from 'ethers';
+import { getAddress, keccak256, ZeroAddress } from 'ethers';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import deployment from '../deployments/sepolia-squad.json';
@@ -43,34 +43,24 @@ async function main() {
   const currentDuelId = BigInt(await contract.nextDuelId());
   const [signer] = await ethers.getSigners();
   const signerAddress = signer ? getAddress(await signer.getAddress()) : null;
-  const signerBalance = signerAddress
-    ? formatEther(await ethers.provider.getBalance(signerAddress))
-    : null;
-
-  // Optional invited-wallet CHECK ONLY, available without the signing flag.
+  // The signer and invited challenger are identified by PUBLIC addresses only.
+  // No wallet balance inspection is performed. ETH gas sufficiency is left
+  // to the transaction provider/network (which may reject before broadcast).
+  // The explicit gasLimit × maxFeePerGas cap is mandatory and independent.
   // The public address is supplied at runtime, never embedded in repo/CI.
   const inviteeRaw = process.env.GAMBIT_SQUAD_CHALLENGER_ADDRESS;
   const challenger = inviteeRaw ? getAddress(inviteeRaw) : null;
   if (challenger && (challenger === expectedOwner || challenger === ZeroAddress)) {
     throw Error('Challenger must be different from the deployed squad owner and nonzero');
   }
-  const challengerBalance = challenger
-    ? formatEther(await ethers.provider.getBalance(challenger))
-    : null;
-  const challengerCode = challenger
-    ? await ethers.provider.getCode(challenger)
-    : null;
-
   console.log('GAMBIT_SQUAD_SEAL_PREFLIGHT ' + JSON.stringify({
     chainId: Number(CHAIN),
     contractAddress: address,
     contractRuntimeVerified: true,
     signerAddress: signerAddress ?? 'NOT_CONFIGURED',
-    signerBalanceSepoliaETH: signerBalance,
     proposedChallenger: challenger ?? 'NOT_PROVIDED',
-    proposedChallengerBalanceSepoliaETH: challengerBalance ?? 'NOT_CHECKED',
-    proposedChallengerAccountHasCode: challengerCode === null ? 'NOT_CHECKED' : challengerCode !== '0x',
-    note: 'Challenger balance and bytecode are read-only observations, not proof of wallet control or funding sufficiency.',
+    explicitBalanceQueriesPerformed: false,
+    note: 'No balance lookup. Sender funding sufficiency is enforced by the provider/network when submitting; the script independently rejects any quoted maximum fee above the explicitly approved cap.',
     nextSquadId: (currentId + 1n).toString(),
     nextDuelId: (currentDuelId + 1n).toString(),
     encryptedInputCount: 10,
@@ -142,9 +132,8 @@ async function main() {
     const quote = await ethers.provider.getFeeData();
     let maxPerGas = quote.maxFeePerGas ?? quote.gasPrice;
     if (!maxPerGas || maxPerGas <= 0n) throw Error('Gas fee quote unavailable');
-    let currentBalance = await ethers.provider.getBalance(signerAddress);
-    if (gasLimit * maxPerGas > approvedMaxFeeWei || gasLimit * maxPerGas > currentBalance) {
-      throw Error('Estimated maximum fee exceeds the explicitly approved cap or wallet balance');
+    if (gasLimit * maxPerGas > approvedMaxFeeWei) {
+      throw Error('Estimated maximum transaction fee exceeds the explicitly approved cap');
     }
 
     // Reject another actor's prior seal / a network switch / stale deployed code.
@@ -158,11 +147,9 @@ async function main() {
 
     const fresh = await ethers.provider.getFeeData();
     maxPerGas = fresh.maxFeePerGas ?? fresh.gasPrice;
-    currentBalance = await ethers.provider.getBalance(signerAddress);
     if (!maxPerGas || maxPerGas <= 0n ||
-        gasLimit * maxPerGas > approvedMaxFeeWei ||
-        gasLimit * maxPerGas > currentBalance) {
-      throw Error('Fee quote drifted beyond the hard cap; no signature');
+        gasLimit * maxPerGas > approvedMaxFeeWei) {
+      throw Error('Fee quote drifted beyond the approved fee cap; no signature');
     }
     const overrides: Record<string, bigint> = { gasLimit };
     if (fresh.maxFeePerGas != null && fresh.maxPriorityFeePerGas != null) {
@@ -181,6 +168,7 @@ async function main() {
       encryptedInputs: 10, estimatedGas: estimated.toString(),
       maximumQuotedFeeWei: (gasLimit * maxPerGas).toString(),
       userApprovedFeeCapWei: approvedMaxFeeWei.toString(),
+      explicitBalanceQueriesPerformed: false,
       inputSecretsOrProofLogged: false
     }));
 
