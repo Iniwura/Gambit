@@ -106,7 +106,7 @@ export function mountBlacksiteGreybox():void{
       <div id="gambit-blacksite-terminal" hidden>
         <h2 id="gambit-blacksite-result">MISSION COMPLETE</h2>
         <p id="gambit-blacksite-result-description"></p>
-        <button id="gambit-blacksite-debrief" type="button" data-action="debrief">
+        <button id="gambit-blacksite-debrief-button" type="button" data-action="debrief">
           VIEW MISSION DEBRIEF
         </button>
       </div>
