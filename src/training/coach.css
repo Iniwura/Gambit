@@ -1,4 +1,4 @@
-/* TRAINING first-round functional greybox, not final game art. */
+/* TRAINING five-round functional greybox, not final game art. */
 #gambit-training-open{
   position:fixed;top:9px;right:690px;z-index:10007;
   min-height:38px;padding:8px 12px;border-radius:9px;
@@ -29,7 +29,8 @@
   border:1px solid #82a0b6;background:#243e56;color:#eff9ff;
   font:750 11px Inter,system-ui,sans-serif;cursor:pointer;flex-shrink:0
 }
-#gambit-training-open:focus-visible,#gambit-training-panel button:focus-visible{
+#gambit-training-open:focus-visible,#gambit-training-mobile-open:focus-visible,
+#gambit-training-panel button:focus-visible{
   outline:3px solid #ffdc8d;outline-offset:3px
 }
 #gambit-training-panel .gt-progress{
