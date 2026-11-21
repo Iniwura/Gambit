@@ -176,15 +176,30 @@ export function mountTrainingCoach():void{
   }
   get<HTMLButtonElement>(panel,'gambit-training-continue')
     .addEventListener('click',()=>{
-      if(!state?.completed||!state.settled||fullState)return;
+      panel.dataset.guideHandoff='requested';
+      if(!state?.completed||!state.settled||fullState){
+        panel.dataset.guideHandoff='invalid-first-round';
+        get<HTMLElement>(panel,'gambit-training-device-hint').textContent=
+          'The first round must complete before this lesson can continue.';
+        return;
+      }
       const match=document.getElementById('game-state');
       if(match?.dataset.phase!=='ready'||match.dataset.round!=='1'){
+        panel.dataset.guideHandoff='mismatched-round';
         get<HTMLElement>(panel,'gambit-training-device-hint').textContent=
           'The match already advanced. Start a fresh practice match to learn all five rounds.';
         return;
       }
-      fullState=createFullMatchCoach(state.settled);
-      render();
+      try{
+        fullState=createFullMatchCoach(state.settled);
+        panel.dataset.guideHandoff='started';
+        render();
+      }catch{
+        fullState=null;
+        panel.dataset.guideHandoff='rejected-evidence';
+        get<HTMLElement>(panel,'gambit-training-device-hint').textContent=
+          'The completed first-round evidence could not be validated. Restart local practice.';
+      }
     });
   launch.addEventListener('click',open);
   mobileLaunch.addEventListener('click',open);
