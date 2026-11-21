@@ -1,0 +1,28 @@
+name: GAMBIT live Duel 1 recovery (read-only)
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'scripts/recover-first-duel-readonly.mjs'
+      - 'scripts/verify-first-squad-seal-readonly.mjs'
+      - 'tests/first-duel-recovery-readonly.test.mjs'
+      - 'package.json'
+      - '.github/workflows/duel-recovery-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated public RPC dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Confirm local decoder rejects false receipts (no signing)
+        run: node --test tests/first-duel-recovery-readonly.test.mjs
+      - name: Public RPC check of consumed one-use invitation and exact DuelOpened receipt
+        run: npm run recover:duel1:readonly
