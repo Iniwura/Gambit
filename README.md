@@ -27,6 +27,12 @@ Practice is **cleartext and deterministic**. The per-fighter reports in this mod
 
 Desktop keys: **4/5/6** choose a fighter, **7/8/9** choose formation, **1/2/3** choose the opener, **Q/W/E** the trigger, **A/S/D** the response and **Enter** locks the turn. Mobile uses the on-screen command deck.
 
+### Tactical Academy — optional real first-round guided training
+
+Choose **TRAINING · GUIDED ROUND** from the desktop game header or mobile command deck. The guide observes the **existing** local squad game: choose Striker, set a FLANK opening, a STRIKE trigger and GUARD response, deploy FEINT, then lock the actual three-fighter squad. The lesson advances only when the real game accepts each action, and completes **after** all three practice lanes resolve. Your real match score appears in the debrief; success is not scripted.
+
+This is a functional first-round lesson, **not** a full training curriculum or an encrypted match. It requires no wallet and does not save personal data. [Exact pre-graphics acceptance gates](docs/TRAINING_GUIDED_ROUND_ACCEPTANCE.md).
+
 ### BLACKSITE — playable local codebreaking training, no wallet
 
 Open the game and select **BLACKSITE · LOCAL MISSION** from the desktop header or **BLACKSITE · LOCAL TRAINING** inside the mobile command deck. Start a mission, enter four ordered glyphs (0–3), and use the actual **exact-position** and **misplaced** feedback to deduce the secret within **five guesses**. Duplicate guesses do not consume another attempt. Finish, review the transcript and start a fresh local mission; returning to Arena preserves your current practice session.
