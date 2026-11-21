@@ -18,6 +18,7 @@
     "check:squad:sepolia": "hardhat run --network sepolia scripts/deploy-squad-sepolia.ts",
     "preflight:squad:public": "hardhat run --network sepolia scripts/preflight-squad-sepolia.ts",
     "hcu:static": "ts-node scripts/hcu-static.ts",
+    "hcu:v3:research": "ts-node scripts/hcu-v3-static.ts",
     "probe:squad:sdk:readonly": "hardhat run --network sepolia scripts/probe-squad-sdk-readonly.ts",
     "seal:squad:sepolia": "hardhat run --network sepolia scripts/seal-squad-sepolia.ts",
     "quote:squad:sepolia": "hardhat run --network sepolia scripts/quote-squad-sepolia.ts",
