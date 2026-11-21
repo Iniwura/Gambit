@@ -148,14 +148,15 @@ export function mountTrainingCoach():void{
        document.getElementById('gambit-chain-dialog')?.hidden===false)
       return;
     const phase=document.getElementById('game-state')?.dataset.phase;
-    if(phase==='intro'||phase==='ready'){
+    const round=document.getElementById('game-state')?.dataset.round;
+    if((phase==='intro'||phase==='ready')&&round==='0'){
       state=createTrainingCoach(phase);
       fullState=null;
       pausedReason='';
     }else{
       state=null;
       fullState=null;
-      pausedReason='Wait for an active local practice round, or start a new rematch.';
+      pausedReason='Tactical Academy begins at round 1. Finish this match and start a rematch to train from the beginning.';
     }
     panel.hidden=false;
     launch.setAttribute('aria-expanded','true');
