@@ -66,6 +66,28 @@ try{
   assert.deepEqual(errs,[],'negative test must not crash page');
   await noWallet.close();
 
+  // A real invitation link must present the CHALLENGER task, not owner
+  // controls for creating a duplicate squad. Nothing is signed on page load.
+  const invitePage=await browser.newPage({viewport:{width:1280,height:800}});
+  const inviteErrors=[];invitePage.on('pageerror',e=>inviteErrors.push(e.message));
+  await invitePage.goto(configured+'?squad=1',{waitUntil:'networkidle',timeout:35000});
+  await invitePage.locator('#gambit-squad-launch').click();
+  assert.equal(await invitePage.locator('#gambit-squad-id').inputValue(),'1');
+  assert.equal(await invitePage.locator('#gambit-squad-seal').isVisible(),false,
+    'challenger must not be prompted to create a new sealed squad');
+  assert.equal(await invitePage.locator('#gambit-squad-share-invite').isVisible(),false,
+    'owner-only share control must be hidden from invitees');
+  assert.equal(await invitePage.locator('#gambit-squad-invite').isVisible(),false,
+    'challenger must not be asked to fill the invitee address');
+  assert.match(await invitePage.locator('#gambit-squad-open-details').textContent(),
+    /200,000,000 Sepolia wei/);
+  assert.match(await invitePage.locator('#gambit-squad-open').textContent(),/Open invited squad/);
+  await invitePage.locator('#gambit-squad-open').click();
+  await invitePage.locator('#gambit-squad-status')
+    .filter({hasText:/Connect and verify Sepolia wallet first/}).waitFor({timeout:6000});
+  assert.deepEqual(inviteErrors,[],'opening an unsigned invitation page cannot crash the game');
+  await invitePage.close();
+
   const wrongNetwork=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   await wrongNetwork.addInitScript(()=>{
     window.__squadSafetySent=false;
