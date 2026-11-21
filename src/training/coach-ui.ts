@@ -114,7 +114,9 @@ export function mountTrainingCoach():void{
       // types also prevent the initial null-only snapshot from narrowing the
       // eventual finished-match report to TypeScript's never.
       const last=(fullState.receipts as readonly {
-        scoreline:string,bonusA?:{breach:number,mark:number,blocked:number}|null
+        scoreline:string,
+        bonusA?:{breach:number,mark:number,blocked:number}|null,
+        bonusB?:{breach:number,mark:number,blocked:number}|null
       }[]).at(-1);
       const debrief=(fullState as unknown as {debrief:{
         scoreline:string,winner:number,stats:Array<{
@@ -127,9 +129,10 @@ export function mountTrainingCoach():void{
           ' · '+debrief.stats.map(x=>x.role+' '+x.wins+'W/'+x.losses+'L/'+x.draws+'D').join(' · ')
         :'Verified local rounds '+fullState.receipts.length+' / 5 · score '+
           (last?.scoreline??'unavailable')+
-          (last?.bonusA?' · own breach '+last.bonusA.breach+
-            ', Scout mark '+last.bonusA.mark+
-            ', blocked '+last.bonusA.blocked:''));
+          (last?.bonusA?' · Striker breach triggered '+last.bonusA.breach+
+            ', Scout mark triggered '+last.bonusA.mark+
+            ', own bonus blocked '+last.bonusA.blocked+
+            ', enemy bonus blocked '+(last.bonusB?.blocked??0):''));
     }else if(state.completed&&state.settled){
       summary.textContent='Real round '+state.settled.round+
         ' · reactor score '+state.settled.scoreline+
