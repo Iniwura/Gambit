@@ -62,7 +62,7 @@ Take command of three distinct fighters, outthink real human opponents with secr
 - Read history from authentic verified receipts/events; **do not seed fictional past opponents or outcomes**.
 - Protect private tactics, wallet addresses and personal data; no speculative rankings without fair repeated matches.
 
-**CURRENT STATUS:** one public Arena finalization has been independently transformed into an authenticated read-only Profile record using [`src/profile/verified-arena-record.mjs`](../src/profile/verified-arena-record.mjs) and [live Sepolia evidence](https://github.com/Iniwura/Gambit/actions/runs/44921548615). **No persistent cross-match index, opt-in identity, achievements, progression or player-facing Profile scene yet.**
+**CURRENT STATUS:** one public Arena finalization is authenticated by [`src/profile/verified-arena-record.mjs`](../src/profile/verified-arena-record.mjs), protected by an immutable approved-deployment registry. A bounded, reorg-aware [`src/profile/approved-event-discovery.mjs`](../src/profile/approved-event-discovery.mjs) indexer was also tested on **seven real Sepolia log pages** and independently linked Duel #1 to its receipt ([CI evidence](https://github.com/Iniwura/Gambit/actions/runs/44924064176)). Discovery candidates are **never counted as wins** without the trusted receipt verifier. **No durable cross-session index, opt-in identity, achievements, progression or player-facing Profile scene yet.**
 
 ## 3. The premium product experience we expect
 
@@ -84,8 +84,8 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 | No-wallet spectator / first-screen proof shortcut and result view | **Built and Chromium-tested** | Judge-friendly evidence route; not full Create/Join product |
 | Latest CI at `2607827264e6acbc55b07952e49b96331351db50` | **Four quality jobs PASS**, rules checks PASS, spectator PASS, GitHub Pages PASS | Tests do not approve art quality, human gameplay or security |
 | Full multi-round confidential Arena, signature GAMBIT intervention, matchmaking and smooth end-to-end UX | **Not yet built / verified** | Requires design, actual implementation and separate live evidence |
-| BLACKSITE | **Headless LOCAL mission controller tested** | No playable scene, confidential contract, missions or real encrypted receipts |
-| Commander Profile, persistent verified history/progression | **One live receipt-backed evidence record verified** | No persistent index, identity/consent, achievements or playable Profile scene |
+| BLACKSITE | **Headless LOCAL mission controller + 7,776-code research tested** | Proposed class scanner failed an initial value test; no playable scene, confidential contract or real encrypted receipts |
+| Commander Profile, persistent verified history/progression | **Live receipt + bounded candidate discovery verified** | No durable history store, identity/consent, achievements or playable Profile scene |
 | Premium original sprite art, audio, accessible UX and independent playtesting/security review | **Incomplete / not established** | No 90+/100 or release-ready claim |
 
 ### Real-chain evidence for the completed first duel
