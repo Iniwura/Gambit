@@ -651,7 +651,8 @@ class GambitArena extends Phaser.Scene {
       this.syncMobileDeck();
       if(this.lastDebrief)emitLocalPractice({
         type:'settled',round:this.lastDebrief.round,
-        scoreline:this.lastDebrief.scoreline,lanes:this.lastDebrief.lanes.length
+        scoreline:this.match.scoreA+' : '+this.match.scoreB,
+        lanes:this.lastDebrief.lanes.length
       });
     });
   }
