@@ -81,6 +81,14 @@ We have authentic Sepolia **EVM gas** for one deployed v2 submit, resolve and fi
 5. If outcomes warrant it, request separate approval for a new testnet deployment and real two-wallet journey. Record authentic fees, latency, HCU if available, receipts and recovery.
 6. Explicitly accept/reject the candidate in this decision record. Until then, leave real v2 unchanged and the premium graphics phase blocked.
 
+## 7. Proposed public-round timeout and recovery policy (research)
+
+A [pure read-only policy](../src/research/arena-v3-round-policy.mjs), [adversarial tests](../tests/arena-v3-round-policy.test.mjs) and [decision record](ARENA_V3_RECOVERY_POLICY.md) now model hypothetical v3 public identity, two submission timestamps, inclusive deadline and distinct resolved/finalized states.
+
+**Fairness:** expired sessions without both accepted inputs remain **UNSCORED**, not awarded wins. Two orders sealed on time remain eligible for finalization after the entry window closes. The classifier rejects contradictory settlement and impossible v3 scores and allows no private fighter orders or sector wagers in its public view.
+
+**Evidence boundary:** research only. Eight new pure cases passed an in-process 8/8 callback replay; GitHub CI must be checked independently. No real v3 contract, RPC status authority, cancellation, proof, signature, wallet, deployment or signed multiplayer. The suggested 24-hour entry window is not a deployed onchain constraint. Future protocol choices still require griefing/fairness review and measured HCU/gas/latency.
+
 ## Current verdict
 
 **Option B is the strongest design hypothesis**, not a deployed or fully approved architecture. Our current real milestone remains one finalized confidential 3v3 encounter. The next task is **headless fairness/cost analysis, exact round-state contracts and acceptance tests**, *not final character art or a new UI redesign*.
