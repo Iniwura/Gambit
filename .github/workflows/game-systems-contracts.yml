@@ -10,6 +10,8 @@ on:
       - 'tests/profile-discovery-contract.test.mjs'
       - 'scripts/verify-profile-duel1-readonly.mjs'
       - 'scripts/verify-profile-discovery-readonly.mjs'
+      - 'scripts/verify-commander-public-history-readonly.mjs'
+      - 'tests/profile-public-history-contract.test.mjs'
       - '.github/workflows/game-systems-contracts.yml'
   workflow_dispatch:
 permissions:
@@ -26,10 +28,13 @@ jobs:
       - name: Install pinned public and local dependencies
         run: npm ci --no-audit --no-fund
       - name: BLACKSITE local mission and Commander Profile evidence contracts
-        run: node --test tests/blacksite-mission-contract.test.mjs tests/profile-evidence-contract.test.mjs tests/profile-discovery-contract.test.mjs
+        run: node --test tests/blacksite-mission-contract.test.mjs tests/profile-evidence-contract.test.mjs tests/profile-discovery-contract.test.mjs tests/profile-public-history-contract.test.mjs
       - name: Verify first real Commander Profile record from public Sepolia (NO TX)
         timeout-minutes: 5
         run: node scripts/verify-profile-duel1-readonly.mjs
       - name: Discover real Duel 1 from canonical log pages and verify receipt (NO TX)
         timeout-minutes: 5
         run: node scripts/verify-profile-discovery-readonly.mjs
+      - name: Verify opt-in Commander history for real Sepolia wallet (NO TX)
+        timeout-minutes: 5
+        run: node scripts/verify-commander-public-history-readonly.mjs
