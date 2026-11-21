@@ -54,7 +54,8 @@ src/
     mission.mjs                    # BUILT: headless local mission; NOT playable or FHE
     private-mission-adapter.mjs    # PLANNED: entirely separate FHE protocol, after feasibility approval
   profile/
-    verified-arena-record.mjs      # BUILT: signed-event receipt reader; NOT a Profile UI
+    verified-arena-record.mjs      # BUILT: trusted receipt reader; NOT a Profile UI
+    approved-event-discovery.mjs   # BUILT: bounded canonical log candidate indexer, NOT ranked history
     progression.mjs                # PLANNED: validate earned achievements
   chain/                            # EXISTS: squad-lifecycle, Sepolia adapters, proof reader
   research/blacksite-cipher.mjs     # EXISTS: local deduction reference only
@@ -161,7 +162,7 @@ NOT_STARTED → FIRST_MOVE → CONDITIONAL_COUNTER → ROLE_COMPOSITION
 
 **Persistence plan:** read-only chain index (public logs + runtime/code/receipt verification), versioned local UI preferences, optional public profiles only with appropriate consent. No passwords, wallet keys, private ciphertext proofs or decrypted strategy in storage. A disconnected wallet can view a verified public match but cannot write on behalf of the player.
 
-**Profile gate:** one actual signed Sepolia match is now independently attributable in a read-only record, with mock forged/reorg tests. **Profile remains disabled** until the trusted deployment allowlist, multi-match persistence/indexing, account privacy and opt-in identity, reorg invalidation, an honest empty state, and responsive browser QA have passed.
+**Profile gate:** an approved-contract [read-only candidate discovery indexer](../src/profile/approved-event-discovery.mjs) and one actual signed Sepolia match are now independently verified. The [focused seven-page live discovery test](https://github.com/Iniwura/Gambit/actions/runs/44924064176) passed 17/17 focused checks; the discovery result is **NOT** itself a verified win. **Profile remains disabled** until durable multi-match history/cursor reconciliation, account privacy and opt-in identity, true restart/reorg invalidation, honest empty/error UI states, and responsive browser QA have passed.
 
 ## 8. Shared state machines and interaction contract
 
