@@ -33,6 +33,14 @@ try{
     .filter({hasText:'CYAN 0 : 1 VIOLET · VIOLET WINS'})
     .waitFor({timeout:50000});
   assert.equal(await page.locator('#gambit-squad-confirmed-score').isVisible(),true);
+  assert.match(await page.locator('#gambit-squad-title').textContent(),/Duel #1 · Finalized/);
+  assert.equal(await page.locator('#gambit-squad-workflow').isHidden(),true,
+    'a finalized duel must not invite another signing or setup action');
+  assert.equal(await page.locator('#gambit-squad-verified-actions').isVisible(),true,
+    'show the spectator result and public evidence instead of obsolete controls');
+  assert.equal(await page.locator('#gambit-squad-public-inspect').isHidden(),true,
+    'the recovery action is no longer needed after canonical verification');
+  assert.equal(await page.locator('#gambit-squad-watch').isVisible(),true);
   assert.equal(await page.locator('#gambit-squad-watch').isEnabled(),true);
   assert.equal(await page.locator('#gambit-squad-share-result').isEnabled(),true);
   assert.equal(await page.locator('#gambit-squad-wallet-choice').inputValue(),'');
