@@ -66,7 +66,7 @@ test('only distinct authorized sides can commit; no duplicate, cross-side reuse 
 });
 
 test('resolution requires two orders and public-handle recording is one-shot and cannot replay previous rounds',()=>{
-  const created=newArenaProtocolResearchMatch(id,A,B);
+  const created=newArenaProtocolResearchMatch(id,A,B,0n);
   assert.throws(()=>beginArenaResearchResolution(created,0n),/Two submitted/);
   let current=readyRound(created,1);
   assert.equal(current.phase,'awaiting-proof');
@@ -90,7 +90,7 @@ test('resolution requires two orders and public-handle recording is one-shot and
 });
 
 test('fail-closed independent verifier: wrong score, stale proof, wrong round, forged bool and repeat finalization',()=>{
-  const pending=readyRound(newArenaProtocolResearchMatch(id,A,B),1);
+  const pending=readyRound(newArenaProtocolResearchMatch(id,A,B,0n),1);
   const good=evidence(id,1,h(301),4,6);
   const errors=[
     [{...good,matchId:'other'},fakeVerifier,/context/],
@@ -142,7 +142,7 @@ test('timeout cannot create fabricated winners or cancel after encrypted commitm
 
 test('five complete rounds from real deterministic rules preserve scoring and recovery, with no onchain claim',()=>{
   for(let seed=0;seed<110;seed++){
-    let match=newArenaProtocolResearchMatch(id,A,B);
+    let match=newArenaProtocolResearchMatch(id,A,B,0n);
     let timestamp=1n;
     const originalId=match.matchId;
     for(let round=1;round<=PROTOCOL_ROUNDS;round++){
@@ -191,7 +191,7 @@ test('five complete rounds from real deterministic rules preserve scoring and re
 });
 
 test('protocol rejects corrupted history, wiped spend markers and forged final scores before accepting new actions',()=>{
-  const first=readyRound(newArenaProtocolResearchMatch(id,A,B),1);
+  const first=readyRound(newArenaProtocolResearchMatch(id,A,B,0n),1);
   const next=finalizeArenaResearchRound(first,evidence(id,1,h(301),3,2),fakeVerifier,1n);
   const bad=[
     {...next,scoreA:5},
