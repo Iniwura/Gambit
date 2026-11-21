@@ -9,7 +9,7 @@ test('master scope retains all four pillars without falsely enabling unfinished 
   assert.deepEqual(PLATFORM_PILLARS,['arena','blacksite','training','profile']);
   const all=gameSceneAvailability();
   assert.deepEqual(new Set(all.map(x=>x.id)),new Set(Object.keys(GAME_SCENES)));
-  for(const id of ['home','training','blacksite-training','profile-readonly','arena-spectate','arena-wallet-lab']){
+  for(const id of ['home','training','blacksite-training','profile-readonly','arena-spectate','arena-wallet-lab','arena-v3-hotseat']){
     const entry=all.find(x=>x.id===id);
     assert.equal(entry.available,true,id);
   }
@@ -23,6 +23,8 @@ test('master scope retains all four pillars without falsely enabling unfinished 
     'local training does not enable the missing encrypted mission');
   assert.equal(all.find(x=>x.id==='blacksite-training').authority,'local-training',
     'player-facing training must never be labeled encrypted onchain');
+  assert.equal(all.find(x=>x.id==='arena-v3-hotseat').authority,'local-two-player-cleartext',
+    'same-device hotseat must never be presented as encrypted multiplayer');
   assert.equal(all.find(x=>x.id==='profile-readonly').authority,'opt-in-readonly-sepolia',
     'public reader cannot be mistaken for wallet-signed Commander Profile');
 });
