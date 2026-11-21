@@ -6,6 +6,8 @@ This document defines quality gates independent of any hackathon deadline.
 
 **Full product scope and phase roadmap:** [GAMBIT Master Scope](GAMBIT_MASTER_SCOPE.md). This charter defines production acceptance gates; the master scope records the entire four-pillar vision and current implementation status.
 
+**Functional architecture specification:** [Game Architecture and Mechanics v1](GAME_ARCHITECTURE_V1.md) documents four pillars, source-of-truth boundaries, canonical onchain constraints, gameplay states and unfinished Phase-1 decisions.
+
 ## Product promise
 
 **Play as a commander, outthink another human, keep your orders secret, and trust the result.**
