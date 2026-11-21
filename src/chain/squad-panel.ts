@@ -1,6 +1,7 @@
 import {createSquadSepoliaClient,type FighterPlan,type SquadResult} from './squad-sepolia';
 import {readVerifiedSquadPublic} from './squad-public-reader';
 import {squadInvitationLink,squadPublicResultLink} from './squad-links.mjs';
+import {discoverInjectedWallets} from './wallet-discovery.mjs';
 
 type Client=Awaited<ReturnType<typeof createSquadSepoliaClient>>;
 type SquadDraft={plans:FighterPlan[],formation:number};
@@ -20,6 +21,15 @@ export function mountSquadSepoliaPanel(
   let client:Client|null=null;
   let busy=false;
   let lastResult:SquadResult|null=null;
+  // Browser extensions can race to own window.ethereum. Select the explicit
+  // EIP-6963 provider and keep it pinned for the whole match session.
+  const walletDiscovery=discoverInjectedWallets(window);
+  let connectedProvider:{
+    request:(args:{method:string,params?:unknown[]})=>Promise<unknown>;
+    on?:(type:string,callback:(value:unknown)=>void)=>void;
+    removeListener?:(type:string,callback:(value:unknown)=>void)=>void
+  }|null=null;
+  let currentWalletListener:((value:unknown)=>void)|null=null;
 
   const button=(label:string,id:string,fn:Action):HTMLButtonElement=>{
     const node=document.createElement('button');
@@ -27,9 +37,16 @@ export function mountSquadSepoliaPanel(
     node.addEventListener('click',()=>{
       if(busy)return;
       setBusy(true);
-      Promise.resolve().then(fn).catch(error=>{
+      // Call directly within the user gesture. Wallet extensions may reject
+      // delayed account requests after a synthetic/microtask-only click.
+      try{
+        Promise.resolve(fn()).catch(error=>{
+          setStatus('Cannot continue: '+(error instanceof Error?error.message:String(error)));
+        }).finally(()=>setBusy(false));
+      }catch(error){
         setStatus('Cannot continue: '+(error instanceof Error?error.message:String(error)));
-      }).finally(()=>setBusy(false));
+        setBusy(false);
+      }
     });
     node.style.cssText='width:100%;min-height:45px;margin-top:8px;border:1px solid #4f748c;' +
       'border-radius:9px;background:#193e59;color:#e9f8ff;padding:10px 12px;font:650 13px system-ui';
@@ -89,8 +106,40 @@ export function mountSquadSepoliaPanel(
   const identity=document.createElement('p');identity.textContent='Wallet not connected';
   identity.style.cssText='color:#91ecf8;font-size:12px;overflow-wrap:anywhere';
   const status=document.createElement('p');status.id='gambit-squad-status';status.setAttribute('role','status');
-  status.setAttribute('aria-live','polite');status.textContent='No wallet action has been requested.';
-  status.style.cssText='padding:11px;background:#192e46;border-radius:8px;overflow-wrap:anywhere';
+  status.setAttribute('aria-live','polite');status.textContent='Choose a wallet and connect. No transaction is needed.';
+  status.style.cssText='padding:11px;background:#192e46;border:1px solid #426985;' +
+    'border-radius:8px;overflow-wrap:anywhere;margin:9px 0 14px';
+  const walletLabel=document.createElement('label');
+  walletLabel.htmlFor='gambit-squad-wallet-choice';
+  walletLabel.textContent='Browser wallet';
+  walletLabel.style.cssText='display:block;margin:10px 0 5px;font:650 12px system-ui';
+  const walletChoice=document.createElement('select');
+  walletChoice.id='gambit-squad-wallet-choice';
+  walletChoice.setAttribute('aria-label','Select an Ethereum browser wallet');
+  walletChoice.style.cssText='width:100%;min-height:44px;border:1px solid #52758e;' +
+    'border-radius:8px;background:#101b2e;color:white;padding:8px 10px';
+  const syncWalletChoices=()=>{
+    const previous=walletChoice.value;
+    const entries=walletDiscovery.list();
+    walletChoice.replaceChildren();
+    if(!entries.length){
+      const option=document.createElement('option');
+      option.value='';option.textContent='No Ethereum wallet detected';
+      walletChoice.append(option);
+      return;
+    }
+    for(const entry of entries){
+      const option=document.createElement('option');
+      option.value=entry.id;option.textContent=entry.label;
+      walletChoice.append(option);
+    }
+    const selected=entries.find(x=>x.id===previous)||
+      entries.find(x=>/metamask/i.test(x.label))||entries[0];
+    walletChoice.value=selected.id;
+  };
+  walletDiscovery.subscribe(syncWalletChoices);
+  walletDiscovery.refresh();
+  syncWalletChoices();
   const result=document.createElement('p');result.id='gambit-squad-receipt';
   result.style.cssText='font-size:13px;color:#cfedff;overflow-wrap:anywhere';
 
@@ -105,7 +154,12 @@ export function mountSquadSepoliaPanel(
   if(publicId&&/^[1-9][0-9]{0,17}$/.test(publicId))duel.input.value=publicId;
 
   function requireClient():Client{if(!client)throw Error('Connect and verify Sepolia wallet first.');return client;}
-  function setStatus(message:string){status.textContent=message;}
+  function setStatus(message:string){
+    status.textContent=message;
+    // Connection errors must be visible beside the Connect control, not
+    // hidden a full panel-scroll below it as before.
+    status.scrollIntoView({block:'nearest'});
+  }
   async function copyOrDisplay(label:string,url:string){
     try{
       await navigator.clipboard.writeText(url);
@@ -120,11 +174,39 @@ export function mountSquadSepoliaPanel(
     close.disabled=value;launch.disabled=value;mobileLaunch.disabled=value;
     shareResult.disabled=value||!lastResult;
   }
+  const invalidate=()=>{
+    client=null;lastResult=null;watch.disabled=true;shareResult.disabled=true;
+    identity.textContent='Wallet changed. Reconnect required.';
+    setStatus('Wallet account, extension or network changed. Reconnect before any action.');
+  };
+  const unbindWallet=()=>{
+    if(connectedProvider&&currentWalletListener){
+      connectedProvider.removeListener?.('accountsChanged',currentWalletListener);
+      connectedProvider.removeListener?.('chainChanged',currentWalletListener);
+    }
+    connectedProvider=null;currentWalletListener=null;
+  };
+  walletChoice.addEventListener('change',()=>{
+    unbindWallet();
+    invalidate();
+  });
   const connect=button('1 · Connect + verify deployed contract','gambit-squad-connect',async()=>{
-    client=await createSquadSepoliaClient(address,hash);
-    identity.textContent='Connected '+client.userAddress+' · Ethereum Sepolia';
+    walletDiscovery.refresh();
+    syncWalletChoices();
+    const selected=walletDiscovery.list().find(x=>x.id===walletChoice.value);
+    if(!selected)throw Error('No Ethereum wallet found. Unlock MetaMask, refresh the page and try again.');
+    setStatus('Connecting to '+selected.label+'… Check the wallet extension popup if prompted.');
+    // Do not replace the previous connection on a failed attempt.
+    const next=await createSquadSepoliaClient(address,hash,selected.provider);
+    unbindWallet();
+    connectedProvider=selected.provider;
+    currentWalletListener=invalidate;
+    connectedProvider.on?.('accountsChanged',currentWalletListener);
+    connectedProvider.on?.('chainChanged',currentWalletListener);
+    client=next;
+    identity.textContent='Connected '+next.userAddress+' · Ethereum Sepolia · '+selected.label;
     lastResult=null;
-    setStatus('Wallet and immutable SquadGambit bytecode fingerprint verified.');
+    setStatus('Wallet connected and SquadGambit contract fingerprint verified. No transaction sent.');
   });
   const seal=button('2 · Encrypt and seal my three fighter plans','gambit-squad-seal',async()=>{
     const c=requireClient();
@@ -224,9 +306,12 @@ export function mountSquadSepoliaPanel(
     result.append(label,anchor);
   }
 
-  card.append(heading,caution,identity,connect,invited.wrap,invited.input,
-    seal,squad.wrap,squad.input,shareInvite,open,recover,duel.wrap,duel.input,
-    publicInspect,inspect,submit,resolve,finalize,status,result,shareResult,watch);
+  // Keep the most important status and wallet choice within view when the
+  // user clicks Connect. The same live status receives every later error.
+  card.append(heading,caution,identity,walletLabel,walletChoice,connect,status,
+    invited.wrap,invited.input,seal,squad.wrap,squad.input,
+    shareInvite,open,recover,duel.wrap,duel.input,
+    publicInspect,inspect,submit,resolve,finalize,result,shareResult,watch);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
   const openDialog=()=>{if(busy)return;dialog.hidden=false;setVisibility();close.focus();};
@@ -238,16 +323,6 @@ export function mountSquadSepoliaPanel(
   });
   setVisibility();
 
-  // Invalidate account-bound SDK clients on any provider switch. The client
-  // additionally revalidates eth_chainId/eth_accounts before each signature.
-  const provider=(window as unknown as {ethereum?:{
-    on?:(name:string,listener:(value:unknown)=>void)=>void
-  }}).ethereum;
-  const invalidate=()=>{
-    client=null;lastResult=null;watch.disabled=true;shareResult.disabled=true;
-    identity.textContent='Wallet changed. Reconnect required.';
-    setStatus('Account/network changed. Existing IDs can be safely recovered after reconnecting.');
-  };
-  provider?.on?.('accountsChanged',invalidate);
-  provider?.on?.('chainChanged',invalidate);
+  // The selected provider (not whichever extension wins window.ethereum)
+  // is the only source of wallet identity and change notifications.
 }
