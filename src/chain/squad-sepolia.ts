@@ -219,6 +219,8 @@ export async function createSquadSepoliaClient(
 
     const finalFees=await provider.getFeeData();
     const maxPerGas=finalFees.maxFeePerGas??finalFees.gasPrice;
+    if(maxPerGas===null||maxPerGas<=0n)
+      throw Error('Fresh Sepolia fee quote unavailable; no wallet prompt.');
     const fee=boundDuelOpenFee(estimated,maxPerGas,MAX_DUEL_OPEN_FEE_WEI);
     const overrides:Record<string,bigint>={gasLimit:fee.gasLimit};
     if(finalFees.maxFeePerGas!==null&&finalFees.maxFeePerGas!==undefined&&
