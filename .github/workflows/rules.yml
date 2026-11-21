@@ -1,9 +1,18 @@
 name: Rules checks
 on:
   push:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
 permissions:
   contents: read
+concurrency:
+  group: gambit-rules-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   rules:
     runs-on: ubuntu-latest
