@@ -90,6 +90,8 @@ jobs:
         run: npm run compile
       - name: Enforce HCU inventory against reviewed SquadGambit source (READ ONLY)
         run: npm run hcu:static
+      - name: Source-locked Arena v3 research operation inventory (NOT live HCU)
+        run: npm run hcu:v3:research
       - name: Execute mock contract tests
         run: npm test
       - name: Live Zama SDK ten-input synthetic encryption probe (NO SIGNER, non-gating)
