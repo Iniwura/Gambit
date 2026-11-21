@@ -14,6 +14,16 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Phase 1: bounded, reorg-aware Commander Profile event discovery
+
+**Verified end-to-end public read-only discovery (no signer, new chain transaction or UI).**
+
+- Implemented [`src/profile/approved-event-discovery.mjs`](../src/profile/approved-event-discovery.mjs) with the immutable approved deployment pin, 12-confirmation minimum, capped **1,800-block pages**, **450-block RPC subwindows**, canonical event/block checks and a cursor bound to the last scanned block's canonical hash. Reorganisation/counterfeit RPC evidence fails closed.
+- **Security split:** discovery yields `UNVERIFIED_CANDIDATES_ONLY`, never a ranked win. Each matching duel must still pass [`verifyArenaProfileRecord`](../src/profile/verified-arena-record.mjs), including approved runtime, canonical receipt/proof, onchain score and correct participants. Adversarial [unit tests](../tests/profile-discovery-contract.test.mjs) refuse forged contracts, duplicate events, tampered cursors, wrong networks, orphaned blocks and oversized event batches.
+- **Real Sepolia confirmation:** [focused workflow 44924064176](https://github.com/Iniwura/Gambit/actions/runs/44924064176) passed **17/17** targeted tests; [`scripts/verify-profile-discovery-readonly.mjs`](../scripts/verify-profile-discovery-readonly.mjs) scanned **7 actual read-only pages**, discovered unique genuine Duel #1, matched the exact mined receipt and attributed **one defender win / one challenger loss** only after authenticated verification. Zero signing or writes.
+- Detailed [profile trust/recovery specification](PROFILE_TRUST_AND_RECOVERY.md) updated. **Still unbuilt:** persistent index/cursor across sessions, performant wallet history queries, consent-based identity, reorg invalidation after restart, functional Profile UI, achievements and progression.
+- **Next:** produce the actual functional Profile greybox driven by trustworthy read-only evidence and explicit empty/error states, with no final graphics. Continue evaluating BLACKSITE alternatives where scans provide a genuine tactical choice instead of a dominated action.
+
 ## 2026-11-21 — Phase 1: verified deployment trust, reorg safety and BLACKSITE difficulty study
 
 **Branch:** `build/verified-first-slice`; draft PR #5. **Graphics frozen. No blockchain writes, new contracts, or wallet signatures.**
