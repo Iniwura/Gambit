@@ -79,6 +79,8 @@ try{
     'owner-only share control must be hidden from invitees');
   assert.equal(await invitePage.locator('#gambit-squad-invite').isVisible(),false,
     'challenger must not be asked to fill the invitee address');
+  assert.equal(await invitePage.locator('label[for="gambit-squad-invite"]').isVisible(),false,
+    'challenger must not see an orphan owner-only field label');
   assert.match(await invitePage.locator('#gambit-squad-open-details').textContent(),
     /200,000,000 Sepolia wei/);
   assert.match(await invitePage.locator('#gambit-squad-open').textContent(),/Open invited squad/);
