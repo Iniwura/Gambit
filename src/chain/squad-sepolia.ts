@@ -291,10 +291,16 @@ export async function createSquadSepoliaClient(
    * binds buffered gasLimit × maxFeePerGas BEFORE ANY wallet prompt.
    * The UI must separately obtain approval; this code never auto-retries.
    */
-  async function submitDuel(duelId:bigint,plans:FighterPlan[],formation:number){
+  async function submitDuel(duelId:bigint,plans:FighterPlan[],formation:number,
+    onProgress?:(message:string)=>void){
+    onProgress?.('Checking Duel #'+duelId+' on Sepolia. No signature requested.');
     const {step}=await nextDuelStep(duelId);
     if(step!=='submit')throw Error('Duel is not awaiting an invited squad submission.');
+    onProgress?.('Encrypting 10 tactical values through Zama. This may take 15–60 seconds. '+
+      'There is no Rabby popup during encryption; do not click again.');
     const input=await encryptedSquad(plans,formation);
+    onProgress?.('Encryption completed. Rechecking the submission deadline and estimating fees '+
+      'before any Rabby request.');
     if((await nextDuelStep(duelId)).step!=='submit')
       throw Error('Onchain duel changed or expired during encryption.');
     const txData=contract.interface.encodeFunctionData('submitDuel',[
@@ -303,6 +309,7 @@ export async function createSquadSepoliaClient(
     const estimate=await provider.estimateGas({
       from:userAddress,to:contractAddress,data:txData,value:0n
     });
+    onProgress?.('Encrypted input proof ready. Checking capped gas: this is still read-only.');
     const originalFees=await provider.getFeeData();
     const originalPrice=originalFees.maxFeePerGas??originalFees.gasPrice;
     if(originalPrice===null||originalPrice<=0n)
@@ -331,8 +338,12 @@ export async function createSquadSepoliaClient(
       overrides.gasPrice=freshPrice;
     }
     await assertWalletStable();
+    onProgress?.('Ready: requesting exactly one submitDuel('+duelId+') signature in Rabby now. '+
+      'Confirm only if the fee is within 500,000,000 wei.');
     const tx=await txSucceeded(()=>contract.submitDuel(
       duelId,input.encryptedValues,input.inputProof,overrides));
+    onProgress?.('The wallet returned a transaction. Checking its confirmed receipt. '+
+      'Do not retry, even if Rabby is slow.');
     const e=eventIn(tx.receipt,'DuelSubmitted');
     if(BigInt(e.args.duelId)!==duelId)
       throw Error('Confirmed submission event ID mismatch. Do not retry.');
