@@ -1,0 +1,25 @@
+name: GAMBIT Duel 1 finalization verification (no wallet)
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'scripts/verify-first-duel-finalize-readonly.mjs'
+      - 'tests/first-duel-finalize-readonly.test.mjs'
+      - '.github/workflows/duel-finalize-receipt-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned public read-only dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Discover and verify finalization from public DuelFinalized event
+        timeout-minutes: 3
+        run: node scripts/verify-first-duel-finalize-readonly.mjs
