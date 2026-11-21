@@ -27,6 +27,7 @@ async function runScenario(label,viewport){
     assert.equal(await overlay.isVisible(),true);
     assert.equal(await launch.getAttribute('aria-expanded'),'true');
     assert.equal(await overlay.getAttribute('data-phase'),'briefing');
+    assert.equal(await overlay.getAttribute('data-scene'),'blacksite-training');
     assert.match(await overlay.textContent(),/NOT ENCRYPTED/);
     assert.match(await overlay.textContent(),/NO WALLET/);
     await page.locator('#gambit-blacksite-begin').click();
@@ -60,6 +61,7 @@ async function runScenario(label,viewport){
     }
     await page.locator('#gambit-blacksite-back').click();
     assert.equal(await overlay.isVisible(),false);
+    assert.equal(await overlay.getAttribute('data-scene'),'home');
     assert.equal(await launch.getAttribute('aria-expanded'),'false');
     assert.equal(await page.locator('#game-state').getAttribute('data-phase'),'intro');
     assert.equal(await page.locator('#game-state').getAttribute('data-practice-seed'),
@@ -67,6 +69,7 @@ async function runScenario(label,viewport){
     await launch.click();
     assert.equal(await overlay.getAttribute('data-round'),'1',
       'local mission must survive closing without refresh');
+    assert.equal(await overlay.getAttribute('data-scene'),'blacksite-training');
     assert.equal(await page.locator('#gambit-blacksite-history li').count(),1);
     // The first guess has a 1/256 probability of immediate victory.
     // Both authentic winning and losing flows are valid and must be tested
