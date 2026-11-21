@@ -124,13 +124,19 @@ A feature is not "done" merely because it compiles. All applicable gates need ev
 - [ ] Product copy, documentation and demo reflect actual features and tested constraints.
 - [ ] Submission materials meet Zama's current official requirements; 3-minute REAL-PERSON pitch (not AI voice). The hackathon is a milestone, not the definition of the product.
 
-## Priority order
+## Priority order — ARCHITECTURE FIRST, GRAPHICS LAST
 
-**Now:** P0 live encrypted session and a genuinely good blind-playtested tactical loop; no further purely decorative polish while these fail.
+**First — game design and architecture:** lock rules, four-pillar feature scope, states, interface contracts, schemas, functional specifications and testable acceptance criteria. Current source includes a verified Duel #1, but the **whole game architecture is not complete**.
 
-**Next:** production-grade Create/Join/Recover/Verify flows; measured asynchronous UX; game-design experiment for the single-use strategic GAMBIT decision.
+**Second — make the game actually WORK and RESPOND:** implement the planned functional greybox with correct controls, navigation, gameplay states, tactical consequences, mission and profile logic, create/join/recovery, meaningful feedback, persistent state and reliable failure handling. Keep provisional visuals.
 
-**Then:** premium art/audio, mobile-first 2.5D composition, rigorous accessibility and security review, telemetry, history and release docs.
+**Third — functional evidence:** deterministic and adversarial tests, responsiveness across mobile/desktop, meaningful playtests, fairness checks, repeatable authentic Sepolia flows under separate per-transaction approvals and recovery from failures. Do not move to visual production with known core gameplay defects.
+
+**Fourth — graphics and production feel:** only when prior gates pass, replace provisional art and create original high-quality fighters, arenas, animations, VFX, sound and final UI. Maintain full responsiveness, security and playability.
+
+**Last — release audit and submission:** end-to-end game, accessibility, performance, security, real user playtests and authentic demo.
+
+This owner-approved sequence is locked in [GAMBIT Master Scope](GAMBIT_MASTER_SCOPE.md), section 5. Earlier mentions of premium vertical-slice art do **not** authorize cosmetic work before the greybox functional gate.
 
 ## Release discipline
 
