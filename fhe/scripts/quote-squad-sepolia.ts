@@ -72,6 +72,7 @@ async function main(){
       throw Error('SDK did not provide the ten encrypted inputs and proof');
     }
 
+    const encryptedAt=Date.now();
     const txData=contract.interface.encodeFunctionData('sealSquad',[
       challenger,encrypted.encryptedValues,encrypted.inputProof
     ]);
@@ -109,7 +110,8 @@ async function main(){
       quotedMaximumFeeSepoliaETH:formatEther(quotedMaximumFeeWei),
       underScriptHardCap:quotedMaximumFeeWei<=MAX_SEAL_FEE_WEI,
       scriptHardCapWei:MAX_SEAL_FEE_WEI.toString(),
-      sdkEncryptionLatencyMs:Date.now()-started,
+      sdkEncryptionLatencyMs:encryptedAt-started,
+      fullQuoteLatencyMs:Date.now()-started,
       liveHcu:'NOT MEASURED',
       balancesChecked:false,transactionSigned:false,transactionSent:false,
       caveat:'Indicative only; signed ciphertext inputs, gas and network fees must be freshly rechecked before user-approved submission'
