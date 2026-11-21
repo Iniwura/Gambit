@@ -4,6 +4,8 @@
 
 GAMBIT is a playable 3v3 squad-tactics game with a confidential, asynchronous head-to-head match powered by the **Zama Protocol** on Ethereum Sepolia. Three fighters each have a private conditional order. Each commander also selects a hidden formation. The contract computes a match without publishing either squad's tactics, and a Zama KMS-signed proof authenticates the **aggregate reactor score**.
 
+**Master product plan:** [Full four-pillar game scope, roadmap and progress](docs/GAMBIT_MASTER_SCOPE.md) — ARENA, BLACKSITE, TRAINING and COMMANDER PROFILE. This governs what we're building beyond the first verified duel.
+
 **Release status:** a genuine two-wallet encrypted match has been completed and independently verified on Sepolia. The game remains a **pre-release candidate** pending newcomer playtests, full product/visual polish and independent security review. We do not claim production readiness or a security audit.
 
 [Play GAMBIT](https://iniwura.github.io/Gambit/) · [Inspect real Duel #1](https://iniwura.github.io/Gambit/?squad=1&duel=1) · [Public Sepolia finalization](https://sepolia.etherscan.io/tx/0x57a19f25a234eca7db206781a18cc965a09818a04b87a9f30d8d659562a9bdad) · [Engineering evidence](docs/STATUS.md)
