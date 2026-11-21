@@ -8,6 +8,8 @@ GAMBIT is a playable 3v3 squad-tactics game with a confidential, asynchronous he
 
 **Permanent development history:** [GAMBIT Build Log](docs/BUILD_LOG.md) records every verified milestone, failed/passed CI check, unresolved system and next priority.
 
+**Two-Commander LOCAL HOTSEAT:** the game now includes a playable five-round same-device duel with real independent player decisions and aggregate outcomes, not encrypted remote multiplayer. [Exact 4/4 browser acceptance](docs/ARENA_V3_HOTSEAT_ACCEPTANCE.md) · [GitHub run 44962022483](https://github.com/Iniwura/Gambit/actions/runs/44962022483), 203/203 deterministic tests and desktop/mobile final score **3 : 17**. No wallet, onchain win or persistence claims.
+
 **Current research, not deployed:** [Arena v3 FHE mock acceptance](docs/ARENA_V3_FHE_MOCK_ACCEPTANCE.md) describes a separate five-round encrypted match prototype. Its 25/25 Hardhat mock tests and 81/81 formation/hidden-sector oracle checks passed; it is neither a released feature nor permission to deploy a new contract.
 
 **Current engineering phase:** [Phase-1 Game Architecture and Mechanics v1](docs/GAME_ARCHITECTURE_V1.md) — functional design, state ownership, four-pillar integration, and pre-graphics gates. **Not a claim that all four modes are playable.**
