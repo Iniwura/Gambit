@@ -26,6 +26,10 @@ test('rejects impossible scores, winner mismatch and forged/duplicate role lanes
   while(!m.finished)m=commitSquadTurn(m,startingSquadPlans()).match;
   assert.throws(()=>buildPracticeMatchDebrief({...m,winner:3}),/completed/);
   assert.throws(()=>buildPracticeMatchDebrief({...m,round:0}),/completed/);
+  // A fake locally "finished" three-round record is no longer an accepted
+  // source for a victory screen; the rules now require all five rounds.
+  const truncated={...m,round:3,finished:true,history:m.history.slice(0,3)};
+  assert.throws(()=>buildPracticeMatchDebrief(truncated),/completed/);
   assert.throws(()=>buildPracticeMatchDebrief({...m,scoreA:-1}),/completed/);
   assert.throws(()=>buildPracticeMatchDebrief({...m,scoreA:m.scoreB+100,winner:2}),/completed/);
   const history=m.history.map(e=>({...e,lanes:e.lanes.map(l=>({...l}))}));
