@@ -117,6 +117,23 @@ test('changed committed commands fail closed even after correct teaching clicks'
   assert.equal(h.coach.completed,false);
 });
 
+test('Guardian lesson rejects an unchanged committed default despite button clicks',()=>{
+  const h=harness(),t=h.teach;
+  t({type:'role',role:0});
+  h.plans[0]={base:0,trigger:1,response:2};
+  for(const [field,index] of [['base',0],['trigger',1],['response',2]])
+    t({type:'choose',role:0,field,index});
+  h.settle(h.commit(2));
+  t({type:'role',role:1});
+  // Actual Guardian plan remains unchanged from round 2.
+  for(const [field,index] of [['base',1],['trigger',2],['response',0]])
+    t({type:'choose',role:1,field,index});
+  assert.equal(h.coach.step,'r3-commit');
+  h.commit(2);
+  assert.equal(h.coach.step,'recovery');
+  assert.equal(h.coach.completed,false);
+});
+
 test('invalid, premature, duplicate or other-round reports cannot advance',()=>{
   const h=harness();
   const start=h.coach;
