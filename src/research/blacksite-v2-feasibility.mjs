@@ -78,9 +78,13 @@ export function candidateV2Codes(publicTranscript){
   const seenGuesses=new Set(),seenScans=new Set();
   let guessCount=0,scanCount=0;
   let candidates=allV2Codes();
-  for(const item of publicTranscript){
+  for(let i=0;i<publicTranscript.length;i++){
+    const item=publicTranscript[i];
     if(!item||typeof item!=='object'||Array.isArray(item))
       throw Error('Malformed BLACKSITE v2 public evidence');
+    if(publicTranscript.slice(0,i).some(previous=>
+      previous?.type==='guess'&&previous.exact===V2_LENGTH))
+      throw Error('BLACKSITE v2 mission already breached');
     if(item.type==='guess'){
       guessCount++;
       const code=validateV2Code(item.guess);
@@ -120,6 +124,11 @@ export function candidateV2Codes(publicTranscript){
 export function evaluateV2ResearchAction(secret,publicTranscript,action){
   const code=validateV2Code(secret);
   const candidates=candidateV2Codes(publicTranscript);
+  if(!candidates.some(candidate=>candidate.every((v,i)=>v===code[i])))
+    throw Error('BLACKSITE v2 prior evidence is not from this research secret');
+  if(publicTranscript.some(item=>
+    item.type==='guess'&&item.exact===V2_LENGTH))
+    throw Error('BLACKSITE v2 research mission already breached');
   if(publicTranscript.length>=V2_ACTION_BUDGET)
     throw Error('BLACKSITE v2 research mission action budget exhausted');
   if(!action||typeof action!=='object')
