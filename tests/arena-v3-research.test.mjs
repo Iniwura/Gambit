@@ -69,8 +69,8 @@ test('public allowlist redacts secret plans, formations and private stakes on ev
   const start=makeArenaV3ResearchMatch('research-private');
   const original=order(2,1);
   const one=submitArenaV3ResearchOrder(start,'challenger',original);
-  original.plans[0].base=2;
-  assert.notEqual(one.pending.challenger.plans[0].base,2,
+  original.plans[0].base=0;
+  assert.notEqual(one.pending.challenger.plans[0].base,0,
     'submitted private plan must be copied before caller mutation');
   const states=[start,one];
   const both=submitArenaV3ResearchOrder(one,'defender',order(1,0));
