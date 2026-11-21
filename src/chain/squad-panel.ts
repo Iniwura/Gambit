@@ -22,6 +22,7 @@ export function mountSquadSepoliaPanel(
   let client:Client|null=null;
   let busy=false;
   let lastResult:SquadResult|null=null;
+  let verifiedView=false;
   // Browser extensions can race to own window.ethereum. Select the explicit
   // EIP-6963 provider and keep it pinned for the whole match session.
   const walletDiscovery=discoverInjectedWallets(window);
@@ -331,6 +332,9 @@ export function mountSquadSepoliaPanel(
     shareResult.disabled=value||!lastResult;
   }
   const invalidate=()=>{
+    // A public KMS-verified outcome is independent of the current wallet.
+    // Changing accounts cannot revoke a finalized, canonical result.
+    if(verifiedView){client=null;return;}
     client=null;lastResult=null;watch.disabled=true;shareResult.disabled=true;
     identity.textContent='Wallet changed. Reconnect required.';
     setStatus('Wallet account, extension or network changed. Reconnect before any action.');
@@ -540,6 +544,14 @@ export function mountSquadSepoliaPanel(
   });
   shareResult.disabled=true;
   const allActions=[connect,balanced,importPractice,seal,shareInvite,open,recover,publicInspect,inspect,submit,resolve,finalize,shareResult];
+  // Completed games use a read-only result experience, not the old invitation form.
+  // The original controls stay mounted for other unfinished duels but are not
+  // presented for an independently verified, finalized match.
+  const workflow=document.createElement('section');
+  workflow.id='gambit-squad-workflow';
+  const verifiedActions=document.createElement('section');
+  verifiedActions.id='gambit-squad-verified-actions';
+  verifiedActions.hidden=true;
   function showResult(proof:SquadResult){
     if(proof.authenticated!==true)throw Error('Unauthenticated result rejected.');
     lastResult=proof;
@@ -567,6 +579,14 @@ export function mountSquadSepoliaPanel(
     note.textContent='Public contract state verified. No further wallet action is required.';
     note.style.cssText='font:12px/1.45 system-ui;margin:7px 0 0;color:#c8edee';
     publicResultSummary.append(headline,score,note);
+    verifiedView=true;
+    title.textContent='Duel #'+proof.duelId+' · Finalized';
+    caution.textContent='An authenticated encrypted match on Ethereum Sepolia. '+
+      'The public score is verified; individual tactics and fighter outcomes remain private.';
+    workflow.hidden=true;
+    verifiedActions.hidden=false;
+    publicInspect.hidden=true;
+    card.scrollTop=0;
   }
 
   // Keep the most important status and wallet choice within view when the
@@ -575,14 +595,18 @@ export function mountSquadSepoliaPanel(
     seal.hidden=true;
     shareInvite.hidden=true;
   }
-  const start=[heading,caution,publicInspect,publicResultSummary,
-    identity,walletLabel,walletChoice,connect,status,invited.wrap,invited.input];
+  const start=[heading,caution,publicInspect,publicResultSummary];
+  const walletControls=[identity,walletLabel,walletChoice,connect,status,
+    invited.wrap,invited.input];
   const lifecycle=[squad.wrap,squad.input,shareInvite,open,openExplainer,recover,
     duel.wrap,duel.input,inspect];
-  const completion=[submit,submitStatus,submitExplainer,resolve,resolveExplainer,finalize,finalizeExplainer,result,shareResult,watch];
-  // Keep the private plan editor adjacent to the action that consumes it.
-  if(isInvitedLink)card.append(...start,seal,...lifecycle,planner,...completion);
-  else card.append(...start,planner,seal,...lifecycle,...completion);
+  const completion=[submit,submitStatus,submitExplainer,resolve,resolveExplainer,
+    finalize,finalizeExplainer];
+  // Only show transactional controls for a match not yet verified as final.
+  if(isInvitedLink)workflow.append(...walletControls,seal,...lifecycle,planner,...completion);
+  else workflow.append(...walletControls,planner,seal,...lifecycle,...completion);
+  verifiedActions.append(result,watch,shareResult);
+  card.append(...start,verifiedActions,workflow);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
   const openDialog=()=>{if(busy)return;dialog.hidden=false;setVisibility();close.focus();};
