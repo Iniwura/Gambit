@@ -27,11 +27,11 @@ Practice is **cleartext and deterministic**. The per-fighter reports in this mod
 
 Desktop keys: **4/5/6** choose a fighter, **7/8/9** choose formation, **1/2/3** choose the opener, **Q/W/E** the trigger, **A/S/D** the response and **Enter** locks the turn. Mobile uses the on-screen command deck.
 
-### Tactical Academy — optional real first-round guided training
+### Tactical Academy — optional full five-round guided training
 
-Choose **TRAINING · GUIDED ROUND** from the desktop game header or mobile command deck. The guide observes the **existing** local squad game: choose Striker, set a FLANK opening, a STRIKE trigger and GUARD response, deploy FEINT, then lock the actual three-fighter squad. The lesson advances only when the real game accepts each action, and completes **after** all three practice lanes resolve. Your real match score appears in the debrief; success is not scripted.
+Choose **TRAINING · TACTICAL ACADEMY** on desktop or mobile. Program Striker's FLANK opening, enemy STRIKE trigger and GUARD response, select FEINT and lock a real local 3v3 round. After reading the real scoreboard, use **CONTINUE FULL MATCH** to program Scout, change Guardian's tactic, adapt formation and independently command all three fighters in the fifth round. Only accepted commands, matching committed plans and genuine settled game events advance the lesson. A defeat or draw still qualifies for genuine local training completion.
 
-This is a functional first-round lesson, **not** a full training curriculum or an encrypted match. It requires no wallet and does not save personal data. [Exact pre-graphics acceptance gates](docs/TRAINING_GUIDED_ROUND_ACCEPTANCE.md).
+**Verified:** [4/4 quality gates](https://github.com/Iniwura/Gambit/actions/runs/44938866411), including actual five-round desktop/mobile gameplay (15 lanes and a genuine **3 : 10 defeat**), 710px/820px tablet navigation, zero browser exceptions or wallet actions. **Boundary:** local cleartext Training, not encrypted five-round multiplayer, persistent mastery or independently observed novice comprehension. [Full acceptance](docs/TRAINING_FULL_MATCH_ACCEPTANCE.md).
 
 ### BLACKSITE — playable local codebreaking training, no wallet
 
