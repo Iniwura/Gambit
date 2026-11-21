@@ -210,9 +210,10 @@ export function mountBlacksiteGreybox():void{
   }
   function open(){
     if(!backdrop.hidden)return;
-    if(document.getElementById('gambit-squad-dialog')?.hidden===false||
+    if(document.body.dataset.gambitFeatureOverlay||
+       document.getElementById('gambit-squad-dialog')?.hidden===false||
        document.getElementById('gambit-chain-dialog')?.hidden===false)
-      return; // Never overlay either active wallet-signing interface.
+      return; // Never overlay Profile or active wallet-signing interfaces.
     previousFocus=document.activeElement instanceof HTMLElement?
       document.activeElement:null;
     if(!mission){
