@@ -14,6 +14,19 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Five-round Academy final acceptance and click recovery
+
+**Status: VERIFIED five-round LOCAL PRACTICE Academy; 4/4 quality jobs SUCCESS.** [GitHub Actions run 44938866411](https://github.com/Iniwura/Gambit/actions/runs/44938866411). Draft PR #5 remains open. This is not encrypted five-round multiplayer.
+
+- **Desktop 1280×850 and mobile 390×844:** real first-round Striker counter/FEINT (2 : 1) continued by a real native Continue click into all five actual local practice rounds. Both completed 15 resolved lanes, genuine **3 : 10 defeat**, verified Scout/Guardian/Striker final match debrief, no scripted wins, no wallet signatures and zero browser errors.
+- **Tablet:** 710px and 820px Chromium hit-testing confirmed four visible, unobstructed feature launchers, preserved Arena state and no page errors. Other browser paths for BLACKSITE, Commander Profile, base five-round game and wallet negative cases also passed.
+- **Reproducible failure and fix:** [run 44938061007](https://github.com/Iniwura/Gambit/actions/runs/44938061007) showed first-round Continue did not advance. [run 44938383394](https://github.com/Iniwura/Gambit/actions/runs/44938383394) traced the missing native handoff while Arena remained correct at ready/round 1. Academy's render had been reparenting its live DOM panel, risking pointer-click cancellation. The fix preserves DOM identity, delegates Continue click to the stable panel, shows fail-closed handoff messages, and verifies the actual native click, not a synthetic event.
+- **Input invariants:** Academy starts at actual round zero and only graduates round 1 from a genuine round-one commit. The full continuation requires actual Scout, changed Guardian, a changed formation, three independent final role commands and canonical final debrief. No local outcome becomes onchain history.
+- **CI correction:** four quality jobs now run for draft PR code changes instead of being marked skipped. Build-branch push duplicate full checks were removed; main pushes remain checked.
+- **Still outstanding:** independent novice playtesting, complete accessibility audit, full encrypted multi-round Arena and signature GAMBIT, competitive BLACKSITE, persistent Commander identity/progression and original graphics/audio. No new contracts, transaction signatures or chain writes.
+
+**Next architecture/gameplay priority:** competitive Arena v3 protocol feasibility, bounded timeout/recovery/fairness and real human multiplayer loop, before final visuals.
+
 ## 2026-11-21 — Phase 2: full five-round Tactical Academy continuation (TRAINING)
 
 **Branch:** build/verified-first-slice, PR #5 remains DRAFT. **Status: IMPLEMENTED, NOT YET FULLY CI/PLAYER VERIFIED.** Pre-art implementation of rounds 2–5 advances the full TRAINING pillar. No contract deployment or wallet signature.
