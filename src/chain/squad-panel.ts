@@ -156,6 +156,15 @@ export function mountSquadSepoliaPanel(
   syncWalletChoices();
   const result=document.createElement('p');result.id='gambit-squad-receipt';
   result.style.cssText='font-size:13px;color:#cfedff;overflow-wrap:anywhere';
+  // The public result belongs at the top of the dialog: an already-mined
+  // finalization must never appear to fail because a wallet RPC lags.
+  const publicResultSummary=document.createElement('section');
+  publicResultSummary.id='gambit-squad-confirmed-score';
+  publicResultSummary.hidden=true;
+  publicResultSummary.setAttribute('role','status');
+  publicResultSummary.setAttribute('aria-live','polite');
+  publicResultSummary.style.cssText='margin:11px 0;padding:13px;border:1px solid #79e9ed;'+
+    'border-radius:10px;background:#153b47;color:#effdff;font:650 14px/1.5 system-ui';
 
   const invited=textbox('Invite this challenger wallet','gambit-squad-invite','0x... different address');
   const squad=textbox('Squad ID (seal, invite or recovery)','gambit-squad-id','e.g. 1');
@@ -430,7 +439,7 @@ export function mountSquadSepoliaPanel(
     duel.input.value=String(id);
     setStatus('Recovered duel #'+id+' from canonical squad contract state.');
   });
-  const publicInspect=button('View finalized score · no wallet','gambit-squad-public-inspect',async()=>{
+  const publicInspect=button('Recover verified match result · no wallet','gambit-squad-public-inspect',async()=>{
     const id=positiveId(duel.input.value,'Duel ID');
     setStatus('Checking public Sepolia chain ID, exact contract runtime and finalized duel state…');
     const verified=await readVerifiedSquadPublic(id,address,hash);
@@ -484,14 +493,29 @@ export function mountSquadSepoliaPanel(
   resolveExplainer.style.cssText='font:12px/1.5 system-ui;color:#aec5da;margin:7px 0 9px';
   const finalize=button('6 · Verify KMS score + finalize (one transaction)','gambit-squad-finalize',async()=>{
     const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
-    setStatus('Fetching the public KMS proof and checking the finalization gas ceiling. '+
-      'This is read-only until ONE distinct Rabby transaction is requested.');
-    const x=await c.finalizeDuel(id);
-    showResult(x);
-    setStatus('Duel #'+id+' has an authenticated, successful finalization receipt. Tx: '+
-      x.finalizationTx+'. Do NOT finalize again. '+(x.canonicalStateVerified===false
-        ?'Your wallet RPC may lag; the canonical DuelFinalized event is authoritative.'
-        :'The public result is finalized on Sepolia.'));
+    setStatus('Checking public KMS proof and new finalization gas ceiling. '+
+      'Do not approve or repeat a transaction if this duel is already finalized.');
+    try{
+      const x=await c.finalizeDuel(id);
+      showResult(x);
+      setStatus('Duel #'+id+' has an authenticated finalization receipt. '+
+        (x.finalizationTx?'Tx: '+x.finalizationTx+'. ':'')+
+        'Do NOT finalize again. The public result is finalized on Sepolia.');
+    }catch(originalError){
+      // A wallet RPC may return stale onchain state immediately after a
+      // SUCCESSFUL receipt. Never invite a second signature. Independently
+      // read canonical chain+bytecode+duel identity before reporting failure.
+      try{
+        const verified=await readVerifiedSquadPublic(id,address,hash);
+        showResult(verified);
+        setStatus('Duel #'+id+' is ALREADY FINALIZED on Sepolia with an '+
+          'independently verified public score. No other signature or transaction '+
+          'is needed. A wallet/RPC post-receipt check may have lagged.');
+        return;
+      }catch{
+        throw originalError;
+      }
+    }
   });
   const finalizeExplainer=document.createElement('p');
   finalizeExplainer.id='gambit-squad-finalize-details';
@@ -530,6 +554,19 @@ export function mountSquadSepoliaPanel(
     anchor.textContent='View independently inspectable Sepolia evidence';
     anchor.style.cssText='display:block;color:#7de7f4;margin-top:8px';
     result.append(label,anchor);
+    publicResultSummary.hidden=false;
+    publicResultSummary.replaceChildren();
+    const headline=document.createElement('strong');
+    headline.textContent='DUEL #'+proof.duelId+' · VERIFIED ON SEPOLIA';
+    const score=document.createElement('div');
+    score.id='gambit-squad-confirmed-scoreline';
+    score.textContent='CYAN '+proof.pointsChallenger+' : '+proof.pointsDefender+
+      ' VIOLET · '+(proof.outcome===1?'CYAN WINS':proof.outcome===2?'VIOLET WINS':'DRAW');
+    score.style.cssText='font:750 19px/1.4 system-ui;margin-top:5px';
+    const note=document.createElement('p');
+    note.textContent='Public contract state verified. No further wallet action is required.';
+    note.style.cssText='font:12px/1.45 system-ui;margin:7px 0 0;color:#c8edee';
+    publicResultSummary.append(headline,score,note);
   }
 
   // Keep the most important status and wallet choice within view when the
@@ -538,10 +575,10 @@ export function mountSquadSepoliaPanel(
     seal.hidden=true;
     shareInvite.hidden=true;
   }
-  const start=[heading,caution,identity,walletLabel,walletChoice,connect,status,
-    invited.wrap,invited.input];
+  const start=[heading,caution,publicInspect,publicResultSummary,
+    identity,walletLabel,walletChoice,connect,status,invited.wrap,invited.input];
   const lifecycle=[squad.wrap,squad.input,shareInvite,open,openExplainer,recover,
-    duel.wrap,duel.input,publicInspect,inspect];
+    duel.wrap,duel.input,inspect];
   const completion=[submit,submitStatus,submitExplainer,resolve,resolveExplainer,finalize,finalizeExplainer,result,shareResult,watch];
   // Keep the private plan editor adjacent to the action that consumes it.
   if(isInvitedLink)card.append(...start,seal,...lifecycle,planner,...completion);
