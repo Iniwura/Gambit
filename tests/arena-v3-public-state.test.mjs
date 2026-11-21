@@ -75,3 +75,24 @@ test('forged adaptive public history and premature winner statements fail closed
   ];
   for(const edited of bad)assert.throws(()=>projectArenaV3PublicMatchState(edited));
 });
+
+
+test('research reducer refuses forged cumulative scores, erased secret-use markers and lost proof lineage',()=>{
+  const plans=startingSquadPlans();
+  const initial=makeArenaV3ResearchMatch();
+  const one=commitArenaV3ResearchRound(initial,order(plans,0,0),order(plans)).match;
+  const a=order(plans),b=order(plans);
+  const broken=[
+    {...one,spentA:false},
+    {...one,scoreA:one.scoreA+5},
+    {...one,history:[{...one.history[0],debug:null}]},
+    {...one,history:[{...one.history[0],debug:{gambitRoleA:null}}]},
+    {...one,history:[{...one.history[0],scoreA:one.scoreA+1}]}
+  ];
+  for(const match of broken)
+    assert.throws(()=>commitArenaV3ResearchRound(match,a,b),
+      /disagree|mismatch|history|research/i);
+  const clean=commitArenaV3ResearchRound(one,a,b);
+  assert.equal(clean.match.round,2);
+  assert.equal(clean.match.spentA,true);
+});
