@@ -1,8 +1,10 @@
 # GAMBIT — Full Five-Round Tactical Academy Plan
 
-**Status: PROPOSED FUNCTIONAL DESIGN TARGET, NOT IMPLEMENTED OR PLAYER-VALIDATED.**  
+**Status: FUNCTIONAL IMPLEMENTATION COMMITTED; FRESH CI, FULL BROWSER QA AND HUMAN PLAYER VALIDATION PENDING.**  
 **Date:** 21 November 2026 · **Implementation order:** canonical local rules → actual player interactions → real match evidence → responsive QA → human comprehension → final art/audio.  
 **Source of truth:** [master game scope](GAMBIT_MASTER_SCOPE.md), [complete architecture](GAME_ARCHITECTURE_V1.md), and existing [five-round deterministic engine](../src/squad.mjs).
+
+**Implementation and exact acceptance:** [Five-round Academy acceptance](TRAINING_FULL_MATCH_ACCEPTANCE.md). The local-match reducer, accepted command bridge, responsive continuation, adversarial tests and desktop/mobile browser test paths are now present. The original first-round Academy remains independently tested; do not confuse a committed test with a passing CI run. No graphics work.**
 
 ## Why this phase exists
 
@@ -33,6 +35,8 @@ If the player deviates or is defeated, the coach still explains what **actually*
 7. Keep confidential Arena result playback separate: no tutorial events may be accepted while the user watches an independently verified FHE encounter.
 
 ## Delivery gates
+
+Implementation has been submitted on the build branch. The new five-round browser scenarios, independent novice evaluation and accessibility sign-off are **not** marked verified until their evidence is available.
 
 - A coherent five-round finite-state machine and explicit event protocol with step rollback/recovery.
 - Deterministic adversarial tests: duplicate/forged events, wrong fighter, wrong round, changed formation, early match finish, rematch, uncompleted objectives and mismatched score.
