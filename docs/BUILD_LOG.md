@@ -14,6 +14,18 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Arena v3 encrypted five-round Solidity research contract
+
+**Status: FHE MOCK-VERIFIED; LIVE COMPETITIVE ARENA NOT BUILT.** New separate [ArenaV3Research.sol](../fhe/contracts/ArenaV3Research.sol), [Hardhat tests](../fhe/test/ArenaV3Research.ts) and [exact acceptance/evidence](ARENA_V3_FHE_MOCK_ACCEPTANCE.md). This is the first genuinely encrypted five-round Arena research lifecycle; the previous v3 reducer was cleartext-only. **No onchain deployment or new wallet authorization.**
+
+- Two distinct participants; **fresh encrypted 3v3/formation plans in every round**; a one-use GAMBIT with public activation timing but encrypted visual target sector; a local FHE circuit for independent roles/formation and risk; only packed **0–7 per-side aggregate** is publicly decryptable.
+- Each score is accepted only with KMS proof over the **exact current round handle**. Replays of a previous round's proof (even if identical public score), duplicate submits, unknown actors, invalid scores and double resolution fail. Both on-time submissions remain settleable after deadline, while a one-sided timed-out match becomes **abandoned and UNSCORED**, never a fabricated win.
+- **Initial failure retained:** [run 44941481160](https://github.com/Iniwura/Gambit/actions/runs/44941481160) failed Solidity parsing because `sealed` is a reserved keyword; renamed state field to `submitted`. [FHE run 44941951287](https://github.com/Iniwura/Gambit/actions/runs/44941951287) then compiled and passed **25/25 mock tests**, including **81/81 independent oracle crosschecks** over all nine encrypted formation pairings and nine paired sector choices, plus five-round finality.
+- **Actual local mock measurements:** runtime **11,851 bytes**, deploy **2,688,796 gas**, two participant submissions ~**1,357,814/1,357,958 gas**, round resolution **2,041,149 gas**, proof finalization **127,045 gas**. **These are NOT live Sepolia EVM costs and do not measure Zama HCU/depth/latency.**
+- The v2 live contract and receipts are unchanged. The v3 prototype has no client lobby, real two-wallet lifecycle, deployed timeout authority, external review, or HCU instrumentation. Public wager timing can give second-sealer information; the full 21-write match is expensive in wallet attention. No premium graphics or sound.
+
+**Next functional acceptance:** HCU source inventory and actual feasibility, strategy/griefing analysis, consented two-player lobby/recovery (no fabricated finality), then *separately approved* testnet deployment only if evidence supports it. The four-pillar roadmap remains active; PR #5 stays DRAFT.
+
 ## 2026-11-21 — Arena v3 read-only deadline and recovery research
 
 **Status: RESEARCH IMPLEMENTED, INDEPENDENT CI PENDING.** Added [pure deadline classifier](../src/research/arena-v3-round-policy.mjs), [eight adversarial tests](../tests/arena-v3-round-policy.test.mjs) and [fairness acceptance record](ARENA_V3_RECOVERY_POLICY.md). Statuses distinguish two players waiting, one order waiting, two submitted on time, resolved-but-not-finalized, real aggregate finalization, and expired-but-**unscored** rounds. An expired one-player round never fabricates a victory; both on-time submissions remain settleable after the window.
