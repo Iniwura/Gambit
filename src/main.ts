@@ -33,7 +33,7 @@ type Actor={shell:Phaser.GameObjects.Container,origin:{x:number,y:number}};
 const names=['STRIKE','GUARD','FLANK'];
 const mobileDeck=createMobileDeck();
 // Observations ONLY: the trainer never commands combat, wallet or scoring.
-function emitLocalPractice(detail:Record<string,string|number>){
+function emitLocalPractice(detail:Record<string,string|number|Plan>){
   window.dispatchEvent(new CustomEvent('gambit:practice-event',{detail}));
 }
 class GambitArena extends Phaser.Scene {
@@ -555,7 +555,8 @@ class GambitArena extends Phaser.Scene {
     this.lastDebrief=null;
     this.battleReport?.setVisible(false);
     this.writeState('resolving');
-    emitLocalPractice({type:'commit',round:this.match.round});
+    emitLocalPractice({type:'commit',round:this.match.round,
+      formation:this.formation,striker:{...this.squadPlans[2]}});
     const stateEl=document.getElementById('game-state');
     if(stateEl){
       stateEl.dataset.lastLaneCount=String(event.lanes.length);
