@@ -23,7 +23,11 @@ npm test
 npm run seal:squad:sepolia
 ```
 
-Without the explicit opt-in environment flag, this last command reads chain ID, deployed runtime hash, current squad/duel counters and the configured public signer. It **does not encrypt or send a transaction**. Record the reported `nextSquadId`.
+For a read-only check of a *specific* invited challenger, set `GAMBIT_SQUAD_CHALLENGER_ADDRESS` in the trusted shell before running that last command. The preflight will validate that the address is nonzero and different from the deployed owner, and query that account's **Sepolia balance and deployed-code status** without requiring the challenger to sign anything. Supply the user-chosen address at runtime; do not commit it as a project default.
+
+Without the explicit opt-in environment flag, this last command reads chain ID, deployed runtime hash, current squad/duel counters, the configured public signer, and optional challenger account information. It **does not encrypt or send a transaction**. Record the reported `nextSquadId`. Account existence or funding does **not** establish that someone controls its signing key.
+
+A genuine seal fee estimate is only available after the official SDK creates the exact ten encrypted inputs and gas estimation succeeds; the existing 0.0005 Sepolia ETH hard ceiling is **not a live quote or a spending authorization**.
 
 ## One bounded v2 signing attempt
 
