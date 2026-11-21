@@ -75,7 +75,7 @@ test('duplicate guesses and malformed input are refused without state mutation',
 
 test('local cleartext hidden code never appears in public events/snapshots',()=>{
   const secret=[3,0,2,1];
-  const briefing=createBlacksiteLocalMission('local-secret-snapshot',secret);
+  const briefing=createBlacksiteLocalMission('local-redacted-example',secret);
   const started=beginBlacksiteLocalMission(briefing);
   const guess=guessBlacksiteLocalMission(started,[0,0,0,0]);
   secret[0]=0; // caller mutation cannot affect private training state
