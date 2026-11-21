@@ -89,6 +89,9 @@ async function scenario(viewport,label){
       new RegExp('reactor score '+scoreA+' : '+scoreB));
     assert.equal(await page.locator('#game-state').getAttribute('data-round'),'1');
     assert.equal(await page.locator('#game-state').getAttribute('data-practice-seed'),initialSeed);
+    console.log('GAMBIT_TRAINING_FIRST_ROUND '+JSON.stringify({
+      viewport:label,actualRound:1,realScore:scoreA+' : '+scoreB,skippedSteps:false
+    }));
     // Continue the SAME five-round Phaser game. The mentor cannot settle a
     // round itself; every score and final profile comes from the real engine.
     await page.locator('#gambit-training-continue').click();
@@ -163,13 +166,14 @@ async function scenario(viewport,label){
     }));
     await page.locator('#gambit-training-close').click();
     assert.equal(await panel.isVisible(),false);
-    assert.equal(await page.locator('#game-state').getAttribute('data-phase'),'ready');
-    assert.equal(await page.locator('#game-state').getAttribute('data-round'),'1');
+    assert.equal(await page.locator('#game-state').getAttribute('data-phase'),'finished',
+      'ending the guide must not reset the genuine completed Arena');
+    assert.equal(await page.locator('#game-state').getAttribute('data-round'),'5');
     assert.deepEqual(exceptions,[]);
     console.log('GAMBIT_TRAINING_COACH_BROWSER '+JSON.stringify({
       viewport:label,stages:9,realRole:'STRIKER',
       realConditionalOrder:'FLANK-if-STRIKE-then-GUARD',
-      realFormation:'FEINT',actualRound:1,
+      realFormation:'FEINT',actualFirstRound:1,actualFinishedRound:5,
       publicLocalScore:scoreA+' : '+scoreB,
       skippedSteps:false,scriptedWin:false,walletActions:0,
       arenaPreserved:true,errors:0
