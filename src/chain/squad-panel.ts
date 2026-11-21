@@ -156,7 +156,7 @@ export function mountSquadSepoliaPanel(
     caution.textContent='Accept the one-use encrypted invitation as the invited wallet. '+
       'Opening starts a 24-hour deadline for your encrypted squad submission. '+
       'No transaction happens until you explicitly approve it in your wallet.';
-    invited.wrap.hidden=true;invited.input.hidden=true;
+    invited.wrap.hidden=true;invited.wrap.style.display='none';invited.input.hidden=true;
     squad.wrap.textContent='Invited Squad ID';
   }
   // A shared read-only result link can prefill the canonical duel ID. It
