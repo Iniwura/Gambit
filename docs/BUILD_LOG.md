@@ -14,6 +14,13 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Tablet navigation reachability QA
+
+- **Found during static responsive review:** GAMBIT now has multiple independently mounted fixed desktop header controls. At widths just over the 700px mobile cutoff, the new Academy button's `right:690px` offset could place it partly off-screen, even though desktop and phone checks were green.
+- **Implemented:** [Academy responsive CSS](../src/training/coach.css) moves its button below the existing first-row controls on 701–950px tablet widths, rather than hiding or overlapping the wallet button.
+- **Added real Chromium hit-testing:** [Training browser suite](../tests/training-coach-browser-check.mjs) now checks **820px and 710px** tablet layouts, all four control bounding boxes and their `document.elementFromPoint` hit targets, then opens/closes Academy, BLACKSITE and Commander read-only overlays and confirms the Arena was not reset. No forced clicks or wallet signing.
+- **Acceptance:** [follow-up quality run 44935438197](https://github.com/Iniwura/Gambit/actions/runs/44935438197) is **PENDING**. The prior [run 44934706796](https://github.com/Iniwura/Gambit/actions/runs/44934706796) remains verified desktop/mobile first-round functionality; do not claim tablet coverage until its own run finishes.
+
 ## 2026-11-21 — Phase 2: real first-round Tactical Academy (TRAINING)
 
 **Scope:** new optional functional tutorial for the existing `GambitArena` LOCAL PRACTICE, preserving all signed FHE contract behavior, gameplay rules and current original-art freeze. **Status: VERIFIED first-round Academy functional greybox.** [Full four-job CI 44934706796](https://github.com/Iniwura/Gambit/actions/runs/44934706796) passed (182/182 deterministic Node tests, Phaser/typecheck, FHE compile, real desktop/mobile browser).
