@@ -1,0 +1,27 @@
+name: GAMBIT Duel 1 public KMS proof preflight (no wallet)
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'fhe/scripts/probe-duel1-kms-readonly.ts'
+      - '.github/workflows/duel-kms-public-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-kms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked FHE dependencies without wallet
+        run: npm --prefix fhe ci --no-audit --no-fund
+      - name: Typecheck read-only KMS proof probe
+        run: npm --prefix fhe run typecheck
+      - name: Public KMS result and proof + simulated finalize through eth_call (NO TX)
+        timeout-minutes: 6
+        working-directory: fhe
+        run: npx hardhat run --network sepolia scripts/probe-duel1-kms-readonly.ts
