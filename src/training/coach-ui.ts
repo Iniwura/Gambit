@@ -71,9 +71,13 @@ export function mountTrainingCoach():void{
   let pausedReason='';
   const isMobile=()=>window.matchMedia('(max-width:700px)').matches;
   function relocate(){
-    if(isMobile()&&mobileLaunch.isConnected)
-      mobileLaunch.after(panel);
-    else document.body.append(panel);
+    // Do not remove/reinsert a live panel on every accepted game command.
+    // Reparenting during a pointer gesture can cancel its native click.
+    if(isMobile()&&mobileLaunch.isConnected){
+      if(panel.previousElementSibling!==mobileLaunch)
+        mobileLaunch.after(panel);
+    }else if(panel.parentElement!==document.body)
+      document.body.append(panel);
   }
   function render(){
     relocate();
@@ -174,8 +178,10 @@ export function mountTrainingCoach():void{
     mobileLaunch.setAttribute('aria-expanded','false');
     (isMobile()?mobileLaunch:launch).focus();
   }
-  get<HTMLButtonElement>(panel,'gambit-training-continue')
-    .addEventListener('click',()=>{
+  // Delegate to the stable panel, not a child node that can be re-mounted.
+  panel.addEventListener('click',event=>{
+      const target=event.target;
+      if(!(target instanceof Element)||!target.closest('#gambit-training-continue'))return;
       panel.dataset.guideHandoff='requested';
       if(!state?.completed||!state.settled||fullState){
         panel.dataset.guideHandoff='invalid-first-round';
