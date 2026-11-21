@@ -84,6 +84,21 @@ test('early commit creates a fail-closed recovery state, never free lesson credi
   assert.match(fullMatchPresentation(h.coach).instruction,/before its required real inputs/);
 });
 
+test('duplicate accepted commit cannot revoke a pending real settlement',()=>{
+  const h=harness(),t=h.teach;
+  t({type:'role',role:0});
+  h.plans[0]={base:0,trigger:1,response:2};
+  for(const [field,index] of [['base',0],['trigger',1],['response',2]])
+    t({type:'choose',role:0,field,index});
+  const turn=h.commit(2);
+  assert.equal(h.coach.step,'r2-settle');
+  const before=h.coach;
+  t({type:'commit',round:2,formation:2,plans:h.plans});
+  assert.equal(h.coach,before,'at-most-once progression despite duplicate event');
+  h.settle(turn);
+  assert.equal(h.coach.step,'r3-role');
+});
+
 test('changed committed commands fail closed even after correct teaching clicks',()=>{
   const h=harness(),t=h.teach;
   t({type:'role',role:0});
