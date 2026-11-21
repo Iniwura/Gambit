@@ -27,7 +27,8 @@ async function verify(viewport,label){
       'must not show fabricated wins before lookup');
     assert.match(await overlay.textContent(),/NO WALLET OR SIGNING/);
     const input=page.locator('#gambit-profile-address');
-    assert.equal(await input.isFocused(),true,'open dialog focuses opt-in input');
+    assert.equal(await input.evaluate(element=>document.activeElement===element),true,
+      'open dialog focuses opt-in input');
     const submit=page.locator('#gambit-profile-submit');
     await input.fill('not-a-wallet');
     await submit.click();
