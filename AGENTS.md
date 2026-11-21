@@ -5,7 +5,7 @@
 ## Source of truth
 - Read `docs/PRODUCTION_PLAN.md`, `docs/GAME_DESIGN.md`, and `docs/RESEARCH_AND_SKILLS.md` before implementing.
 - Name: **GAMBIT**. Style: original premium cartoon / top-down 2D sci-fi tactical arena. Existing six fighter characters are approved. **Graphics frozen until end-to-end play works.**
-- Use Phaser 4.2.1 + TypeScript + Vite for the browser game, with scene/render/UI separated from deterministic authoritative rules. Use the official Zama Hardhat plugin, Solidity, and Relayer SDK for confidential onchain decisions. Chain: Sepolia.
+- Use Phaser 4.2.1 + TypeScript + Vite for the browser game, with scene/render/UI separated from deterministic authoritative rules. Use the official Zama Hardhat plugin, Solidity, and current `@zama-fhe/sdk` (not deprecated Relayer SDK) for confidential onchain decisions. Chain: Sepolia.
 - Do not silently replace Phaser with handmade HTML, Canvas, or procedural WebGL demos. Local practice may use a deterministic cleartext reference engine, visibly labeled local/simulated.
 
 ## Studio workflow for every feature

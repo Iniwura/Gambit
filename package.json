@@ -3,15 +3,25 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "npm run build:contract-artifact && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test tests/*.test.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:squad:live:readonly": "node scripts/verify-squad-readonly.mjs",
+    "build:contract-artifact": "npm --prefix fhe install --no-audit --no-fund && npm --prefix fhe run compile && node scripts/check-squad-client.mjs && node scripts/export-contract.mjs",
+    "check:seal:live:readonly": "node scripts/verify-first-squad-seal-readonly.mjs",
+    "quote:duel:open:readonly": "node scripts/quote-first-duel-open-readonly.mjs",
+    "recover:duel1:readonly": "node scripts/recover-first-duel-readonly.mjs"
   },
   "dependencies": {
-    "phaser": "^4.2.1"
+    "phaser": "^4.2.1",
+    "@zama-fhe/sdk": "^3.8.0",
+    "ethers": "^6.16.0"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

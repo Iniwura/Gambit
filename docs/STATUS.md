@@ -1,26 +1,74 @@
-# GAMBIT: verified status
+# GAMBIT — verified engineering status
 
-Updated: 2026-11-18.
+Updated 2026-11-21. Engineering work is in **draft PR #5** (`build/verified-first-slice`), not merged to main.
 
-## Verified in local working tree
-- Reference strategy engine exhaustive 729-tactic matchups, symmetry and deterministic replay.
-- Map layout tests.
-- Offline solo practice game passed prior desktop and mobile browser checks.
+## Current P0: complete the first genuine encrypted 3v3 duel
 
-## Not yet verified on GitHub
-- Phaser production build and original binary game artwork not yet fully imported.
-- CI results for GitHub-hosted files.
+- **Contract deployed:** `SquadGambit` at [`0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134`](https://sepolia.etherscan.io/address/0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134) on Ethereum Sepolia (chain `11155111`). [Deployment tx](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a) succeeded in block 12174655. Runtime 10,183 bytes; pinned keccak `0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419`.
+- **Defender sealed Squad #1:** [`sealSquad` tx](https://sepolia.etherscan.io/tx/0x65b1fde92ff899718f4febcdc1597cc9fb05c681b1e05996f306d2a3bae41e0b), block 12181816; exact owner, invited challenger, receipt and event are independently checked by `scripts/verify-first-squad-seal-readonly.mjs`.
+- **Challenger opened Duel #1:** [`openDuel(1)` tx](https://sepolia.etherscan.io/tx/0x632c8eca45b6c4881112ee11516252d20a85cef4fa0507a981766e1c4b4548fe), block 12182024; canonical event, sender and state verified by `scripts/recover-first-duel-readonly.mjs`.
+- **Not yet submitted:** read-only recovery on 21 November at block 12182144 returned `submitted=false`, `resolved=false`, `finalized=false`, `expired=false`. A later receipt or new read is required to make any newer state claim.
+- **Duel #1 challenger submission deadline:** 22 November 2026, 13:07:48 UTC (14:07:48 Lagos). This 24-hour *duel* expiry is distinct from the official Zama submission deadline (14 December 2026).
+- **Live unsigned challenger quote passed:** [workflow](https://github.com/Iniwura/Gambit/actions/runs/44909988544) encrypted ten synthetic inputs with the official SDK, estimated exactly 4,142,942 gas and a buffered maximum quote of 159,088,992 wei as of block 12182183, under the separate 500,000,000 wei transaction ceiling. It used a `VoidSigner`; no wallet, private plan, signature or broadcast. This does not prove real Rabby signing.
+- **Browser pre-sign integration now passed:** [dedicated Chromium job](https://github.com/Iniwura/Gambit/actions/runs/44910136360) exercised the live read-only Sepolia adapter, encrypted 10 synthetic challenger inputs in-browser, completed real gas preparation, and intercepted exactly one `eth_sendTransaction` request. The blocked signing/broadcast boundary confirms no transaction was sent; **Rabby extension behavior is still unverified**. The original missing-popup report remains open until the user's wallet action is independently observed.
+- **Outstanding P0:** genuinely submit encrypted challenger plans once with a fresh, separately approved wallet signature, then resolve FHE and finalize a signed public KMS aggregate. Verify canonical receipts, cost/latency, evidence and recovery. See [Issue #8](https://github.com/Iniwura/Gambit/issues/8).
+- [117 root tests and four green quality jobs at `31cc6e0`](https://github.com/Iniwura/Gambit/actions/runs/44909370830) are not proof of a completed onchain multiplayer match. Actual live HCU, KMS proof and final score are still **NOT VERIFIED**.
 
-## Not yet verified technically
-- FHEVM Solidity compilation, adversarial security testing or Zama SDK integration.
-- Authentic two-wallet Sepolia confrontation and public verification.
-- Full game multiplayer and independent player testing.
+**Release verdict: KEEP DRAFT / NO-GO for complete live encrypted multiplayer and production-ready claims.** No mainnet writes and no invented FHE evidence.
 
-## Required release gates
-1. Import full original game artwork and production code.
-2. Build Phaser successfully; record actual browser tests.
-3. Compile Zama contract and test input permissions, replay, double-submission and disclosure.
-4. Execute and verify a real Sepolia confrontation with public receipt.
-5. Integrate actual confidential resolution with the game, then review UX.
+The sections below are historical work-in-progress notes from before this v2 deployment. Where they describe `SquadGambit` as undeployed, the deployment record above supersedes them.
 
-Do not describe the current build as an encrypted or completed game.
+## Independently verified Ethereum Sepolia deployment
+
+- **SealedGambit address:** `0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0`
+- **Chain:** Ethereum Sepolia, chain ID `11155111`
+- **Deployer:** `0x7d567Fa1d5fe35737BbF045f47667e13298Ee176`
+- **Transaction:** `0x0d58f80bf197e705c5ef702e4d9de0f4d822813c6b19e31c711123de2c12a95b`
+- **Block:** `12167782`; **receipt status:** success
+- **Gas used:** `12452573`; **fee:** `236598887` wei (0.000000000236598887 Sepolia ETH)
+- **Runtime code present:** 7700 bytes.
+- **Compiled executable code:** all 7647 bytes match an independent Hardhat recompile. The 53-byte Solidity metadata trailer differs; the full runtime does **not** byte-for-byte match. Do not overclaim byte-for-byte identity.
+- **Grounded deployment record:** [fhe/deployments/sepolia.json](../fhe/deployments/sepolia.json)
+- **Explorer:** https://sepolia.etherscan.io/tx/0x0d58f80bf197e705c5ef702e4d9de0f4d822813c6b19e31c711123de2c12a95b
+
+## Local tests and browser verification
+- Phaser game, desktop/mobile local practice match and rematch passed real browser tests on the verified CI branch.
+- Zama FHEVM Solidity compiled; 9 Hardhat mock contract tests passed, including sealed strategies, replay/tamper rejection and public decryption proof.
+- Root TypeScript/Vite build and Hardhat typechecks were green before the new CLI seal script; the new script requires a **fresh** CI run to establish readiness.
+- The Zama SDK browser adapter has passed static typecheck, not a real funded-wallet journey.
+
+## Prepared for the first actual encrypted test
+
+- [fhe/scripts/seal-policy-sepolia.ts](../fhe/scripts/seal-policy-sepolia.ts): one known synthetic policy `(base=0, trigger=1, response=2)` encrypted with the official Node SDK and sealed via the pre-existing wallet.
+- **Requires fresh explicit approval:** `GAMBIT_APPROVE_ONE_SEAL=YES_SEPOLIA_TEST_ONLY` and the dedicated command `npm run seal:sepolia` from the `fhe` directory. No script runs automatically in CI.
+- Strict Sepolia chain, owner, contract-code, estimated gas and 0.0005 Sepolia ETH maximum fee checks.
+- Approval for the contract deployment does NOT authorize further testnet policy transactions.
+
+## Critical outstanding gates
+
+1. **First real encrypted seal:** not yet signed or confirmed. Its SDK runtime requires real Sepolia verification, not a mock-only claim.
+2. **Second wallet and real challenge:** not yet completed. Need independent challenger funding/signatures; encrypted submit, compute, SDK/KMS signed public decrypt, onchain finalize, explorer evidence.
+3. **Confidentiality caveat:** the test policy above is intentionally public; it proves encryption plumbing only, not player secrecy. The production policy space is low entropy and repeatable policy querying creates inference risk.
+4. **Gameplay depth:** current sprites are mainly visual; 3v3 role differentiation and counterplay must be developed before first-place release.
+5. **Original art and QA:** full approved art assets absent from the production repo, browser wallet not validated and beginner playtesting not complete.
+
+**Quality verdict:** deployment gate PASSED. Actual encrypted game and first-place-quality release NOT YET VERIFIED. No fake receipts, no mainnet transactions, no unapproved signing.
+
+## 19 November: challenge-recovery and verified-duel UI hardening
+
+- Recovery controller is now driven by actual `challengeStatus` and recognizes `submit`, `resolve`, `finalize`, and `verified` stages. Unknown/expired challenges and wrong challenger accounts fail closed.
+- Browser wallet address and Sepolia network are rechecked before transactions; changes require reconnecting. The client refuses an unexpected contract address or missing/mismatched deployed runtime length.
+- The Phaser intro now labels its primary choice as a **combat move** (STRIKE/GUARD/FLANK), consistent with the FHE contract and deterministic reference engine; it was previously incorrectly labeled as a route.
+- Only authenticated finalized onchain outcomes may enter the verified-duel renderer. No opponent's hidden choice is reconstructed; onchain UI is a **single duel**, not a claimed five-round match.
+- `tests/chain-lifecycle.test.mjs` exercises the failure and recovery paths. The GitHub quality gates (rules, TypeScript + Vite build, Hardhat FHE tests, desktop/mobile browser practice) passed at `e20ea5ba`: https://github.com/Iniwura/Gambit/actions/runs/44518557488
+- Preview build `e20ea5ba` was reported READY by Vercel; this does **not** demonstrate an actual browser wallet signature: https://gambit-arena-bc7jyc4wg-iniwura-akurus-projects.vercel.app
+
+**Still P0:** No real Sepolia encrypted strategy seal has been authorized or executed; no second-wallet challenge, KMS-verified game receipt, or complete onchain round exists. The first test strategy is publicly known. Do not present the current game as fully confidential multiplayer or finished 3v3.
+
+## Nov 19 — formation tactics research candidate
+
+Local practice added **HOLD, PIVOT, FEINT** squad formations and role-versus-role matchups. The undeployed `SquadGambit.sol` candidate now takes ten encrypted `euint8` inputs per squad (nine tactics plus private formation), selects opponent ciphertext by encrypted relative deployment, and computes role-specific bonuses without decrypting either squad formation. This change does not modify `SealedGambit` or any deployed contract. Compilation, Hardhat mock tests, performance/HCU benchmarking and independent replay proof verification are required before this candidate can be treated as validated.
+
+## Nov 19 — encrypted 3v3 integration staging (pre-alpha)
+
+The compiled v2 contract now exposes `duelForSquad` for abandoned receipt recovery and `openedAt` in duel status. A separate ten-input browser wallet adapter verifies Sepolia, public account, deployed bytecode hash and signed final KMS proof. Its UI is **not mounted in current previews** because no real v2 contract/runtime fingerprint has been provided. Synthetic browser negative tests reject missing/wrong-network wallets. A read-only-by-default deployment handoff and explicit sign-off gate are documented in `docs/SQUAD_DEPLOYMENT_GATE.md`. Additional Hardhat mock cross-duel proof-replay tests and EVM-only local gas numbers are under CI review. A successful mock gas result cannot establish Sepolia HCU viability.
