@@ -121,7 +121,7 @@ export function advanceTrainingCoach(state,event){
     step==='counter'&&event.type==='choose'&&
       event.role===2&&event.field==='response'&&event.index===1||
     step==='formation'&&event.type==='formation'&&event.index===2||
-    step==='commit'&&event.type==='commit'&&event.round>=1&&
+    step==='commit'&&event.type==='commit'&&event.round===1&&
       event.formation===2&&event.striker.base===2&&
       event.striker.trigger===0&&event.striker.response===1||
     step==='settled'&&event.type==='settled'&&
