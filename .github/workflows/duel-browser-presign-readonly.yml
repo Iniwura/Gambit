@@ -1,0 +1,36 @@
+name: GAMBIT Duel 1 Chromium pre-sign (no wallet, no TX)
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'tests/duel-browser-presign-readonly.mjs'
+      - 'src/chain/squad-sepolia.ts'
+      - 'src/chain/squad-lifecycle.mjs'
+      - 'src/chain/duel-submit-fee.mjs'
+      - '.github/workflows/duel-browser-presign-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install game and Chromium runner (no wallet secrets)
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.65.1
+          npx playwright install chromium
+      - name: Launch Vite with pinned deployed Sepolia contract
+        run: |
+          VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS=0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134 VITE_GAMBIT_SQUAD_RUNTIME_HASH=0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419 npm run dev -- --host 127.0.0.1 --port 4177 >/tmp/gambit-readonly-browser.log 2>&1 &
+          for i in $(seq 1 45); do curl -fsS http://127.0.0.1:4177/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/gambit-readonly-browser.log
+          exit 1
+      - name: Real Chromium Zama encryption + gas estimation (ALL sends blocked)
+        timeout-minutes: 5
+        run: node tests/duel-browser-presign-readonly.mjs
