@@ -4,6 +4,8 @@ import {
   guessBlacksiteLocalMission,debriefBlacksiteLocalMission,
   restartBlacksiteLocalMission,publicBlacksiteLocalMission
 } from './mission.mjs';
+import {createGameShell,transitionGameShell}
+  from '../architecture/game-shell.mjs';
 
 /**
  * Phase 2 functional greybox. This is REAL wallet-free local training,
@@ -127,6 +129,7 @@ export function mountBlacksiteGreybox():void{
   document.body.append(launch,backdrop);
 
   let mission:Mission|null=null;
+  let shell=createGameShell();
   let message='Choose Start to begin local training.';
   let previousFocus:HTMLElement|null=null;
   let priorInert:Array<{element:HTMLElement,inert:boolean}>=[];
@@ -214,6 +217,10 @@ export function mountBlacksiteGreybox():void{
         element.inert=true;
       }
     }
+    // Mode is enabled only as LOCAL TRAINING by the shared shell.
+    // The planned competitive BLACKSITE mission remains unavailable.
+    shell=transitionGameShell(shell,{type:'OPEN',scene:'blacksite-training'});
+    backdrop.dataset.scene=shell.scene;
     document.body.dataset.gambitFeatureOverlay='blacksite';
     backdrop.hidden=false;
     launch.setAttribute('aria-expanded','true');
@@ -227,13 +234,15 @@ export function mountBlacksiteGreybox():void{
     if(mission?.phase==='debrief')return control<HTMLElement>(backdrop,
       'gambit-blacksite-retry');
     if(mission?.phase==='breached'||mission?.phase==='locked')
-      return control<HTMLElement>(backdrop,'gambit-blacksite-debrief');
+      return control<HTMLElement>(backdrop,'gambit-blacksite-debrief-button');
     return control<HTMLElement>(backdrop,'gambit-blacksite-begin');
   }
   function close(){
     if(backdrop.hidden)return;
     backdrop.hidden=true;
     backdrop.dataset.phase='closed';
+    shell=transitionGameShell(shell,{type:'BACK'});
+    backdrop.dataset.scene=shell.scene;
     delete document.body.dataset.gambitFeatureOverlay;
     launch.setAttribute('aria-expanded','false');
     for(const {element,inert} of priorInert)element.inert=inert;
