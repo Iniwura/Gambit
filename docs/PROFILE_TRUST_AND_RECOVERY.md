@@ -66,7 +66,7 @@ The `DuelFinalized` event indexes duel ID, not the participants. To build a wall
 
 A trusted provider is an assumption. Do not describe a single public RPC node as an independently audited full Ethereum light client.
 
-## 5. Commander state and UI contracts (planned; not shipped)
+## 5. Commander state and UI contracts (read-only greybox implemented; full profile not shipped)
 
 ```text
 NO_WALLET_SELECTED
@@ -100,6 +100,14 @@ NO_WALLET_SELECTED
 | Same duel ID has a conflicting tx/block hash | **REJECT** |
 | Unrelated wallet claims someone else's victory | **REJECT** |
 | User disconnects, RPC unavailable | Show recoverable/partial state; **do not fabricate a win or request a signing retry** |
+
+### Implemented functional opt-in public record viewer
+
+[`src/profile/public-history.mjs`](../src/profile/public-history.mjs) now implements the bounded opt-in wallet history loader on the **approved contract only**. All discovered events are rechecked independently as trusted finalization records before attribution, with honest `COMPLETE_RPC_SCAN` / `PARTIAL_RPC_SCAN` status; cancellation stops further history progress. [`src/profile/greybox.ts`](../src/profile/greybox.ts) mounts the actual non-signing, non-persistent input/results/empty/error dialog over the existing game with responsive desktop/mobile launchers. It clears addresses on close and preserves Arena state. [Acceptance contract](PROFILE_GREYBOX_ACCEPTANCE.md) records precise feature and privacy gates.
+
+**Positive real-chain evidence:** [run 44927551505](https://github.com/Iniwura/Gambit/actions/runs/44927551505) passed 23/23 focused tests and performed an eight-page real Sepolia scan, finding one genuine signed Duel #1 defender win and no synthetic other records. **The browser E2E gate must pass before release claims of a verified player-facing experience.**
+
+Full durable Profile identity, cross-session history, achievements and progression remain unbuilt.
 
 **Exit gate for full Commander Profile:** complete opt-in identity model, robust multi-record indexing and persistent reconciliation with reorg tests, honest empty UI, responsive interaction QA, consent and privacy review, and repeatable verified real matches. The backend authenticity baseline alone does not satisfy that gate.
 
