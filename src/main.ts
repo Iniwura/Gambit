@@ -5,6 +5,7 @@ import {buildPracticeMatchDebrief} from './practice-match-debrief.mjs';
 import {createMobileDeck} from './mobile-deck';
 import {mountBlacksiteGreybox} from './blacksite/greybox';
 import {mountCommanderPublicViewer} from './profile/greybox';
+import {mountTrainingCoach} from './training/coach-ui';
 import {buildPracticeDebrief} from './tactical-report.mjs';
 import {renderReactorDeck} from './visual/arena';
 import {makeFighter} from './visual/characters';
@@ -31,6 +32,10 @@ let selectedPracticeStyle:PracticeStyle='reactive';
 type Actor={shell:Phaser.GameObjects.Container,origin:{x:number,y:number}};
 const names=['STRIKE','GUARD','FLANK'];
 const mobileDeck=createMobileDeck();
+// Observations ONLY: the trainer never commands combat, wallet or scoring.
+function emitLocalPractice(detail:Record<string,string|number>){
+  window.dispatchEvent(new CustomEvent('gambit:practice-event',{detail}));
+}
 class GambitArena extends Phaser.Scene {
   private match=makeSquadMatch(1102);
   private squadPlans:Plan[]=startingSquadPlans();
@@ -102,6 +107,7 @@ class GambitArena extends Phaser.Scene {
     this.drawControls();
     this.refresh();
     this.writeState('intro');
+    emitLocalPractice({type:'reset',phase:'intro'});
     this.intro();
     this.keyboardListener=(e:KeyboardEvent)=>{
       if(e.target instanceof HTMLInputElement)return;
@@ -271,6 +277,7 @@ class GambitArena extends Phaser.Scene {
     this.plan=this.squadPlans[index];
     lastSelectedPlan={...this.plan};
     this.refresh();
+    emitLocalPractice({type:'role',role:index});
   }
   private selectFormation(index:number){
     if(!this.active||this.busy||this.finished||!Number.isInteger(index)||index<0||index>=FORMATIONS.length)return;
@@ -282,12 +289,14 @@ class GambitArena extends Phaser.Scene {
       this.tweens.add({targets:this.actors[role].shell,y:homeY[lane],duration:270,ease:'Sine.easeInOut'});
     }
     this.refresh();
+    emitLocalPractice({type:'formation',index});
   }
   private choose(field:Field,index:number){
     if(!this.active||this.busy||this.finished)return;
     this.plan[field]=index;
     lastSelectedPlan={...this.plan};
     this.refresh();
+    emitLocalPractice({type:'choose',field,index,role:this.selectedRole});
   }
   private refresh(){
     this.round.setText('ROUND '+Math.min(this.match.round+1,5)+' / 5');
@@ -477,6 +486,7 @@ class GambitArena extends Phaser.Scene {
       overlay.destroy(true);
       this.active=true;
       this.writeState('ready');
+      emitLocalPractice({type:'enter',phase:'ready'});
       window.removeEventListener('keydown',enterKey);
       window.removeEventListener('gambit:mobile-control',touchStart);
     };
@@ -545,6 +555,7 @@ class GambitArena extends Phaser.Scene {
     this.lastDebrief=null;
     this.battleReport?.setVisible(false);
     this.writeState('resolving');
+    emitLocalPractice({type:'commit',round:this.match.round});
     const stateEl=document.getElementById('game-state');
     if(stateEl){
       stateEl.dataset.lastLaneCount=String(event.lanes.length);
@@ -638,6 +649,10 @@ class GambitArena extends Phaser.Scene {
         this.writeState('ready');
       }
       this.syncMobileDeck();
+      if(this.lastDebrief)emitLocalPractice({
+        type:'settled',round:this.lastDebrief.round,
+        scoreline:this.lastDebrief.scoreline,lanes:this.lastDebrief.lanes.length
+      });
     });
   }
 
@@ -784,6 +799,7 @@ class GambitArena extends Phaser.Scene {
 mountBlacksiteGreybox();
 
 mountCommanderPublicViewer();
+mountTrainingCoach();
 
 const game=new Phaser.Game({
   type:Phaser.AUTO,parent:'app',width:W,height:H,backgroundColor:'#060b16',
