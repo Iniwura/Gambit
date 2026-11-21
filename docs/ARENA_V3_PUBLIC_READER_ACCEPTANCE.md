@@ -24,7 +24,7 @@ The [public match reader](../src/arena/public-match-reader.mjs) works *only* whe
 
 ## Exact tests
 
-[Adversarial Node tests](../tests/arena-v3-public-reader.test.mjs) use a simulated ethers-compatible provider that returns exact ABI-coded contract data. They cover the initial waiting stage, single player seal, expired uns cored round, dual seal after deadline, proof-ready handle, five valid finalized aggregates, incomplete abandonment, invalid score/flags/participants, runtime mismatch, wrong chain, reorged block, caller AbortSignal and no wallet methods.
+[Adversarial Node tests](../tests/arena-v3-public-reader.test.mjs) use a simulated ethers-compatible provider that returns exact ABI-coded contract data. They cover the initial waiting stage, single player seal, expired unscored round, dual seal after deadline, proof-ready handle, five valid finalized aggregates, incomplete abandonment, invalid score/flags/participants, runtime mismatch, wrong chain, reorged block, caller AbortSignal and no wallet methods.
 
 **[CI 44962888818](https://github.com/Iniwura/Gambit/actions/runs/44962888818) PASSED 4/4:** **212/212 deterministic Node tests**, **25/25 FHE Hardhat mock tests**, Phaser/TypeScript compilation, source-locked HCU inventory, actual desktop/mobile local Hotseat and prior Academy/BLACKSITE/Profile/tablet/wallet negative browser regressions. The new v3 public-reader tests are fixture-backed, NOT actual Sepolia v3 contract reads.
 
