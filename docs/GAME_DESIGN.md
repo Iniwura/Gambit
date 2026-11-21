@@ -24,13 +24,13 @@ Browser-first, short-attention-span-friendly, strategic yet understandable to ne
 4. **Resolve** — no reveal of private conditional plans; Zama FHE computes authorized outcome.
 5. **Witness** — an authenticated round result triggers meaningful squad animation and updated objective state.
 6. **Adapt** — learn from observable consequence; change plans for next round, keeping strategy secret.
-7. **Finish** — first to 3 reactor-control points or best at five rounds (finalize exact fairness rule after tests), with verified final outcome, replay and rematch.
+7. **Finish** — complete all five practice rounds; highest cumulative reactor pressure wins, with a draw on equal totals. The capped +/-3 control value is a momentum indicator, not an early termination or conflicting winner rule. The online encrypted v2 protocol is a separate one-encounter match, not five onchain rounds.
 
 ## New solo-practice squad prototype (19 November 2026)
 
 Three independent fighter plans per turn: Scout, Guardian and Striker each have a separate primary move, trigger and response. Select the fighter (4/5/6 keyboard or on-canvas tabs) and edit its tactic, then lock the entire squad. The deterministic opponent also has one plan per role. All three duels animate independently. This layer is implemented as `src/squad.mjs`, with exhaustive parity, role-impact and anti-symmetry tests in `tests/squad.test.mjs`.
 
-Each lane victory gives +1 reactor pressure. A winning Striker receives +1 breach; a winning allied Scout adds +1 mark to the Striker's bonus, while a winning opposing Guardian blocks 1 point of that bonus. Scout's mark and Guardian's protection are meaningful interactions rather than cosmetic effects. Five rounds maximum, with early control at +/-3; results depend only on actions and deterministic bot rules.
+Each lane victory gives +1 reactor pressure. A winning Striker receives +1 breach; a winning allied Scout adds +1 mark to the Striker's bonus, while a winning opposing Guardian blocks 1 point of that bonus. Scout's mark and Guardian's protection are meaningful interactions rather than cosmetic effects. Exactly five practice rounds, with capped +/-3 momentum (no early termination); the final winner always agrees with total reactor pressure. Results depend only on actions and deterministic bot rules.
 
 **Scope restriction:** This is CLEAR-TEXT local practice. The Sepolia `SealedGambit` contract still accepts one (base, trigger, response) tuple per side; it does NOT run the 3-role practice rules. The opt-in browser wallet explicitly sends only the currently selected fighter tactic. Completing a real FHE three-role match requires a new versioned Solidity contract and a fresh independent deployment/validation gate. No assertion of production privacy or secure multiplayer is warranted.
 
