@@ -49,6 +49,10 @@ The authoritative engine still resolves the bot match according to the user's fu
 
 **Proof boundary:** this establishes functional deterministic/local tutorial behavior and preserved regression gates, not full curriculum quality, human newcomer comprehension or Zama onchain multiplayer.
 
+## Additional responsive-navigation acceptance
+
+[Run 44935438197](https://github.com/Iniwura/Gambit/actions/runs/44935438197) passed **4/4** updated CI jobs. Desktop and mobile again completed all nine real Academy steps. Tablet browser tests at **820px and 710px** verified the four existing header launchers (Commander, BLACKSITE, Sepolia and Academy) were visible, fully within the viewport, physically unobstructed under `document.elementFromPoint`, and that Academy/BLACKSITE/Commander could each open and close without resetting the Arena. Both viewport runs reported **zero occluded controls, zero browser errors and no signatures**. The Academy button's tablet breakpoint is part of [the temporary CSS](../src/training/coach.css).
+
 ## Still not built
 
 A complete newcomer curriculum through all five local rounds and final match review; role-by-role mastery missions; onboarding retention or human comprehension measurement; saved consented training checkpoints; rewards/achievements; competitive matchmaking; and final game art/animation/audio. This is a first genuine tutorial vertical slice, not proof the complete TRAINING pillar is done.
