@@ -76,7 +76,7 @@ We have authentic Sepolia **EVM gas** for one deployed v2 submit, resolve and fi
 
 1. Use the existing pure reference to run large strategy samples across formations and adaptivity. Record skill sensitivity, ties, stake exploitation and role balance.
 2. **Partially completed:** the independent headless five-round reducer now tests exactly-once stakes, ordered commits, tied/final score bounds, duplicate refusal and public redaction. **Still open:** aborts, deadlines, human balance and a real encrypted round implementation.
-3. Build a mock FHE Solidity research contract in a new namespace/version, prove exact parity against reference, assess bytecode/HCU estimates and privacy leakage. **Mock FHE is not Sepolia proof.**
+3. **Partially achieved:** an isolated [ArenaV3Research FHE contract](../fhe/contracts/ArenaV3Research.sol) now compiles and completes five encrypted sequential rounds with 25/25 passing Hardhat mock tests and [81/81 oracle formation/sector cases](ARENA_V3_FHE_MOCK_ACCEPTANCE.md). Runtime size and mock EVM gas are measured; actual HCU, sequential depth, Sepolia proof/latency and formal confidentiality still **UNVERIFIED**. Mock FHE is not real-chain proof.
 4. Human-playtest the no-art greybox with new players; compare one-round versus five-round sessions, measure attention and comprehension.
 5. If outcomes warrant it, request separate approval for a new testnet deployment and real two-wallet journey. Record authentic fees, latency, HCU if available, receipts and recovery.
 6. Explicitly accept/reject the candidate in this decision record. Until then, leave real v2 unchanged and the premium graphics phase blocked.
@@ -89,6 +89,12 @@ A [pure read-only policy](../src/research/arena-v3-round-policy.mjs), [adversari
 
 **Evidence boundary:** research only. Eight new pure cases passed an in-process 8/8 callback replay; GitHub CI must be checked independently. No real v3 contract, RPC status authority, cancellation, proof, signature, wallet, deployment or signed multiplayer. The suggested 24-hour entry window is not a deployed onchain constraint. Future protocol choices still require griefing/fairness review and measured HCU/gas/latency.
 
+## 8. Isolated encrypted v3 mock implementation — evidence and remaining risk
+
+The [ArenaV3Research contract](../fhe/contracts/ArenaV3Research.sol) is now separate from the deployed v2. It admits two distinct participants, five fresh encrypted 11-input-per-side rounds, secret formation routing, one-use publicly timed/privately targeted GAMBIT interventions, KMS handle-bound proof verification, cumulative score and unscored one-sided expiry. This is more than a cleartext state-machine specification but **still not real multiplayer**.
+
+[Independent mock acceptance and measured local gas](ARENA_V3_FHE_MOCK_ACCEPTANCE.md) documents a successful compiler, **25/25 FHE tests**, an 81-combination independent oracle and a mock runtime of **11,851 bytes**. Actual per-round HCU, data availability, transaction gas on Sepolia, user wait time and any eventual multiplayer liveness are **UNKNOWN**. Each player will still face many approvals: the simple version requires **21 writes over five rounds**, a serious UX obstacle. Public timing of the once-per-match wager is a known strategic information leak to assess.
+
 ## Current verdict
 
-**Option B is the strongest design hypothesis**, not a deployed or fully approved architecture. Our current real milestone remains one finalized confidential 3v3 encounter. The next task is **headless fairness/cost analysis, exact round-state contracts and acceptance tests**, *not final character art or a new UI redesign*.
+**Option B now has an isolated, compiling and mock-tested five-round encrypted research implementation** ([25/25 Hardhat tests and 81/81 confidential formation/sector cases](https://github.com/Iniwura/Gambit/actions/runs/44941951287)). It is **not** deployed, independently audited, HCU-measured, signed off for costs/fairness or connected to human PVP. The existing single-match v2 remains the only real onchain Arena lifecycle. Next: source-pinned v3 HCU inventory and measured network feasibility, griefing/second-mover analysis, user-friction mitigation and explicit go/no-go before any authorized deployment. **No graphics-first shortcut.**
