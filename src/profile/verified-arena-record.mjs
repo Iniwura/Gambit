@@ -56,11 +56,13 @@ async function verifyArenaProfileRecordInternal(provider,duelId,config,brand){
     'contract address');
   check(BigInt(await provider.send('eth_chainId',[]))===11155111n,
     'Ethereum Sepolia network');
-  const [head,code]=await Promise.all([
-    provider.getBlock('latest'),provider.getCode(address)
-  ]);
+  const head=await provider.getBlock('latest');
   check(head&&Number.isSafeInteger(head.number)&&
-    head.number>=config.fromBlock,'latest canonical block');
+    head.number>=config.fromBlock&&hash(head.hash),
+    'latest canonical block');
+  // Pin every read to the same candidate head. The final head-hash
+  // confirmation below fails closed if this block is reorganized.
+  const code=await provider.getCode(address,head.number);
   check(code&&code!=='0x'&&normHash(keccak256(code))===
     normHash(config.runtimeHash),'contract runtime fingerprint');
 
@@ -87,8 +89,9 @@ async function verifyArenaProfileRecordInternal(provider,duelId,config,brand){
     provider.getTransaction(eventLog.transactionHash),
     provider.getBlock(eventLog.blockNumber)
   ]);
-  check(receipt&&tx&&eventBlock&&receipt.status===1,
-    'missing or reverted finalization');
+  check(receipt&&tx&&eventBlock&&receipt.status===1&&
+    hash(eventBlock.hash)&&eventBlock.hash===receipt.blockHash,
+    'missing/reverted/orphaned finalization block');
   check(eventLog.blockHash===receipt.blockHash&&
     tx.blockHash===receipt.blockHash&&
     receipt.blockNumber===eventLog.blockNumber&&
@@ -129,10 +132,10 @@ async function verifyArenaProfileRecordInternal(provider,duelId,config,brand){
   // eth_call at the receipt block is intentionally NOT required: many public
   // Sepolia RPCs do not provide archival state. This avoids a false negative
   // without trusting an arbitrary score or skipping receipt/event checks.
-  const duelNow=await readAt(provider,address,'latest','duelStatus',[duelId]);
+  const duelNow=await readAt(provider,address,head.number,'duelStatus',[duelId]);
   const [squadNow,linkedNow]=await Promise.all([
-    readAt(provider,address,'latest','squadStatus',[duelNow.squadId]),
-    readAt(provider,address,'latest','duelForSquad',[duelNow.squadId])
+    readAt(provider,address,head.number,'squadStatus',[duelNow.squadId]),
+    readAt(provider,address,head.number,'duelForSquad',[duelNow.squadId])
   ]);
   const snapshot=verifyFinalizedSquadSnapshot(
     duelId,{
@@ -153,6 +156,9 @@ async function verifyArenaProfileRecordInternal(provider,duelId,config,brand){
   check(snapshot.pointsChallenger===pointsChallenger&&
     snapshot.pointsDefender===pointsDefender&&snapshot.outcome===outcome,
     'canonical state and event disagree');
+  const reconfirmedHead=await provider.getBlock(head.number);
+  check(reconfirmedHead&&reconfirmedHead.hash===head.hash,
+    'head changed during Profile evidence check (possible reorg)');
   const record=Object.freeze({
     version:1,chainId:11155111,
     contractAddress:address,runtimeHash:normHash(config.runtimeHash),
