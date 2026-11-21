@@ -14,6 +14,12 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-21 — Arena v3 read-only deadline and recovery research
+
+**Status: RESEARCH IMPLEMENTED, INDEPENDENT CI PENDING.** Added [pure deadline classifier](../src/research/arena-v3-round-policy.mjs), [eight adversarial tests](../tests/arena-v3-round-policy.test.mjs) and [fairness acceptance record](ARENA_V3_RECOVERY_POLICY.md). Statuses distinguish two players waiting, one order waiting, two submitted on time, resolved-but-not-finalized, real aggregate finalization, and expired-but-**unscored** rounds. An expired one-player round never fabricates a victory; both on-time submissions remain settleable after the window.
+
+The in-process replay of all eight new test callbacks passed. No wallet, RPC, encrypted contract, signer, deployment, transaction or new playable multiplayer UI was added. Exact deadline and v3 score constraints are research hypotheses, not Sepolia facts. **Next gate:** independent CI, real FHE/HCU feasibility and fair cancellation/consent design before implementing a human five-round game.
+
 ## 2026-11-21 — Five-round Academy final acceptance and click recovery
 
 **Status: VERIFIED five-round LOCAL PRACTICE Academy; 4/4 quality jobs SUCCESS.** [GitHub Actions run 44938866411](https://github.com/Iniwura/Gambit/actions/runs/44938866411). Draft PR #5 remains open. This is not encrypted five-round multiplayer.
