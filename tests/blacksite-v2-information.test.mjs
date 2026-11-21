@@ -7,7 +7,7 @@ test('exact first-action information benchmark audits all 7776 secrets',()=>{
   const measured=benchmarkBlacksiteV2Opening();
   assert.equal(measured.codeSpace,7776);
   assert.equal(measured.scope,'EXACT_LOCAL_RESEARCH_NO_FHE');
-  for(const name of ['guess','scan','scanPlusGuess']){
+  for(const name of ['guess','scan','scanPlusGuess','twoGuesses']){
     const outcome=measured[name];
     assert.ok(outcome.buckets>=2);
     assert.ok(outcome.buckets<=7776);
@@ -18,6 +18,10 @@ test('exact first-action information benchmark audits all 7776 secrets',()=>{
     assert.ok(outcome.meanPublicInformationBits<Math.log2(7776));
     assert.ok(Object.isFrozen(outcome));
   }
+  assert.ok(measured.twoGuesses.expectedRemaining<=
+    measured.guess.expectedRemaining,
+    'two independent chosen guesses refine the opening partition');
+  assert.equal(measured.secondGuessExample.length,5);
   assert.ok(measured.scanPlusGuess.expectedRemaining<=
     measured.guess.expectedRemaining,
     'two actions cannot provide less partition information than one');
