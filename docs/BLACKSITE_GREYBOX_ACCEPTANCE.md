@@ -1,7 +1,7 @@
 # BLACKSITE — Functional Local Greybox Acceptance
 
 **GAMBIT build sequence:** architecture/rules → functional greybox → browser and gameplay verification → final graphics/audio.  
-**Milestone:** Phase 2 first playable BLACKSITE local-training slice, 21 November 2026.  
+**Milestone:** Phase 2 first playable BLACKSITE local-training slice, **VERIFIED 21 November 2026** (desktop/mobile Chromium and all 4 CI jobs: [run 44926274058](https://github.com/Iniwura/Gambit/actions/runs/44926274058)).  
 **Implementation boundary:** this is the original four-glyph cleartext tutorial, **NOT** the proposed competitive 5-glyph encrypted BLACKSITE protocol.
 
 ## Actual functional experience
@@ -27,7 +27,7 @@
 | Focus | Dialog semantics, focus on first active action, keyboard Escape to return, Tab containment, focus restoration on close |
 | Concurrent wallet UI | Local mission launcher refuses to open over an active `gambit-squad-dialog`; opened local mode inerts underlying Arena and wallet entry controls |
 | Session continuity | Close/reopen keeps local mission in memory; Arena seed and gameplay state remain unchanged |
-| Mobile | Dedicated scrollable full-screen functional mission view; 44+px controls, usable at 390×844 |
+| Mobile | In-flow, real touch launcher inside mobile command deck, plus scrollable dialog and 44+px controls; tested at 390×844 with no Sepolia launcher overlap |
 | Offline | Once game assets are loaded, local guesses require no RPC, no wallet and no transaction |
 | Failure/recovery | Invalid/duplicate actions leave the canonical mission state unchanged; browser errors must not be swallowed |
 
@@ -39,7 +39,7 @@
 
 **Browser E2E:** [`tests/blacksite-greybox-browser-check.mjs`](../tests/blacksite-greybox-browser-check.mjs) runs in Chromium at desktop **1280×850** and mobile **390×844**, checking launch and mode registration, real attempt feedback, duplicate rejection, nonresetting Arena, reopening, terminal result, debrief and fresh retry. The test allows either a real first-attempt breach or an eventual lock because the local secret is deliberately random; it never silently seeds a fake fixed win.
 
-The full [GAMBIT quality suite](https://github.com/Iniwura/Gambit/actions/workflows/validate.yml) invokes this test after existing Arena browser coverage. **Do not mark this browser gate passed until an exact run actually completes.** A successful TypeScript/Phaser build alone does not verify the player interaction.
+The full [GAMBIT quality suite](https://github.com/Iniwura/Gambit/actions/workflows/validate.yml) invokes this test after existing Arena browser coverage. **Acceptance evidence:** [run 44926274058](https://github.com/Iniwura/Gambit/actions/runs/44926274058) completed **4/4 jobs successfully**. Real Chromium desktop and mobile runs each confirmed a five-attempt local lock, clue feedback, duplicate refusal, mission close/reopen, debrief/new mission and unchanged Arena state, with zero browser page exceptions. The first [failed browser run 44925760940](https://github.com/Iniwura/Gambit/actions/runs/44925760940) was retained because it identified a true mobile launcher collision, fixed by moving mobile BLACKSITE entry into the existing command deck without removing the Sepolia control.
 
 ## Explicitly NOT delivered by this milestone
 
