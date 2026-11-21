@@ -140,12 +140,14 @@ The existing `src/research/blacksite-cipher.mjs` and `tests/blacksite-cipher.tes
 
 The current TRAINING baseline is `makeSquadMatch` + `commitSquadTurn` + Phaser/DOM command deck, **five deterministic cleartext rounds** and three bot styles (steady, reactive, volatile).
 
-**Target tutorial state machine (PLANNED):**
+**IMPLEMENTED first-round instructional slice:** [pure state contract](../src/training/coach.mjs) plus [optional responsive Academy coach](../src/training/coach-ui.ts) observes real Phaser 3v3 commands; first entry → Striker → FLANK opening → STRIKE trigger → GUARD counter → FEINT formation → actual tactic-bound commit → actual three-lane result. The completed guide displays the **true match score**, not a fictional tutorial victory. No signed wallet calls and no private onchain tactics. [Pre-art acceptance tests](TRAINING_GUIDED_ROUND_ACCEPTANCE.md) require full desktop/mobile real-action browser verification. This teaches **one genuine first round** only.
+
+**Full TRAINING curriculum target (NOT BUILT):**
 ```text
 NOT_STARTED → FIRST_MOVE → CONDITIONAL_COUNTER → ROLE_COMPOSITION
             → FORMATION_MASTERY → FULL_PRACTICE_MATCH → REVIEW → COMPLETE
 ```
-- Every step has one required player choice and a visible result. Prevent accidental skipping unless optional, and preserve valid progress in a versioned local preference record.
+- Full-curriculum steps must have one required player choice and visible result, without accidental skipping. The first-round coach already checks real accepted commands and actual committed/settled round; consented checkpoint persistence across reloads remains **unbuilt**.
 - Explain Scout mark, Guardian denial and Striker breach using **actual local public lane evidence**; never derive educational examples from a genuine FHE opponent's sealed plans.
 - Uncoached beginner goal: first meaningful action in ≤30 seconds (target, not measured); understand objective and turn submission; voluntarily replay. Record tested outcomes, not asserted engagement.
 - Local bot uses deterministic seeded reference logic. No bot is a human onchain opponent. On reboot, only safe tutorial checkpoint and preferences persist, not secret tactics.
