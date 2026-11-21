@@ -311,10 +311,21 @@ export function mountSquadSepoliaPanel(
   const submit=button('4 · Encrypt and submit my squad','gambit-squad-submit',async()=>{
     const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
     const draft=readDraft();
-    setStatus('Encrypting ten inputs. Confirm submission in your wallet.');
+    setStatus('Preparing encrypted tactics and checking the 500,000,000-wei maximum fee. '+
+      'A separate wallet approval is required; no follow-up is automatic.');
     const x=await c.submitDuel(id,draft.plans,draft.formation);
-    setStatus('Duel #'+id+' submitted onchain. Tx: '+x.transactionHash);
+    setStatus(x.canonicalStateVerified
+      ?'Duel #'+id+' encrypted submission confirmed onchain. Tx: '+x.transactionHash+
+        '. No other transaction was initiated.'
+      :'Duel #'+id+' has a successful DuelSubmitted receipt. Tx: '+x.transactionHash+
+        '. Wallet state may be lagging. DO NOT retry; verify the receipt and recover read-only.');
   });
+  const submitExplainer=document.createElement('p');
+  submitExplainer.id='gambit-squad-submit-details';
+  submitExplainer.textContent='Separate approval required: ONE encrypted 10-input submission. '+
+    'Maximum transaction fee 500,000,000 Sepolia wei (0.0000000005 ETH). '+
+    'No auto-retries. Submission deadline: 24 hours after duel opening.';
+  submitExplainer.style.cssText='font:12px/1.5 system-ui;color:#aec5da;margin:7px 0 9px';
   const resolve=button('5 · Resolve encrypted match (one transaction)','gambit-squad-resolve',async()=>{
     const c=requireClient(),id=positiveId(duel.input.value,'Duel ID');
     setStatus('Confirm ONE resolution transaction in your wallet. '+
@@ -371,7 +382,7 @@ export function mountSquadSepoliaPanel(
   card.append(heading,caution,identity,walletLabel,walletChoice,connect,status,
     invited.wrap,invited.input,seal,squad.wrap,squad.input,
     shareInvite,open,openExplainer,recover,duel.wrap,duel.input,
-    publicInspect,inspect,submit,resolve,finalize,result,shareResult,watch);
+    publicInspect,inspect,submit,submitExplainer,resolve,finalize,result,shareResult,watch);
   dialog.append(card);document.body.append(launch,dialog);
   const setVisibility=()=>{dialog.style.display=dialog.hidden?'none':'flex';};
   const openDialog=()=>{if(busy)return;dialog.hidden=false;setVisibility();close.focus();};
