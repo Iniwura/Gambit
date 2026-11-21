@@ -440,7 +440,7 @@ class GambitArena extends Phaser.Scene {
     this.active=false;
     const overlay=this.add.container(0,0).setDepth(7000);
     overlay.add(this.add.rectangle(W/2,H/2,W,H,0x050912,.82));
-    const panel=this.add.rectangle(W/2,H/2,760,390,0x15213a,.99).setStrokeStyle(3,C.cyan,.8);
+    const panel=this.add.rectangle(W/2,H/2,760,495,0x15213a,.99).setStrokeStyle(3,C.cyan,.8);
     overlay.add(panel);
     overlay.add(this.text(W/2,248,'GAMBIT',59,C.white,true).setOrigin(.5));
     overlay.add(this.text(W/2,309,'OUTSMART THREE ENEMY FIGHTERS.',21,'#9feefc',true).setOrigin(.5));
@@ -460,8 +460,17 @@ class GambitArena extends Phaser.Scene {
     }
     const bg=this.add.rectangle(W/2,518,280,57,0x0d6179).setStrokeStyle(2,C.cyan).setInteractive({useHandCursor:true});
     overlay.add([bg,this.text(W/2,518,'ENTER ARENA',20,C.white,true).setOrigin(.5)]);
+    // A first-time judge can watch a REAL signed match without learning
+    // wallet stages or seeing a fake local round. The public reader checks
+    // chain ID, runtime hash, one-use link and finalized aggregate on demand.
+    const watchBg=this.add.rectangle(W/2,581,345,44,0x1c334a,.99)
+      .setStrokeStyle(1,C.gold,.92).setInteractive({useHandCursor:true});
+    const watchText=this.text(W/2,581,'WATCH VERIFIED DUEL #1 · NO WALLET',14,C.white,true).setOrigin(.5);
+    const proofStatus=this.text(W/2,628,'',12,'#c4d8ea').setOrigin(.5);
+    overlay.add([watchBg,watchText,proofStatus]);
+    let proofLoading=false;
     const begin=()=>{
-      if(this.active)return;
+      if(this.active||proofLoading)return;
       overlay.destroy(true);
       this.active=true;
       this.writeState('ready');
@@ -474,6 +483,31 @@ class GambitArena extends Phaser.Scene {
     window.addEventListener('gambit:mobile-control',touchStart);
     const enterKey=(e:KeyboardEvent)=>{if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();begin();}};
     bg.on('pointerdown',begin);
+    watchBg.on('pointerdown',()=>{
+      if(this.active||proofLoading)return;
+      proofLoading=true;
+      proofStatus.setText('Checking the real Sepolia result…');
+      const address=import.meta.env.VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS;
+      const hash=import.meta.env.VITE_GAMBIT_SQUAD_RUNTIME_HASH;
+      if(typeof address!=='string'||typeof hash!=='string'){
+        proofStatus.setText('Verified match unavailable in this build.');
+        proofLoading=false;
+        return;
+      }
+      void import('./chain/squad-public-reader')
+        .then(({readVerifiedSquadPublic})=>readVerifiedSquadPublic(1n,address,hash))
+        .then(verified=>{
+          window.removeEventListener('keydown',enterKey);
+          window.removeEventListener('gambit:mobile-control',touchStart);
+          overlay.destroy(true);
+          this.showVerifiedSquad(verified);
+        })
+        .catch(()=>{
+          // Never animate or claim a score until canonical verification works.
+          proofStatus.setText('Result lookup unavailable. Try again or enter Practice.');
+          proofLoading=false;
+        });
+    });
     window.addEventListener('keydown',enterKey);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{
       window.removeEventListener('keydown',enterKey);
