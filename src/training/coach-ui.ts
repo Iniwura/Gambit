@@ -110,8 +110,17 @@ export function mountTrainingCoach():void{
     continueButton.hidden=Boolean(fullState)||!state.completed;
     summary.hidden=fullState?false:!view.completed;
     if(fullState){
-      const last=fullState.receipts.at(-1);
-      const debrief=fullState.debrief;
+      // Runtime reducer validates canonical debrief data; explicit display
+      // types also prevent the initial null-only snapshot from narrowing the
+      // eventual finished-match report to TypeScript's never.
+      const last=(fullState.receipts as readonly {
+        scoreline:string,bonusA?:{breach:number,mark:number,blocked:number}|null
+      }[]).at(-1);
+      const debrief=(fullState as unknown as {debrief:{
+        scoreline:string,winner:number,stats:Array<{
+          role:string,wins:number,losses:number,draws:number
+        }>
+      }|null}).debrief;
       summary.textContent=(debrief
         ?'Real five-round LOCAL result · '+debrief.scoreline+
           ' · '+(debrief.winner===1?'Victory':debrief.winner===2?'Defeat':'Draw')+
