@@ -11,7 +11,7 @@ This specification implements the architecture phase of the [master scope](GAMBI
 
 **Product pillars:**
 - **ARENA:** flagship competitive tactical game. Target evolving multi-round confidential PVP; presently one authentic single-encounter FHE match exists.
-- **TRAINING:** first-use tutorial, deterministic five-round local practice and tactical mastery. Five-round practice is built; an optional verified first-round real-action Academy coach is also built. The full five-round curriculum and human learning validation remain unbuilt.
+- **TRAINING:** first-use tutorial and complete five-round local Tactical Academy are implemented and verified by [real desktop/mobile five-round browser playthrough and 4/4 full CI](https://github.com/Iniwura/Gambit/actions/runs/44938866411). Independent novice comprehension and saved progression are unverified/unbuilt.
 - **BLACKSITE:** distinct limited-information codebreaking/infiltration missions. A responsive **playable four-glyph LOCAL TRAINING** greybox is verified; the confidential competitive mission, fair v2 puzzle economy and contract are not built.
 - **COMMANDER PROFILE:** persistent identity, verified history and earned achievements are the target. A non-persistent opt-in read-only **Commander Records** viewer is verified against actual Sepolia receipts; persistent identity, achievements and progression are not implemented.
 
@@ -142,12 +142,12 @@ The current TRAINING baseline is `makeSquadMatch` + `commitSquadTurn` + Phaser/D
 
 **IMPLEMENTED first-round instructional slice:** [pure state contract](../src/training/coach.mjs) plus [optional responsive Academy coach](../src/training/coach-ui.ts) observes real Phaser 3v3 commands; first entry → Striker → FLANK opening → STRIKE trigger → GUARD counter → FEINT formation → actual tactic-bound commit → actual three-lane result. The completed guide displays the **true match score**, not a fictional tutorial victory. No signed wallet calls and no private onchain tactics. [Pre-art acceptance tests](TRAINING_GUIDED_ROUND_ACCEPTANCE.md) require full desktop/mobile real-action browser verification. This teaches **one genuine first round** only.
 
-**Full TRAINING curriculum target (NOT BUILT):**
+**Full five-round TRAINING curriculum IMPLEMENTED and desktop/mobile browser VERIFIED (cleartext local only):**
 ```text
 NOT_STARTED → FIRST_MOVE → CONDITIONAL_COUNTER → ROLE_COMPOSITION
             → FORMATION_MASTERY → FULL_PRACTICE_MATCH → REVIEW → COMPLETE
 ```
-- Full-curriculum steps must have one required player choice and visible result, without accidental skipping. The first-round coach already checks real accepted commands and actual committed/settled round; consented checkpoint persistence across reloads remains **unbuilt**.
+- [Five-round continuation reducer](../src/training/full-match.mjs) and [acceptance suite](TRAINING_FULL_MATCH_ACCEPTANCE.md) bind Scout/changed Guardian orders, changed formation, independent final-role commands and final debrief to real committed/settled match evidence. [CI run 44938866411](https://github.com/Iniwura/Gambit/actions/runs/44938866411) verified all 4 quality jobs and real desktop/mobile 5-round journeys; consented checkpoint persistence is still **unbuilt**.
 - Explain Scout mark, Guardian denial and Striker breach using **actual local public lane evidence**; never derive educational examples from a genuine FHE opponent's sealed plans.
 - Uncoached beginner goal: first meaningful action in ≤30 seconds (target, not measured); understand objective and turn submission; voluntarily replay. Record tested outcomes, not asserted engagement.
 - Local bot uses deterministic seeded reference logic. No bot is a human onchain opponent. On reboot, only safe tutorial checkpoint and preferences persist, not secret tactics.
