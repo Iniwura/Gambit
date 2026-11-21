@@ -57,7 +57,7 @@ See `src/research/gambit-commitment-v0.mjs` and `tests/gambit-commitment-researc
 - The local reference uses public test lanes to evaluate a private selection, but only emits `pointsA`, `pointsB`, `packed`, `outcome`. No sector, plan or lane result is included in the output.
 - Baseline 0..5 per-team score becomes candidate 0..7; three bits per team would still pack a result, but **deployed v2 explicitly rejects scores greater than 5**. This is a new **v3 scoring/validation rule** and is not wire-compatible with existing v2.
 - Test 27 lane-outcome patterns × 16 combinations of unused/three-sector stakes, check symmetry and bounds, compare winning versus losing wager and ensure no sector leaks into the aggregate object. These are **mathematical checks**, not a proven balanced or attractive human game.
-- One-use rule requires a new versioned state machine; role/sector indices must be transformed correctly through encrypted formations. Prevent last-second stake decisions after learning opponent information.
+- One-use is now enforced in a **local headless state machine**; the versioned **onchain** state machine is still unimplemented. Role/sector indices must be transformed correctly through encrypted formations. Prevent last-second stake decisions after learning opponent information.
 - The extra FHE conditions, scoring arithmetic and risk of score-based inference must be measured and threat-modelled.
 
 **Unanswered game-design question:** Is +2/-1 a meaningful but fair risk, or can optimal policies exploit it? Require cross-formation adversarial simulation, player testing, and simple “why did I win/lose?” explanation that does not reveal private sector outcomes.
