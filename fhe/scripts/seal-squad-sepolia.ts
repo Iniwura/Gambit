@@ -47,12 +47,30 @@ async function main() {
     ? formatEther(await ethers.provider.getBalance(signerAddress))
     : null;
 
+  // Optional invited-wallet CHECK ONLY, available without the signing flag.
+  // The public address is supplied at runtime, never embedded in repo/CI.
+  const inviteeRaw = process.env.GAMBIT_SQUAD_CHALLENGER_ADDRESS;
+  const challenger = inviteeRaw ? getAddress(inviteeRaw) : null;
+  if (challenger && (challenger === expectedOwner || challenger === ZeroAddress)) {
+    throw Error('Challenger must be different from the deployed squad owner and nonzero');
+  }
+  const challengerBalance = challenger
+    ? formatEther(await ethers.provider.getBalance(challenger))
+    : null;
+  const challengerCode = challenger
+    ? await ethers.provider.getCode(challenger)
+    : null;
+
   console.log('GAMBIT_SQUAD_SEAL_PREFLIGHT ' + JSON.stringify({
     chainId: Number(CHAIN),
     contractAddress: address,
     contractRuntimeVerified: true,
     signerAddress: signerAddress ?? 'NOT_CONFIGURED',
     signerBalanceSepoliaETH: signerBalance,
+    proposedChallenger: challenger ?? 'NOT_PROVIDED',
+    proposedChallengerBalanceSepoliaETH: challengerBalance ?? 'NOT_CHECKED',
+    proposedChallengerAccountHasCode: challengerCode === null ? 'NOT_CHECKED' : challengerCode !== '0x',
+    note: 'Challenger balance and bytecode are read-only observations, not proof of wallet control or funding sufficiency.',
     nextSquadId: (currentId + 1n).toString(),
     nextDuelId: (currentDuelId + 1n).toString(),
     encryptedInputCount: 10,
@@ -69,11 +87,9 @@ async function main() {
     throw Error('Existing approved deployer signer is missing or differs');
   }
 
-  const inviteeRaw = process.env.GAMBIT_SQUAD_CHALLENGER_ADDRESS;
-  if (!inviteeRaw) throw Error('A distinct public challenger wallet address is required');
-  const challenger = getAddress(inviteeRaw);
-  if (challenger === signerAddress || challenger === ZeroAddress) {
-    throw Error('Challenger must be a distinct nonzero wallet');
+  if (!challenger) throw Error('A distinct public challenger wallet address is required');
+  if (challenger === signerAddress) {
+    throw Error('Challenger must be different from the signing wallet');
   }
 
   const expectedOwnerRaw = process.env.GAMBIT_EXPECTED_SQUAD_SEAL_SIGNER;
