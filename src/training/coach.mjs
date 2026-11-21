@@ -92,8 +92,13 @@ export function advanceTrainingCoach(state,event){
         'formation');
       break;
     case 'commit':
-      check(Number.isInteger(event.round)&&event.round>=1&&event.round<=5,
-        'actual committed round');
+      check(Number.isInteger(event.round)&&event.round>=1&&event.round<=5&&
+        Number.isInteger(event.formation)&&event.formation>=0&&
+        event.formation<=2&&event.striker&&
+        ['base','trigger','response'].every(field=>
+          Number.isInteger(event.striker[field])&&event.striker[field]>=0&&
+          event.striker[field]<=2),
+        'actual committed round and striker plan');
       break;
     case 'settled':
       check(Number.isInteger(event.round)&&event.round>=1&&event.round<=5&&
@@ -116,7 +121,9 @@ export function advanceTrainingCoach(state,event){
     step==='counter'&&event.type==='choose'&&
       event.role===2&&event.field==='response'&&event.index===1||
     step==='formation'&&event.type==='formation'&&event.index===2||
-    step==='commit'&&event.type==='commit'&&event.round>=1||
+    step==='commit'&&event.type==='commit'&&event.round>=1&&
+      event.formation===2&&event.striker.base===2&&
+      event.striker.trigger===0&&event.striker.response===1||
     step==='settled'&&event.type==='settled'&&
       event.round===state.committedRound;
   if(!accepted)return state;
