@@ -95,6 +95,69 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
     }
   });
 
+
+  it('matches an independent role/formation oracle across all 81 private-sector pairings',async function(){
+    this.timeout(300000);
+    const left:Plan[]=[
+      {base:0,trigger:2,response:1},
+      {base:1,trigger:0,response:2},
+      {base:2,trigger:1,response:0}
+    ];
+    const right:Plan[]=[
+      {base:2,trigger:0,response:1},
+      {base:0,trigger:1,response:2},
+      {base:1,trigger:2,response:0}
+    ];
+    const formations=[[0,1,2],[1,2,0],[2,0,1]];
+    function oracle(fa:number,fb:number,sa:number,sb:number){
+      const wa=[false,false,false],wb=[false,false,false],lanes:number[]=[];
+      for(let lane=0;lane<3;lane++){
+        const ai=formations[fa][lane],bi=formations[fb][lane];
+        const pa=left[ai],pb=right[bi];
+        const am=pa.trigger===pb.base?pa.response:pa.base;
+        const bm=pb.trigger===pa.base?pb.response:pb.base;
+        const outcome=am===bm?0:
+          (am===0&&bm===2)||(am===1&&bm===0)||(am===2&&bm===1)?1:2;
+        lanes.push(outcome);
+        wa[ai]=outcome===1;wb[bi]=outcome===2;
+      }
+      const points=(own:boolean[],other:boolean[])=>{
+        const base=own.filter(Boolean).length;
+        const breach=own[2]?1:0;
+        const mark=own[0]&&own[2]?1:0;
+        const blocked=own[2]&&other[1]?1:0;
+        return base+Math.max(0,breach+mark-blocked);
+      };
+      const wager=(base:number,sector:number,side:number)=>
+        lanes[sector]===side?base+2:Math.max(0,base-1);
+      const a=wager(points(wa,wb),sa,1);
+      const b=wager(points(wb,wa),sb,2);
+      return {packed:8*a+b,scoreA:a,scoreB:b};
+    }
+    let checked=0;
+    for(let fa=0;fa<3;fa++)for(let fb=0;fb<3;fb++)
+      for(let sa=0;sa<3;sa++)for(let sb=0;sb<3;sb++){
+        const {c,challenger,defender}=await fixture();
+        const expected=oracle(fa,fb,sa,sb);
+        await (await submit(c,challenger,left,fa,sa,true)).wait();
+        await (await submit(c,defender,right,fb,sb,true)).wait();
+        await (await c.resolveRound(1n)).wait();
+        const h=await c.publicResultHandle(1n,1);
+        const proof=await fhevm.publicDecrypt([h]);
+        const actual=Number(proof.clearValues[h]);
+        expect(actual,'formation='+fa+'/'+fb+' stake='+sa+'/'+sb)
+          .to.equal(expected.packed);
+        checked++;
+      }
+    expect(checked).to.equal(81);
+    console.log('GAMBIT_ARENA_V3_FHE_ORACLE '+JSON.stringify({
+      network:'Hardhat FHE mock',cases:checked,
+      formationPairs:9,privateSectorPairsPerFormation:9,
+      conditionalPlans:true,independentOracle:true,
+      secretLaneIndexesLeaked:false,liveHcuMeasured:false
+    }));
+  });
+
   it('hidden visual-sector stake follows encrypted formation, not role indices',async function(){
     const {c,challenger,defender}=await fixture();
     // Challenger PIVOT => role 1 on visual lane 0, role 2 on lane 1,
