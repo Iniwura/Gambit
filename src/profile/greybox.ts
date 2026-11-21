@@ -20,7 +20,7 @@ type VerifiedRow={
 type PublicView={
   status:string,wallet:string,matches:number,wins:number,losses:number,
   draws:number,pagesScanned:number,candidatesChecked:number,
-  verifiedHistory:VerifiedRow[],fullHistoryObserved:boolean
+  verifiedHistory:readonly VerifiedRow[],fullHistoryObserved:boolean
 };
 type Loading={pagesScanned:number,candidatesChecked:number,playerRecordsVerified:number,
   completed:boolean,lastScannedBlock:number|null};
