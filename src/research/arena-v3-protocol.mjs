@@ -127,13 +127,16 @@ function assertConsistent(state){
      state.previousResultHandles.length!==accepted||
      state.previousResultHandles.some((h,i)=>h!==state.history[i].resultHandle))
     throw Error('Protocol match score and proof lineage disagree.');
+  if(state.spentOrderHandles.some(h=>roundHandles.has(h)))
+    throw Error('Result and order commitment domains overlap.');
   if(state.spentOrderHandles.length!==2*accepted)
     throw Error('Previous round order commitments are missing or duplicated.');
   const spent=new Set(state.spentOrderHandles);
   if(spent.size!==state.spentOrderHandles.length)
     throw Error('Replayed encrypted order commitment.');
   for(const old of state.spentOrderHandles)handle(old);
-  if(Object.values(state.submissions).some(s=>s!==null&&spent.has(s)))
+  if(Object.values(state.submissions).some(s=>s!==null&&
+      (spent.has(s)||roundHandles.has(s))))
     throw Error('Encrypted order already used by this match.');
   if(state.submissions.a!==null&&state.submissions.a===state.submissions.b)
     throw Error('Both players cannot reuse the same ciphertext commitment.');
@@ -161,6 +164,7 @@ export function submitArenaResearchOrder(state,participant,orderHandle,now){
     throw Error('This participant already submitted a private order.');
   const encryptedHandle=handle(orderHandle);
   if(state.spentOrderHandles.includes(encryptedHandle)||
+     state.previousResultHandles.includes(encryptedHandle)||
      Object.values(state.submissions).includes(encryptedHandle))
     throw Error('Replay or cross-player reuse of a secret order handle.');
   const next=clone(state);
@@ -284,7 +288,7 @@ export function publicArenaResearchProtocolState(state){
     matchId:state.matchId,
     round:state.round,phase:state.phase,
     scoreA:state.scoreA,scoreB:state.scoreB,
-    submissions:{a:state.submissions.a!==null,b:state.submissions.b!==null},
+    submissions:Object.freeze({a:state.submissions.a!==null,b:state.submissions.b!==null}),
     winner:state.winner,abortReason:state.abortReason,
     history:Object.freeze(state.history.map(r=>
       Object.freeze({round:r.round,pointsA:r.pointsA,pointsB:r.pointsB,
