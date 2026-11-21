@@ -199,7 +199,11 @@ export function commitSquadTurn(match,challengerPlans,formation=0) {
   };
   const event={round:next.round,...results,scoreA:next.scoreA,scoreB:next.scoreB,control};
   next.history.push(event);
-  next.finished=next.round>=5||Math.abs(control)===3;
+  // One consistent victory objective: highest cumulative reactor pressure
+  // after five FULL rounds. 'control' is capped momentum feedback, not an
+  // early victory condition; using both rules made a maxed meter capable of
+  // ending a match whose scoreline awarded victory to the other player.
+  next.finished=next.round===5;
   if(next.finished)
     next.winner=next.scoreA>next.scoreB?1:next.scoreB>next.scoreA?2:0;
   return {match:next,event};
