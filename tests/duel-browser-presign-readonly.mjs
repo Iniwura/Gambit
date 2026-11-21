@@ -109,6 +109,47 @@ try{
       progressStages:result.progress.length,blocklistCount:result.blocked.length
     }));
   }
+  if(!result.skipped){
+    // End-to-end UI regression for the actual screenshot: the Phaser scene
+    // remains INTRO, while a connected invitee chooses a separate private
+    // encrypted squad plan in the dialog and reaches the wallet boundary.
+    await page.goto('http://127.0.0.1:4177/?squad=1&duel=1',{
+      waitUntil:'domcontentloaded',timeout:45000
+    });
+    await page.locator('#gambit-squad-launch').waitFor({state:'visible',timeout:30000});
+    assert.equal(await page.locator('#game-state').getAttribute('data-phase'),'intro');
+    await page.locator('#gambit-squad-launch').click();
+    await page.locator('#gambit-squad-connect').click();
+    await page.locator('#gambit-squad-status')
+      .filter({hasText:/Duel #1|Wallet and contract verified|already claimed/i})
+      .waitFor({timeout:30000});
+    // After connecting, incomplete plans MUST fail before Zama or the wallet.
+    await page.locator('#gambit-squad-submit').click();
+    await page.locator('#gambit-squad-submit-status')
+      .filter({hasText:/Choose your private fighter plans/})
+      .waitFor({timeout:10000});
+    assert.equal((await page.evaluate(()=>window.__gambitPresign.blocked)).length,0,
+      'missing tactics must never make a signing or transaction request');
+    // The user can choose a preset without entering an unrelated local match.
+    await page.locator('#gambit-squad-balanced').click();
+    await page.locator('#gambit-squad-plan-status')
+      .filter({hasText:/Ready: three private fighter plans/}).waitFor({timeout:5000});
+    assert.equal(await page.locator('#game-state').getAttribute('data-phase'),'intro');
+    assert.equal(await page.locator('#gambit-squad-planner select').count(),10);
+    await page.locator('#gambit-squad-submit').click();
+    await page.locator('#gambit-squad-submit-status')
+      .filter({hasText:/GAMBIT_TEST_WALLET_BLOCKED_eth_sendTransaction/})
+      .waitFor({timeout:120000});
+    const uiCalls=await page.evaluate(()=>window.__gambitPresign);
+    assert.deepEqual(uiCalls.blocked,['eth_sendTransaction'],
+      'prepared UI submission must reach ONE blocked transaction request');
+    assert.equal(uiCalls.requests.filter(method=>method==='eth_sendTransaction').length,1);
+    console.log('GAMBIT_INVITED_UI_PRESIGN_READONLY '+JSON.stringify({
+      sourcePhase:'intro',path:'INVITED_PANEL_WITH_BALANCED_PRESET',
+      inputsSelected:10,stage:'ONE_WALLET_REQUEST_INTERCEPTED',
+      walletConnected:false,signatureMade:false,transactionSent:false
+    }));
+  }
   assert.deepEqual(pageErrors,[],'Chromium must not produce uncaught page errors');
   await page.close();
 }finally{
