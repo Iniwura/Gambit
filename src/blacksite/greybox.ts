@@ -48,6 +48,12 @@ export function mountBlacksiteGreybox():void{
   launch.setAttribute('aria-haspopup','dialog');
   launch.setAttribute('aria-expanded','false');
   launch.setAttribute('aria-controls','gambit-blacksite-dialog');
+  // A separate, in-flow mobile control avoids collision with existing
+  // fixed Sepolia challenge launchers. Never hide a real wallet action.
+  const mobileLaunch=launch.cloneNode(false) as HTMLButtonElement;
+  mobileLaunch.id='gambit-blacksite-mobile-open';
+  mobileLaunch.className='gambit-blacksite-mobile-open';
+  mobileLaunch.textContent='BLACKSITE · LOCAL TRAINING';
 
   const backdrop=document.createElement('div');
   backdrop.id='gambit-blacksite-overlay';
@@ -127,6 +133,8 @@ export function mountBlacksiteGreybox():void{
       <footer>LOCAL GREYBOX · NO CHAIN CALLS · NO ENCRYPTED PROOF OR PLAYER RANK</footer>
     </section>`;
   document.body.append(launch,backdrop);
+  document.querySelector('#gambit-mobile-deck .gambit-mobile-head')
+    ?.after(mobileLaunch);
 
   let mission:Mission|null=null;
   let shell=createGameShell();
@@ -202,8 +210,9 @@ export function mountBlacksiteGreybox():void{
   }
   function open(){
     if(!backdrop.hidden)return;
-    if(document.getElementById('gambit-squad-dialog')?.hidden===false)
-      return; // Never overlay an active wallet-signing interface.
+    if(document.getElementById('gambit-squad-dialog')?.hidden===false||
+       document.getElementById('gambit-chain-dialog')?.hidden===false)
+      return; // Never overlay either active wallet-signing interface.
     previousFocus=document.activeElement instanceof HTMLElement?
       document.activeElement:null;
     if(!mission){
@@ -224,6 +233,7 @@ export function mountBlacksiteGreybox():void{
     document.body.dataset.gambitFeatureOverlay='blacksite';
     backdrop.hidden=false;
     launch.setAttribute('aria-expanded','true');
+    mobileLaunch.setAttribute('aria-expanded','true');
     render();
     const first=currentFirstAction();
     first.focus();
@@ -245,6 +255,7 @@ export function mountBlacksiteGreybox():void{
     backdrop.dataset.scene=shell.scene;
     delete document.body.dataset.gambitFeatureOverlay;
     launch.setAttribute('aria-expanded','false');
+    mobileLaunch.setAttribute('aria-expanded','false');
     for(const {element,inert} of priorInert)element.inert=inert;
     priorInert=[];
     (previousFocus?.isConnected?previousFocus:launch)?.focus();
@@ -252,6 +263,7 @@ export function mountBlacksiteGreybox():void{
     // A browser refresh starts a new local mission by design.
   }
   launch.addEventListener('click',open);
+  mobileLaunch.addEventListener('click',open);
   backdrop.addEventListener('click',event=>{
     const button=(event.target as HTMLElement).closest<HTMLButtonElement>(
       'button[data-action]');
