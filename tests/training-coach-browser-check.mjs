@@ -113,11 +113,11 @@ async function scenario(viewport,label){
 
     await action('5',page.locator('.gambit-mobile-role').nth(1));
     await step('r3-base');
-    await action('2',page.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(1));
+    await action('1',page.locator('.gambit-mobile-action-group').nth(0).locator('button').nth(0));
     await step('r3-trigger');
-    await action('e',page.locator('.gambit-mobile-action-group').nth(1).locator('button').nth(2));
+    await action('q',page.locator('.gambit-mobile-action-group').nth(1).locator('button').nth(0));
     await step('r3-response');
-    await action('a',page.locator('.gambit-mobile-action-group').nth(2).locator('button').nth(0));
+    await action('d',page.locator('.gambit-mobile-action-group').nth(2).locator('button').nth(2));
     await step('r3-commit');
     await action('Enter',page.locator('#gambit-mobile-lock'));
     await step('r3-settle');
