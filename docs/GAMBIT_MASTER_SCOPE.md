@@ -96,6 +96,8 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 - Contract [resolved encrypted match](https://sepolia.etherscan.io/tx/0xe91ba8ba3af4ce9666871752974b5b2168f4ccac4a6a8157df93d27fe79696ac), authentic public [KMS proof preflight](https://github.com/Iniwura/Gambit/actions/runs/44913989691), [finalized 0:1 Violet](https://sepolia.etherscan.io/tx/0x57a19f25a234eca7db206781a18cc965a09818a04b87a9f30d8d659562a9bdad).
 - Independent [final receipt verifier](https://github.com/Iniwura/Gambit/actions/runs/44914775566), [real browser no-wallet spectator](https://github.com/Iniwura/Gambit/actions/runs/44917771468), [four quality gates](https://github.com/Iniwura/Gambit/actions/runs/44917777173), [published game](https://iniwura.github.io/Gambit/).
 
+**Current Phase-1 game/system specification:** [GAME_ARCHITECTURE_V1.md](GAME_ARCHITECTURE_V1.md), with an executable, fail-closed shell contract in [`src/architecture/game-shell.mjs`](../src/architecture/game-shell.mjs). Architecture status is **in progress**, not signed off. The BLACKSITE local research engine exists but has no UI or onchain deployment.
+
 ## 5. Locked build order — architecture and working game BEFORE graphics
 
 **This section is a direct statement of the owner's original plan and overrides any older phase language that mixes artwork into the systems build. Do not skip or reorder.**
