@@ -11,7 +11,8 @@ const opening={type:'choose',field:'base',role:2,index:2};
 const trigger={type:'choose',field:'trigger',role:2,index:0};
 const counter={type:'choose',field:'response',role:2,index:1};
 const formation={type:'formation',index:2};
-const commit={type:'commit',round:1};
+const commit={type:'commit',round:1,formation:2,
+  striker:{base:2,trigger:0,response:1}};
 const settle={type:'settled',round:1,lanes:3,scoreline:'2 : 1'};
 const progression=[enter,striker,opening,trigger,counter,formation,commit,settle];
 
@@ -52,6 +53,11 @@ test('wrong fighter, wrong tactic or premature lock cannot skip the lesson',()=>
   assert.equal(advanceTrainingCoach(s,commit),s);
   s=advanceTrainingCoach(s,formation);
   assert.equal(s.step,'commit');
+  assert.equal(advanceTrainingCoach(s,{...commit,formation:1}),s,
+    'wrong actual formation cannot complete the coached exercise');
+  assert.equal(advanceTrainingCoach(s,{...commit,
+    striker:{base:0,trigger:0,response:1}}),s,
+    'changing the Striker opening after guidance cannot earn completion');
   s=advanceTrainingCoach(s,commit);
   assert.equal(s.step,'settled');
   assert.equal(advanceTrainingCoach(s,{...settle,round:2}),s,
@@ -76,6 +82,7 @@ test('malformed event cannot report fake match mastery or alter canonical state'
   const invalid=[null,{},[],{type:'onchain'},{type:'role',role:4},
     {type:'role',role:'2'},{type:'choose',role:2,field:'secret',index:0},
     {type:'formation',index:NaN},{type:'commit',round:0},
+    {type:'commit',round:1,formation:2,striker:null},
     {type:'settled',round:1,lanes:2,scoreline:'2 : 1'},
     {type:'settled',round:1,lanes:3,scoreline:'WIN'},
     {type:'reset',phase:'chain-verified'}];
