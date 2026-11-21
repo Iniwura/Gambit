@@ -60,7 +60,7 @@ function fixture(duel=7n,packed=1,transaction='0x'+'ab'.repeat(32)){
       if(tag===flags.head){
         flags.headReads++;
         return {number:flags.head,
-          hash:flags.reorgOnRecheck&&flags.headReads>1
+          hash:flags.reorgOnRecheck&&flags.headReads>=1
             ?'0x'+'ef'.repeat(32):headHash};
       }
       if(tag===block)return {number:block,timestamp:1795279000,
