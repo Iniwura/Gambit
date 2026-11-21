@@ -1,99 +1,100 @@
 # GAMBIT
 
-**A confidential squad tactics game powered by Zama FHE.**
+**Sealed Orders. Real strategy. No exposed tactics.**
 
-**Production direction:** [GAMBIT: Sealed Orders — Production Charter](docs/PRODUCTION_CHARTER.md). This is a full-game product standard with explicit acceptance gates; the current public build remains pre-alpha and does not yet satisfy those gates.
+GAMBIT is a playable 3v3 squad-tactics game with a confidential, asynchronous head-to-head match powered by the **Zama Protocol** on Ethereum Sepolia. Three fighters each have a private conditional order. Each commander also selects a hidden formation. The contract computes a match without publishing either squad's tactics, and a Zama KMS-signed proof authenticates the **aggregate reactor score**.
 
-**Play the public pre-alpha:** https://iniwura.github.io/Gambit/ — free browser practice, no wallet needed. This is not a verified encrypted multiplayer release.
+**Release status:** a genuine two-wallet encrypted match has been completed and independently verified on Sepolia. The game remains a **pre-release candidate** pending newcomer playtests, full product/visual polish and independent security review. We do not claim production readiness or a security audit.
 
-Program three fighters, choose a hidden deployment and outthink an opponent. The final reactor score is independently verifiable without publishing either squad's encrypted orders.
+[Play GAMBIT](https://iniwura.github.io/Gambit/) · [Inspect real Duel #1](https://iniwura.github.io/Gambit/?squad=1&duel=1) · [Public Sepolia finalization](https://sepolia.etherscan.io/tx/0x57a19f25a234eca7db206781a18cc965a09818a04b87a9f30d8d659562a9bdad) · [Engineering evidence](docs/STATUS.md)
 
-> **Release status: pre-alpha.** The 3v3 practice match is playable in Phaser, and both experimental contracts have been deployed to Sepolia. The full encrypted squad contract was deployed on 20 Nov 2026. On 21 Nov, Squad #1 was genuinely sealed on Sepolia and independently receipt/contract-state verified (ten encrypted squad inputs accepted). No complete two-wallet FHE duel, result resolution or signed KMS finalization has yet been verified. **A real two-wallet encrypted 3v3 match is NOT yet verified.** Production visuals and external user testing are outstanding.
+## Play in two ways
 
-## Play
+### Practice — learn the strategy, no wallet
 
-Practice needs no wallet. It is a deterministic **cleartext** match, not a claim of encrypted live multiplayer.
+1. Open the [game](https://iniwura.github.io/Gambit/). Enter **Practice** by choosing a bot (**Steady**, **Reactive** or **Volatile**) and selecting **Enter Arena**.
+2. Program your **Scout**, **Guardian** and **Striker** independently. Give each fighter an opening action (**Strike**, **Guard** or **Flank**), an opponent-action trigger and the counter to use when it activates.
+3. Choose **Hold**, **Pivot** or **Feint** formation; these change which opposing roles your squad faces.
+4. Lock all three plans and watch the three practice duels resolve. Review reactor pressure and tactical feedback; adjust across five practice rounds. You can rematch after the final score.
 
-1. Choose a practice opponent: **Steady** (learnable), **Reactive** (adjusts to prior lane results), or **Volatile** (varies tactics and deployment). Enter the arena and select **Scout**, **Guardian** or **Striker**.
-2. Give each fighter an opening move, an enemy-move trigger and the response to that trigger.
-3. Select **HOLD**, **PIVOT** or **FEINT** to change which opposing fighter each role faces.
-4. Lock the squad. Watch **three individually staged** encounters, reactor score changes and an explanation of which conditional counter actually executed.
-5. Reprogram your team across five full practice rounds. The highest cumulative reactor pressure wins; the capped reactor-control meter only reflects momentum. The final screen identifies a standout fighter and a weaker role to rethink; rematch against a different seeded opponent.
+Practice is **cleartext and deterministic**. The per-fighter reports in this mode are educational and **must not** be represented as onchain decrypted tactics.
 
-**Controls:** 4/5/6 select a fighter, 7/8/9 select formation, 1/2/3 the opening move, Q/W/E the trigger, A/S/D the counter and Enter to lock. Mobile has a separate large-touch command deck.
+Desktop keys: **4/5/6** choose a fighter, **7/8/9** choose formation, **1/2/3** choose the opener, **Q/W/E** the trigger, **A/S/D** the response and **Enter** locks the turn. Mobile uses the on-screen command deck.
 
-## Why encryption matters
+### View a genuinely completed encrypted match — no wallet
 
-The experimental **SquadGambit** design uses ten independent encrypted `euint8` inputs per player: three conditional actions for each of three fighter roles, plus a hidden formation. Each player can commit their private tactics while the contract calculates the matchup through FHE. A final Zama KMS-signed public decryption reveals **only the aggregate reactor score**, not the three private plans, formations or individual lane outcomes.
+Open [Duel #1](https://iniwura.github.io/Gambit/?squad=1&duel=1), choose **Encrypted Squad Lab** and click **Recover verified match result · no wallet**. You can read the canonical finalized score and open **View Authenticated Reactor Result**. No extension, gas or signing is needed.
 
-A defender invites a specified opponent for a **single-use** challenge. This limits simple repeated-result oracle attacks against the same sealed squad, but cannot eliminate collusion or inference across separately sealed squads. No formal secrecy claim or independent audit has been completed.
+**Official first result:** **Cyan 0 : 1 Violet**. The Violet defender won the first genuine encrypted match. The verifier checks the exact chain ID, contract runtime fingerprint, finalized state, one-use duel linkage and legal aggregate. It doesn't infer hidden per-fighter tactics.
 
-The playable practice mode reveals each public lane result for learning. **The encrypted mode cannot honestly replay per-lane winners, because those results are not publicly decrypted.** Its authenticated viewer shows the final reactor totals only.
+### Play an encrypted Sepolia duel — wallet required
 
-**Spectator verification, without a wallet:** Once a real duel has been finalized on Sepolia, open the [public game](https://iniwura.github.io/Gambit/?duel=1) with `?duel=<finalized ID>`, select **Encrypted Squad Lab → View finalized score · no wallet**. The reader independently checks Sepolia chain ID, the exact v2 contract runtime hash, the one-use invitation, canonical duel linkage and finalized aggregate score. It fails closed for pending or invalid results. **No real finalized 3v3 match has yet been produced**, so this feature is currently prepared rather than demonstrated with a genuine duel.
+A squad owner selects three secret plans and a formation, connects a Sepolia wallet, invites a *specific distinct* second wallet and signs one `sealSquad` transaction. The invited player opens the one-use duel, independently encrypts their ten tactical inputs, and signs `submitDuel`. Separate wallet approvals are required to `resolveDuel` and to verify the public KMS proof and `finalizeDuel`. The contract exposes aggregate scores, not the private tactical decisions. Each action is explicitly fee-capped; no transaction is automatically retried.
 
-## What actually exists
+**Do not repeat transactions for Duel #1:** it is already finalized. Create a new squad and fresh invitation for any new match. Onchain matchmaking, automations and public opponent discovery are not implemented; players coordinate invitations themselves.
 
-| Component | Status | Evidence |
+## Why confidentiality is essential
+
+If every onchain opening action, contingency and formation were public, an opponent could inspect and counter your squad before submitting. GAMBIT's strategy relies on simultaneous *hidden* conditional plans, not a hidden animation over public decisions. With Zama FHE, the contract evaluates encrypted plans onchain while revealing only the authorized aggregate result. A public signed decryption proof enables verification of that result.
+
+The one-use invitation limits simple repeated-query attacks on the same sealed squad. It does **not** prevent strategic inference or collusion across separately sealed squads. No general privacy guarantee or independent audit is claimed.
+
+The encrypted onchain game is **one confidential 3v3 encounter**. The local **five-round practice** is a separate training experience. Public score verification must never be passed off as disclosure of private lane outcomes.
+
+## Genuine Sepolia match: independently verifiable evidence
+
+Contract: [`SquadGambit`](https://sepolia.etherscan.io/address/0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134) (`0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134`) · chain **11155111** · exact runtime keccak `0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419`.
+
+| Milestone | Real onchain evidence | Verified outcome |
 | --- | --- | --- |
-| 3v3 playable practice | Implemented | Phaser browser tests, deterministic transcript verification, 3 distinct local bot styles and staged combat |
-| Scout / Guardian / Striker tactics | Implemented | Independent plans, role bonuses, formation matchup tests |
-| Desktop / mobile controls | Implemented | Real Chromium actions across both screen sizes, visible fighter tactics and post-match role analysis |
-| One-fighter `SealedGambit` | **Deployed, NOT live-match-verified** | Sepolia `0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0` |
-| Encrypted 3v3 `SquadGambit` | **Deployed, NOT live-match-verified** | Sepolia `0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134`; [deployment receipt](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a) |
-| First real 3v3 encrypted squad seal | **Verified on Sepolia; no duel yet** | Squad #1 owner `0x7d567F…8Ee176`, invited challenger `0x70d086…dcDD5`; [seal receipt](https://sepolia.etherscan.io/tx/0x65b1fde92ff899718f4febcdc1597cc9fb05c681b1e05996f306d2a3bae41e0b); [independent public-RPC verifier](https://github.com/Iniwura/Gambit/actions/runs/44904055643) confirmed exact event, active/unclaimed state and 74,851,940 wei fee |
-| Versioned encrypted squad browser adapter | Prepared, **gated** | Exact Sepolia address and independently verified runtime code hash required |
-| No-wallet finalized-score inspector | Implemented, **no real final match to inspect** | Public RPC + runtime fingerprint + finalized state/linkage checks; negative tests |
-| Zama SDK ten-value encryption probe | **Passed, read-only** | Public relayer produced 10 ciphertext handles plus input proof; CI run [44725183567](https://github.com/Iniwura/Gambit/actions/runs/44725183567); no signature or chain write |
-| Real two-wallet 3v3 proof | **Not complete** | Separate signatures, ten-input FHE flow, public KMS decryption, finalization and recovery still required |
-| Production-grade character art and audio | **Not complete** | Original procedural stand-ins only |
-| External playtest / security review | **Not complete** | Mandatory before submission-ready claim |
+| Deploy encrypted SquadGambit | [Deployment transaction](https://sepolia.etherscan.io/tx/0x058a2e70401e5cd685895c4ef1cc6ee86d9aeaa8ad93f30fb39832d58f3da00a) | Deployed v2 runtime, block 12174655 |
+| Defender seal | [`sealSquad` transaction](https://sepolia.etherscan.io/tx/0x65b1fde92ff899718f4febcdc1597cc9fb05c681b1e05996f306d2a3bae41e0b) | Squad #1, ten encrypted inputs, canonical receipt |
+| Challenger opens | [`openDuel(1)` transaction](https://sepolia.etherscan.io/tx/0x632c8eca45b6c4881112ee11516252d20a85cef4fa0507a981766e1c4b4548fe) | Duel #1, one-use invitation |
+| Challenger submits | [`submitDuel(1)` transaction](https://sepolia.etherscan.io/tx/0x00562be6f918e33a5781ce9c2ff9bcb4516d4c5e6d5a8cb25e485a17ddf2a8d4) · [independent check](https://github.com/Iniwura/Gambit/actions/runs/44911934524) | Ten encrypted challenger inputs, input proof, unique event |
+| Confidential resolution | [`resolveDuel(1)` transaction](https://sepolia.etherscan.io/tx/0xe91ba8ba3af4ce9666871752974b5b2168f4ccac4a6a8157df93d27fe79696ac) · [independent check](https://github.com/Iniwura/Gambit/actions/runs/44913900191) | Genuine `DuelReady` event, canonical encrypted result handle |
+| KMS proof | [Public decryption + exact `eth_call` preflight](https://github.com/Iniwura/Gambit/actions/runs/44913989691) | Aggregate **0:1**, proof accepted without signing |
+| Finalization | [`finalizeDuel(1)` transaction](https://sepolia.etherscan.io/tx/0x57a19f25a234eca7db206781a18cc965a09818a04b87a9f30d8d659562a9bdad) · [independent check](https://github.com/Iniwura/Gambit/actions/runs/44914775566) | Block **12182444**, stored packed score **1**, authentic `DuelFinalized` event, **Violet wins** |
+| Public browser recovery | [Chromium verification](https://github.com/Iniwura/Gambit/actions/runs/44915491170) | Real score and authenticated reactor view displayed with **no wallet, signing or broadcast** |
 
-The previous one-fighter deployment transaction is [visible on Etherscan](https://sepolia.etherscan.io/tx/0x0d58f80bf197e705c5ef702e4d9de0f4d822813c6b19e31c711123de2c12a95b). Its deployment alone does not prove a completed match.
+Receipt-based checks validate the exact signer, contract, method, event, runtime fingerprint, stored state, and consistency with the signed aggregate. This is evidence of **one completed real match**, not evidence of exhaustive multiplayer reliability or a third-party security audit.
 
-## Run locally
+### Cost evidence
 
-Requires Node.js 22 or later.
+The genuine challenger submission consumed **3,424,133 gas** (54,786,128 wei actual fee). Encrypted resolution consumed **3,059,375 gas** (45,890,625 wei). The finalization consumed **483,782 gas** (7,740,512 wei). These are actual Sepolia receipt values, not a guaranteed price quote. Zama HCU is distinct from EVM gas and has **not** been independently metered here. Full latency across the user journey has not been professionally benchmarked.
+
+## Engineering and reproduction
+
+- Web game: **Phaser 4**, **TypeScript** and **Vite**, deterministic gameplay rules in `src/squad.mjs` and a separate Phaser presentation in `src/main.ts`.
+- Confidential chain: `fhe/contracts/SquadGambit.sol`, the official **`@zama-fhe/sdk`**, the Solidity FHE integration, and a pinned Sepolia runtime manifest.
+- Wallet and recovery: `src/chain/squad-sepolia.ts`, `src/chain/squad-panel.ts`, `src/chain/squad-public-reader.ts`. No-wallet spectator verification fails closed on unknown or unfinished duels.
+- Tests: deterministic rules, adversarial contract/mock tests, exact gas-fee ceilings and duplicate-action protections, real browser desktop/mobile checks, and independent public RPC receipt probes.
+
+Requirements: Node.js 22+.
 
 ```bash
-npm install
+npm ci
 npm run typecheck
 npm test
+npm run build
 npm run dev
 ```
 
-The browser build also compiles both Solidity contracts and verifies that the versioned TypeScript squad ABI matches the actual compiled `SquadGambit` methods, argument types and events.
+FHE mocks and compile:
 
 ```bash
-npm run build
 cd fhe
-npm install
+npm ci
 npm run typecheck
+npm run compile
 npm test
 ```
 
-The Hardhat FHE suite uses **local mock encryption and decryption**. Green tests are reproducibility evidence, not real Sepolia HCU, latency or signature evidence. See [GitHub Actions](../../actions/workflows/validate.yml) for browser screenshots, deterministic tests and mock contract checks.
+Mock FHE tests are **not** substitutes for live decryption or authentic chain receipts. See [full engineering status](docs/STATUS.md), [production charter](docs/PRODUCTION_CHARTER.md) and [CI](https://github.com/Iniwura/Gambit/actions). The experimental legacy `SealedGambit` is a different one-fighter contract and must not be counted as proof of this 3v3 match.
 
-## Source map
+## What's not finished
 
-- `src/main.ts` — Phaser practice game and authenticated-result rendering
-- `src/squad.mjs` — deterministic local reference, role scoring, formation rules and replay verification
-- `src/tactical-report.mjs`, `src/practice-insight.mjs`, `src/practice-match-debrief.mjs` — practice-only tactical coaching and match review
-- `src/visual/` — original procedural environment and fighter silhouettes
-- `src/chain/sepolia.ts` — deployed **one-fighter** client
-- `src/chain/squad-sepolia.ts` — deployed but **not yet live-match-verified** 3v3 wallet client; exact Sepolia runtime hash required
-- `src/chain/squad-public-reader.ts` — wallet-free verification of finalized 3v3 score from exact deployed contract state
-- `fhe/contracts/` — Solidity FHE candidates, including `SealedGambit.sol` and `SquadGambit.sol`
-- `fhe/test/` — adversarial, parity and proof-replay mock tests
-- `fhe/scripts/seal-squad-sepolia.ts` — guarded real v2 ten-input seal; **executed once successfully for Squad #1 on 21 Nov**; see [live handoff](docs/LIVE_SQUAD_SEAL_HANDOFF.md)
+GAMBIT has one proven encrypted vertical slice, not a finished award-winning game. Remaining release criteria: an independent security/privacy and gameplay review; repeated full live matches with a new pair of users; first-time-player playtests and measurable session experience; approved original production sprites, sound and motion; accessibility and responsive visual QA; and the official pitch/submission materials.
 
-Detailed design and constraints: [GAME_DESIGN](docs/GAME_DESIGN.md), [FHE Squad Protocol](docs/CONFIDENTIAL_SQUAD_V2.md), [Visual QA](docs/VISUAL_ACCEPTANCE.md), and [Deployment Gate](docs/SQUAD_DEPLOYMENT_GATE.md).
+Zama's **Confidential Gaming** competition evaluates *fun and intuitive gameplay*, confidentiality design, fairness, real Sepolia functionality, demo quality and code quality. The [program page](https://www.zama.org/post/zama-developer-program-mainnet-season-5-confidential-gaming) and [submission form](https://forms.zama.org/zama-developer-program-mainnet-season-5-confidential-gaming) require a functioning deployed game, clear documentation, an X introduction, and a **three-minute pitch presented by a real person**. AI-generated pitch video or voice will not be considered. **Applications close 14 December 2026 at 23:59 AOE.**
 
-## What's next
-
-1. The first real ten-input `sealSquad` succeeded and was independently reverified using public Sepolia RPC. **Next: the invited second wallet must separately authorize `openDuel(1)`.** The [live verification checklist](https://github.com/Iniwura/Gambit/issues/8) tracks the rest of the match. No further transaction is authorized by the spent one-seal approval.
-2. Proceed only with one-shot, owner-controlled, **fee-capped testnet transaction flags**. Verify a real two-wallet ten-value encrypted duel, signed aggregate KMS result and recovery. Do not rely on deployment approval or reuse a transaction flag indiscriminately.
-3. Record actual Sepolia gas, HCU if observable, relayer/KMS latency, canonical receipts and user-facing verified results.
-4. Replace provisional fighter graphics with final original sprites and animations, perform beginner playtests, and conduct an independent privacy / gameplay audit.
-
-**Design rule:** no fake signatures, no simulated chain receipts, no unverified onchain victories.
+**Project rule:** no invented onchain results, no simulated user transaction proof, no hidden tactical disclosure, and no unsupported claim of production readiness.
