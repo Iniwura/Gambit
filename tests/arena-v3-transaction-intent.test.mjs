@@ -130,8 +130,11 @@ test('encrypted squad needs genuine invited player, no prior seal, exact ciphert
   assert.equal(intent.matchId,1);
   assert.equal(intent.round,1);
   assert.equal(intent.chainId,11155111);
+  assert.match(intent.summary,/WITHOUT activating GAMBIT/);
+  assert.match(intent.consentText,/actor 0x1111111111111111111111111111111111111111/);
+  assert.match(intent.consentText,/0\.004 ETH/);
   assert.match(intent.consentText,/EXPLICIT ONE-TIME APPROVAL REQUIRED/);
-  assert.match(intent.consentText,/maximum quoted EIP-1559 fee/);
+  assert.match(intent.consentText,/maximum consented EIP-1559 budget/);
   assert.equal('signed' in intent,false);
   const proposal=await release(p,intent,payload);
   assert.equal(proposal.signed,false);
@@ -170,6 +173,10 @@ test('cannot bypass explicit authorization or mutate bytes/proof after approval'
     ...payload,encryptedHandles:mutated
   }),/ciphertext, KMS proof or calldata changed after approval/);
   await assert.rejects(release(p,{...intent,actor:B},payload),
+    /intent mutated after staging/);
+  await assert.rejects(release(p,{...intent,summary:'APPROVED WITHOUT WARNING'},payload),
+    /intent mutated after staging/);
+  await assert.rejects(release(p,{...intent,consentText:'FREE TRANSACTION'},payload),
     /intent mutated after staging/);
   await assert.rejects(release(p,{...intent,fee:{
     ...intent.fee,maxFeePerGasWei:'9999999999'
@@ -234,6 +241,9 @@ test('reject absent actor, duplicate seal, spent GAMBIT, wrong moment or extra p
     ...payload,useGambit:true,encryptedHandles:payload.encryptedHandles,
     inputProof:payload.inputProof
   },{...fee(),gasLimit:'500'}),/gas limit bounds/);
+  const gambit=await stage(fx,'SEAL_ROUND',A,{...payload,useGambit:true});
+  assert.match(gambit.intent.summary,/WITH once-only GAMBIT/);
+  assert.match(gambit.intent.summary,/sector encrypted/);
   fx.rows[0].challengerSealed=true;
   await assert.rejects(stage(fx,'SEAL_ROUND',A,payload),
     /participant already sealed/);
@@ -269,6 +279,7 @@ test('signed KMS bytes are bound to exactly the current result handle and callda
   const payload={packedScore:40,kmsDecryptionProof:'0x1234',resultHandle:HAND};
   const {p,intent}=await stage(fx,'FINALIZE_ROUND',A,payload);
   assert.equal(JSON.stringify(intent).includes('0x1234'),false);
+  assert.match(intent.summary,/proposed public score 5 : 0/);
   const tx=await release(p,intent,payload);
   const parsed=WRITE.parseTransaction({data:tx.data});
   assert.equal(parsed.name,'finalizeRound');
