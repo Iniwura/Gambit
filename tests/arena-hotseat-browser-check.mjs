@@ -31,6 +31,50 @@ async function play(viewport,name){
     assert.match(await page.locator('#gambit-arena-hotseat-boundary').textContent(),
       /NOT encrypted/);
     assert.equal(await page.locator('#gambit-arena-hotseat-history li').count(),0);
+    // A selected, previously authorized fixture wallet can be inspected,
+    // but no approved v3 deployment exists. The browser must not sign,
+    // request accounts, call the relayer, or unlock invitation recovery.
+    await page.evaluate(()=>{
+      const listeners=new Map(),calls=[];
+      let chain='0xaa36a7',account='0x'+'1'.repeat(40);
+      const wallet={
+        async request({method}){
+          calls.push(method);
+          if(method==='eth_chainId')return chain;
+          if(method==='eth_accounts')return [account];
+          throw Error('Unexpected wallet method: '+method);
+        },
+        on(event,fn){if(!listeners.has(event))listeners.set(event,new Set());listeners.get(event).add(fn);},
+        removeListener(event,fn){listeners.get(event)?.delete(fn);}
+      };
+      Object.defineProperty(window,'ethereum',{value:wallet,configurable:true});
+      window.__arenaLobbyFixture={calls,changeAccount(){
+        account='0x'+'2'.repeat(40);
+        for(const fn of listeners.get('accountsChanged')??[])fn([account]);
+      },changeChain(){chain='0x1';for(const fn of listeners.get('chainChanged')??[])fn(chain);}};
+    });
+    const lobby=page.locator('#gambit-arena-online-lobby');
+    await lobby.locator('summary').click();
+    await page.locator('#gambit-arena-online-wallet option').nth(1).waitFor();
+    await page.locator('#gambit-arena-online-wallet').selectOption({index:1});
+    await page.locator('#gambit-arena-online-inspect').click();
+    await page.getByText('Sepolia account: 0x'+'1'.repeat(40)+' · No approved v3 deployment. Live actions locked.',{exact:true}).waitFor();
+    assert.equal(await page.locator('#gambit-arena-online-recover').isDisabled(),true);
+    await page.evaluate(()=>window.__arenaLobbyFixture.changeAccount());
+    assert.match(await page.locator('#gambit-arena-online-status').textContent(),/changed/);
+    await page.locator('#gambit-arena-online-inspect').click();
+    await page.getByText('Sepolia account: 0x'+'2'.repeat(40)+' · No approved v3 deployment. Live actions locked.',{exact:true}).waitFor();
+    await page.evaluate(()=>window.__arenaLobbyFixture.changeChain());
+    await page.locator('#gambit-arena-online-inspect').click();
+    await page.getByText('No authorized Sepolia account.',{exact:false}).waitFor();
+    assert.deepEqual(await page.evaluate(()=>window.__arenaLobbyFixture.calls),
+      ['eth_chainId','eth_accounts','eth_chainId','eth_accounts','eth_chainId']);
+    await lobby.locator('summary').click();
+    assert.equal(await lobby.getAttribute('open'),null);
+    console.log('GAMBIT_ARENA_V3_LOBBY_BROWSER '+JSON.stringify({
+      viewport:name,selectedWalletRead:true,accountChangeInvalidated:true,
+      wrongChainRejected:true,inviteDisabledWithoutPin:true,accountPrompts:0,signatures:0,writes:0
+    }));
     await page.locator('#gambit-arena-hotseat-start').click();
 
     let lastA=0,lastB=0;
