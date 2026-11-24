@@ -5,8 +5,16 @@ import {formatEther,keccak256,getAddress,toQuantity} from 'ethers';
  * Simulate the exact constructor at one canonical block on independent
  * endpoints; a successful simulation is NOT deployment or live FHE proof.
  */
-const CAP=16_777_216n; // Sepolia EIP-7825
-const TEST_GAS=6_000_000n;
+// Glamsterdam is active on Sepolia. EIP-8037 separates execution gas
+// (EIP-7825 cap) from state gas (included in total tx.gas).
+// See https://eips.ethereum.org/EIPS/eip-8037 and
+// https://blog.ethereum.org/2026/09/17/glamsterdam-testnet-announcement
+const EXECUTION_CAP=16_777_216n;
+const TOTAL_PROTOCOL_CAP=4_294_967_295n;
+// Explicit project ceiling for this read-only simulation, NOT permission
+// to spend. Based on the previous 23.64M combined estimate plus margin.
+const TEST_GAS=32_000_000n;
+const STATE_GAS_PER_CODE_BYTE=1_530n;
 const ENDPOINTS=[
   {name:'PublicNode',url:'https://ethereum-sepolia-rpc.publicnode.com'},
   {name:'Tenderly',url:'https://gateway.tenderly.co/public/sepolia'},
@@ -74,7 +82,7 @@ async function main(){
     // endpoint supports contract-creation eth_call at the chosen block.
     const control={from,data:'0x6001600c60003960016000f300',value:'0x0',gas:'0x100000'};
     const [estimate,sim,baseline]=await Promise.all([
-      rpc(url,'eth_estimateGas',[{...tx,gas:toQuantity(CAP)},tag]),
+      rpc(url,'eth_estimateGas',[tx,tag]),
       rpc(url,'eth_call',[tx,tag]),
       rpc(url,'eth_call',[control,tag])
     ]);
@@ -105,7 +113,7 @@ async function main(){
   // are patched by the constructor, treat mismatch as unresolved and
   // investigate build-info references rather than silently stripping bytes.
   const bounded=canonical&&trusted.length>=2&&agrees&&buffered!==null&&
-    buffered<=TEST_GAS&&buffered<=CAP&&buffered*100n<reference.gasLimit*90n&&
+    buffered<=TEST_GAS&&buffered<=TOTAL_PROTOCOL_CAP&&buffered*100n<reference.gasLimit*90n&&
     maxFee!==null&&priority!==null&&maxFee>0n&&priority>=0n&&priority<=maxFee;
   const cap=bounded&&buffered!==null&&maxFee!==null?buffered*maxFee:null;
   console.log('GAMBIT_ARENA_V3_PUBLIC_PREFLIGHT '+JSON.stringify({
@@ -116,7 +124,11 @@ async function main(){
     compiledRuntimeTemplateBytes:(artifact.deployedBytecode.length-2)/2,
     referenceBlock:reference.number,referenceBlockHash:expectedHash,
     referenceBlockStillCanonical:canonical,referenceBlockGasLimit:reference.gasLimit.toString(),
-    eip7825TransactionGasCap:CAP.toString(),simulationGasLimit:TEST_GAS.toString(),
+    gasModel:'Glamsterdam EIP-8037 execution + state gas',
+    eip7825ExecutionGasCap:EXECUTION_CAP.toString(),
+    eip8037TotalTransactionGasCap:TOTAL_PROTOCOL_CAP.toString(),
+    codeDepositStateGasOnly:(BigInt((artifact.deployedBytecode.length-2)/2)*STATE_GAS_PER_CODE_BYTE).toString(),
+    simulationGasLimit:TEST_GAS.toString(),
     endpointChecks:checks,independentExactRuntimeSimulations:trusted.length,
     estimatesAgreeWithin2x:agrees,boundedDeploymentEvmQuote:bounded,
     bufferedGasLimit:bounded?buffered?.toString():null,
@@ -124,7 +136,7 @@ async function main(){
     maxPriorityFeePerGasWei:bounded?priority?.toString():null,
     maximumFeeWei:cap?.toString()??null,
     maximumFeeSepoliaETH:cap===null?null:formatEther(cap),
-    caveat:'Constructor eth_call is simulation, not deployed runtime, receipt, HCU or transaction inclusion evidence.',
+    caveat:'Constructor eth_call is simulation, not deployed runtime, receipt, HCU, separate execution-gas measurement or transaction inclusion evidence.',
     liveHcuMeasured:false,liveDepthMeasured:false,
     transactionSent:false,signatureRequested:false,deployAuthorized:false
   }));
