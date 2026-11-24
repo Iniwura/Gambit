@@ -1,5 +1,5 @@
 /**
- * Arena v3 single-action wallet boundary. NOT mounted in the game until a
+ * Arena v3 single-action wallet boundary. Mounted only by the lobby after the
  * separately reviewed v3 deployment is pinned. No automatic retries,
  * account request, chain switch, deployment or multi-transaction sequence.
  *

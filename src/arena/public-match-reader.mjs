@@ -1,8 +1,8 @@
 /**
  * GAMBIT Arena v3 — READ ONLY research contract public-state reader.
  *
- * No v3 deployment is approved or supplied by default. Caller MUST supply
- * an independently approved immutable deployment manifest. This module
+ * No deployment is supplied by default. Caller MUST supply the independently
+ * approved immutable deployment manifest. This module
  * validates public RPC facts against THAT manifest, but cannot establish
  * that an arbitrary caller-provided manifest is trustworthy.
  *

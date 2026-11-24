@@ -49,3 +49,12 @@ The optional **ARENA · LOCAL HOTSEAT** launcher is available on desktop and ins
 - Full competitive BLACKSITE, persistent Commander Profile and original visual/audio production remain outside this milestone.
 
 **Next:** implement a fail-closed **v3 public match read/recovery adapter and explicit wallet-action intent model** against the exact compiled research ABI (no arbitrary RPC runtime claims), then verify local Hardhat FHE execution end to end. Any deployment or transaction requires new explicit authorization. Graphics remain frozen.
+
+## Live integration update — 24 November 2026
+
+The document above remains the acceptance contract for the local cleartext reference. The separate online path is now mounted in the same responsive briefing and is pinned to the independently verified ArenaV3Research Sepolia deployment recorded in [`docs/BUILD_LOG.md`](BUILD_LOG.md).
+
+- Match creation is reviewed before the wallet opens; the mined receipt is the only source of the match ID. Invitation tokens contain only the canonical creation transaction hash and can be shared or recovered by either invited seat after three confirmations.
+- Both seats use the existing Zama SDK preparation path for encrypted eleven-value tactical orders. Resolution, KMS proof preparation, finalization, public score refresh and five-round completion all remain round-bound and contract-authenticated.
+- Every write is an explicit, one-action wallet review. Pending hashes are reconciled before another review; account/network changes, stale rounds, reorgs, failed RPC reads and uncertain wallet responses fail closed. No automatic retry or secret plan/proof persistence is allowed.
+- Browser readiness passes at desktop, mobile and both tablet widths with zero wallet writes. A complete live five-round match is intentionally not claimed here because it requires separate user-authorized gameplay transactions and an available opponent.

@@ -31,9 +31,9 @@ async function play(viewport,name){
     assert.match(await page.locator('#gambit-arena-hotseat-boundary').textContent(),
       /NOT encrypted/);
     assert.equal(await page.locator('#gambit-arena-hotseat-history li').count(),0);
-    // A selected, previously authorized fixture wallet can be inspected,
-    // but no approved v3 deployment exists. The browser must not sign,
-    // request accounts, call the relayer, or unlock invitation recovery.
+    // A selected, previously authorized fixture wallet can inspect the pinned
+    // live deployment. The browser must not sign, request accounts, call the
+    // relayer, or send a transaction during this readiness check.
     await page.evaluate(()=>{
       const listeners=new Map(),calls=[];
       let chain='0xaa36a7',account='0x'+'1'.repeat(40);
@@ -58,12 +58,14 @@ async function play(viewport,name){
     await page.locator('#gambit-arena-online-wallet option').nth(1).waitFor({state:'attached'});
     await page.locator('#gambit-arena-online-wallet').selectOption({index:1});
     await page.locator('#gambit-arena-online-inspect').click();
-    await page.getByText('Sepolia account: 0x'+'1'.repeat(40)+' · No approved v3 deployment. Live actions locked.',{exact:true}).waitFor();
-    assert.equal(await page.locator('#gambit-arena-online-recover').isDisabled(),true);
+    await page.getByText(/Sepolia account: 0x1111111111111111111111111111111111111111.*Verified ArenaV3Research is pinned/).waitFor();
+    assert.equal(await page.locator('#gambit-arena-online-recover').isDisabled(),false);
+    assert.equal(await page.locator('#gambit-arena-online-create-stage').isDisabled(),false);
+    assert.match(await page.locator('#gambit-arena-online-deployment').textContent(),/Pinned ArenaV3Research.*Sepolia/);
     await page.evaluate(()=>window.__arenaLobbyFixture.changeAccount());
     assert.match(await page.locator('#gambit-arena-online-status').textContent(),/changed/);
     await page.locator('#gambit-arena-online-inspect').click();
-    await page.getByText('Sepolia account: 0x'+'2'.repeat(40)+' · No approved v3 deployment. Live actions locked.',{exact:true}).waitFor();
+    await page.getByText(/Sepolia account: 0x2222222222222222222222222222222222222222.*Verified ArenaV3Research is pinned/).waitFor();
     await page.evaluate(()=>window.__arenaLobbyFixture.changeChain());
     await page.locator('#gambit-arena-online-inspect').click();
     await page.getByText('No authorized Sepolia account.',{exact:false}).waitFor();
@@ -73,7 +75,8 @@ async function play(viewport,name){
     assert.equal(await lobby.getAttribute('open'),null);
     console.log('GAMBIT_ARENA_V3_LOBBY_BROWSER '+JSON.stringify({
       viewport:name,selectedWalletRead:true,accountChangeInvalidated:true,
-      wrongChainRejected:true,inviteDisabledWithoutPin:true,accountPrompts:0,signatures:0,writes:0
+      wrongChainRejected:true,inviteRecoveryEnabledWithPinnedDeployment:true,
+      accountPrompts:0,signatures:0,writes:0
     }));
     await page.locator('#gambit-arena-hotseat-start').click();
 
@@ -138,8 +141,7 @@ async function play(viewport,name){
         new RegExp('ROUND '+round+' .*Match '+cumulativeA+' : '+cumulativeB));
       lastA=cumulativeA;lastB=cumulativeB;
       if(round<5)await page.locator('#gambit-arena-hotseat-next').click();
-    }
-
+}
     assert.match(await page.locator('#gambit-arena-hotseat-final').textContent(),
       new RegExp('LOCAL (DRAW|CHALLENGER WON|DEFENDER WON).*'+lastA+' : '+lastB));
     const fullText=await page.locator('#gambit-arena-hotseat-complete').textContent();

@@ -22,6 +22,12 @@ const FEE_LIMIT=1_000_000_000n; // emergency upper bound; explicit user budget m
 const AUTH='YES_ONE_ARENA_V3_SEPOLIA_DEPLOYMENT';
 const JOURNAL=resolve(process.cwd(),'.arena-v3-sepolia-deployment-attempt.json');
 const MANIFEST=resolve(process.cwd(),'deployments/sepolia-arena-v3.json');
+function approvedDecimal(name:string,allowZero=false){
+  const value=process.env[name];
+  const pattern=allowZero?/^[0-9]+$/:/^[1-9][0-9]*$/;
+  if(!value||!pattern.test(value))throw Error(name+' required');
+  return BigInt(value);
+}
 
 async function main(){
   const p=ethers.provider;
@@ -55,11 +61,23 @@ async function main(){
   const approved=process.env.GAMBIT_MAX_ARENA_V3_DEPLOY_FEE_WEI;
   if(!approved||!/^[1-9][0-9]*$/.test(approved))throw Error('Exact user fee budget required');
   const budget=BigInt(approved);
+  const approvedNonce=approvedDecimal('GAMBIT_EXPECTED_ARENA_V3_DEPLOY_NONCE');
+  const approvedMaxFee=approvedDecimal('GAMBIT_EXPECTED_ARENA_V3_DEPLOY_MAX_FEE_PER_GAS_WEI');
+  const approvedPriority=approvedDecimal('GAMBIT_EXPECTED_ARENA_V3_DEPLOY_PRIORITY_FEE_PER_GAS_WEI',true);
   if(budget>FEE_LIMIT||maximum>budget||maximum>balance)throw Error('Fee/balance authorization exceeded');
+  if(maxFee!==approvedMaxFee||priority!==approvedPriority)
+    throw Error('Approved fee quote changed');
   const expected=process.env.GAMBIT_EXPECTED_ARENA_V3_DEPLOYER;
   if(!expected||getAddress(expected)!==FROM)throw Error('Exact approved deployer required');
   const [signer]=await ethers.getSigners();
   if(!signer||getAddress(await signer.getAddress())!==FROM)throw Error('Approved local signer unavailable');
+  if(BigInt(nonce)!==approvedNonce)throw Error('Approved nonce changed');
+  const freshPending=await p.getTransactionCount(FROM,'pending');
+  const freshLatest=await p.getTransactionCount(FROM,'latest');
+  const freshFees=await p.getFeeData();
+  if(BigInt(freshPending)!==approvedNonce||BigInt(freshLatest)!==approvedNonce||
+    freshFees.maxFeePerGas!==approvedMaxFee||freshFees.maxPriorityFeePerGas!==approvedPriority)
+    throw Error('Approved account or fee state changed before dispatch');
   const predicted=getCreateAddress({from:FROM,nonce});
   if((await p.getTransactionCount(FROM,'pending'))!==nonce||
     (await p.getTransactionCount(FROM,'latest'))!==nonce||

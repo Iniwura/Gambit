@@ -253,3 +253,24 @@ The in-process replay of all eight new test callbacks passed. No wallet, RPC, en
 
 - Built local deterministic three-role practice, the early Phaser presentation, encrypted `SquadGambit` v2, wallet SDK integration and a public witness path. Recorded real two-wallet testnet evidence in [STATUS.md](STATUS.md).
 - Prior technical notes stating that `SquadGambit` is undeployed are superseded by verified 21 November receipts. Do not call the old solo `SealedGambit` a full 3v3 match.
+
+## 2026-11-24 — Arena v3 deployment verified and live lobby integration
+
+**Branch:** `build/verified-first-slice`; draft [PR #5](https://github.com/Iniwura/Gambit/pull/5). Graphics remain frozen while the functional four-pillar roadmap advances.
+
+### Deployment evidence
+
+- ArenaV3Research is pinned at `0xBF56087EFF029594beeFf1B57B47b1419bCDF16b` on Sepolia (chain `11155111`). Creation hash is `0x9919bf4aa879e48f2f8116e516814402d117fe5c62a1fdd051aa66559671f727`; runtime hash is `0xf4f31fff6b4ec7f90e573bba95362a49d43ffeb12d971f515cef6301afbde8a9`.
+- Deployment transaction `0x7856d4031860e919329bb00b678f2c107ac093ba8b1f7dc9f6cbcafd08696be5` mined in block `12201819`, receipt status `1`, gas used `19,544,120`, effective gas price `18 wei`, actual fee `351,794,160 wei`. The receipt, transaction envelope, contract address and runtime were independently checked through PublicNode, Tenderly and ethPandaOps at the verification snapshot; all three agreed.
+- The local journal and public manifest are preserved in [`fhe/.arena-v3-sepolia-deployment-attempt.json`](../fhe/.arena-v3-sepolia-deployment-attempt.json) and [`fhe/deployments/sepolia-arena-v3.json`](../fhe/deployments/sepolia-arena-v3.json). The reusable deployment helper now requires the approved nonce and EIP-1559 quote again immediately before its one dispatch path.
+
+### Functional online integration
+
+- [`src/arena/approved-deployment.mjs`](../src/arena/approved-deployment.mjs) pins the independently verified address and runtime. [`src/arena/online-lobby.ts`](../src/arena/online-lobby.ts) now mounts the live path in the existing responsive Arena briefing without changing the contract or local hotseat rules.
+- The lobby supports match-creation review, receipt-derived invitation tokens, copy/share, three-confirmation recovery, public match refresh, encrypted eleven-value tactical preparation for both seats, KMS result-handle/proof preparation, resolve/finalize/expiry review, score history and five-round completion state.
+- Every write follows the existing unsigned-intent and wallet boundary: exact chain/address/round/state/fee review, one explicit wallet submission, no automatic retry, uncertain-hash reconciliation, account/network invalidation, stale-round refusal, network-error messaging and session-storage recovery of public pending hashes only. Ciphertexts, plans and proofs are not persisted.
+- Desktop `1280×850`, mobile `390×844`, and tablet `820/710px` Chromium checks pass with zero page errors. The readiness fixture confirms pinned deployment availability, account/network invalidation and zero wallet writes; it does not claim a completed live match. A real gameplay transaction still requires a separate explicit authorization at the wallet review checkpoint.
+
+### Scope boundary
+
+The deployed contract is reused unchanged. No redeployment, gameplay transaction or graphics work was added in this slice. Live opponent coordination, FHE relayer availability and a complete five-round public match remain operational checks that can only be performed with separately authorized gameplay transactions.

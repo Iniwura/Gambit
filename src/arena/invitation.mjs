@@ -1,7 +1,7 @@
 /**
  * Arena v3 invitation lifecycle — unsigned creation review and canonical
- * receipt recovery. Research only: no approved v3 deployment, wallet, signer,
- * transaction broadcast, URL-derived deployment pin, or automatic retry.
+ * receipt recovery for the app-pinned deployment. This module still has no
+ * signer, transaction broadcast, URL-derived deployment pin or automatic retry.
  */
 import {Interface,getAddress,keccak256,toUtf8Bytes,formatEther} from 'ethers';
 import {normalizeArenaV3FeeQuote} from './transaction-intent.mjs';
