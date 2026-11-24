@@ -21,16 +21,17 @@ async function encrypt(c:any,signer:any,plans:Plan[],formation=0,stakeSector=0){
 }
 async function submit(c:any,signer:any,plans:Plan[],formation=0,stakeSector=0,useGambit=false){
   const payload=await encrypt(c,signer,plans,formation,stakeSector);
-  return c.connect(signer).sealRound(1n,payload.handles,payload.inputProof,useGambit);
+  const round=(await c.matchStatus(1n)).currentRound;
+  return c.connect(signer).sealRound(1n,round,payload.handles,payload.inputProof,useGambit);
 }
 async function finalize(c:any,expectedPacked:number){
-  await expect(c.resolveRound(1n)).to.emit(c,'RoundReady');
   const round=(await c.matchStatus(1n)).currentRound;
+  await expect(c.resolveRound(1n,round)).to.emit(c,'RoundReady');
   const handle=await c.publicResultHandle(1n,round);
   const decrypted=await fhevm.publicDecrypt([handle]);
   const packed=Number(decrypted.clearValues[handle]);
   expect(packed).to.equal(expectedPacked);
-  await expect(c.finalizeRound(1n,packed,decrypted.decryptionProof)).to.emit(c,'RoundFinalized');
+  await expect(c.finalizeRound(1n,round,packed,decrypted.decryptionProof)).to.emit(c,'RoundFinalized');
   return packed;
 }
 describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',function(){
@@ -59,9 +60,9 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
       await expect(submit(c,challenger,w)).to.emit(c,'RoundSealed');
       await expect(submit(c,challenger,w)).to.be.revertedWith('Already sealed');
       await expect(submit(c,outsider,w)).to.be.revertedWith('Not participant');
-      await expect(c.resolveRound(1n)).to.be.revertedWith('Both orders required');
+      await expect(c.resolveRound(1n,round)).to.be.revertedWith('Both orders required');
       await expect(submit(c,defender,l)).to.emit(c,'RoundSealed');
-      await expect(c.connect(outsider).resolveRound(1n)).to.emit(c,'RoundReady');
+      await expect(c.connect(outsider).resolveRound(1n,round)).to.emit(c,'RoundReady');
       const h=await c.publicResultHandle(1n,round);
       const receipt=await fhevm.publicDecrypt([h]);
       const packed=Number(receipt.clearValues[h]);
@@ -69,10 +70,10 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
       if(priorProof!==null){
         // Same PUBLIC score as last round, but a DIFFERENT encrypted handle.
         // A KMS signature from round n-1 cannot finalize round n.
-        await expect(c.finalizeRound(1n,packed,priorProof)).to.be.reverted;
+        await expect(c.finalizeRound(1n,round,packed,priorProof)).to.be.reverted;
       }
-      await expect(c.finalizeRound(1n,packed+1,receipt.decryptionProof)).to.be.reverted;
-      await expect(c.connect(outsider).finalizeRound(1n,packed,receipt.decryptionProof))
+      await expect(c.finalizeRound(1n,round,packed+1,receipt.decryptionProof)).to.be.reverted;
+      await expect(c.connect(outsider).finalizeRound(1n,round,packed,receipt.decryptionProof))
         .to.emit(c,'RoundFinalized');
       const s=await c.matchStatus(1n);
       expect(s.cumulativeChallenger).to.equal(BigInt(5*round));
@@ -87,7 +88,7 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
     expect(final.abandoned).to.equal(false);
     expect(final.cumulativeChallenger).to.equal(25n);
     expect(final.cumulativeDefender).to.equal(0n);
-    await expect(c.resolveRound(1n)).to.be.revertedWith('Match closed');
+    await expect(c.resolveRound(1n,1)).to.be.revertedWith('Match closed');
     await expect(submit(c,challenger,w)).to.be.revertedWith('Match closed');
     const names=c.interface.fragments.map((f:any)=>f.name).filter(Boolean);
     for(const leaked of ['readPlans','getFormation','getStakeSector','getTactic']){
@@ -141,7 +142,7 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
         const expected=oracle(fa,fb,sa,sb);
         await (await submit(c,challenger,left,fa,sa,true)).wait();
         await (await submit(c,defender,right,fb,sb,true)).wait();
-        await (await c.resolveRound(1n)).wait();
+        await (await c.resolveRound(1n,1)).wait();
         const h=await c.publicResultHandle(1n,1);
         const proof=await fhevm.publicDecrypt([h]);
         const actual=Number(proof.clearValues[h]);
@@ -180,14 +181,14 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
     await network.provider.send('evm_increaseTime',[24*3600+2]);
     await network.provider.send('evm_mine');
     await expect(submit(c,defender,B)).to.be.revertedWith('Entry expired');
-    await expect(c.expireIncomplete(1n)).to.emit(c,'MatchAbandonedUnscored').withArgs(1n,1);
+    await expect(c.expireIncomplete(1n,1)).to.emit(c,'MatchAbandonedUnscored').withArgs(1n,1);
     const s=await c.matchStatus(1n);
     expect(s.abandoned).to.equal(true);
     expect(s.complete).to.equal(false);
     expect(s.cumulativeChallenger).to.equal(0n);
     expect(s.cumulativeDefender).to.equal(0n);
-    await expect(c.expireIncomplete(1n)).to.be.revertedWith('Match closed');
-    await expect(c.resolveRound(1n)).to.be.revertedWith('Match closed');
+    await expect(c.expireIncomplete(1n,1)).to.be.revertedWith('Match closed');
+    await expect(c.resolveRound(1n,1)).to.be.revertedWith('Match closed');
   });
 
   it('two accepted encrypted seals remain resolvable after deadline',async function(){
@@ -198,7 +199,7 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
     await (await submit(c,defender,l)).wait();
     await network.provider.send('evm_increaseTime',[24*3600+2]);
     await network.provider.send('evm_mine');
-    await expect(c.expireIncomplete(1n)).to.be.revertedWith('Both sealed on time');
+    await expect(c.expireIncomplete(1n,1)).to.be.revertedWith('Both sealed on time');
     await finalize(c,40);
     expect((await c.matchStatus(1n)).cumulativeChallenger).to.equal(5n);
   });
@@ -212,12 +213,12 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
     const created=await c.deploymentTransaction()?.wait();
     const a=await (await submit(c,challenger,w)).wait();
     const b=await (await submit(c,defender,l)).wait();
-    const resolved=await (await c.resolveRound(1n)).wait();
+    const resolved=await (await c.resolveRound(1n,1)).wait();
     const handle=await c.publicResultHandle(1n,1);
     const decrypted=await fhevm.publicDecrypt([handle]);
     const packed=Number(decrypted.clearValues[handle]);
     expect(packed).to.equal(40);
-    const finalized=await (await c.finalizeRound(1n,packed,decrypted.decryptionProof)).wait();
+    const finalized=await (await c.finalizeRound(1n,1,packed,decrypted.decryptionProof)).wait();
     expect(code).to.match(/^0x[0-9a-f]+$/i);
     expect(created?.gasUsed).to.be.greaterThan(0n);
     for(const tx of [a,b,resolved,finalized])expect(tx?.gasUsed).to.be.greaterThan(0n);
@@ -237,6 +238,47 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
     }));
   });
 
+
+  it('rejects every stale or future round write at execution, even after a new round opens',async function(){
+    const {c,challenger,defender,outsider}=await fixture();
+    const w=[always(0),always(0),always(0)],l=[always(2),always(2),always(2)];
+    const original=await encrypt(c,challenger,w);
+    await expect(c.connect(challenger).sealRound(1n,2,original.handles,original.inputProof,false))
+      .to.be.revertedWith('Unexpected round');
+    await expect(c.connect(challenger).sealRound(1n,1,original.handles,original.inputProof,false))
+      .to.emit(c,'RoundSealed');
+    await (await submit(c,defender,l)).wait();
+    await (await c.resolveRound(1n,1)).wait();
+    const handle=await c.publicResultHandle(1n,1);
+    const proof=await fhevm.publicDecrypt([handle]);
+    const score=Number(proof.clearValues[handle]);
+    await (await c.finalizeRound(1n,1,score,proof.decryptionProof)).wait();
+    expect((await c.matchStatus(1n)).currentRound).to.equal(2n);
+    await expect(c.connect(challenger).sealRound(1n,1,original.handles,original.inputProof,true))
+      .to.be.revertedWith('Unexpected round');
+    await expect(c.connect(outsider).resolveRound(1n,1)).to.be.revertedWith('Unexpected round');
+    await expect(c.finalizeRound(1n,1,score,proof.decryptionProof)).to.be.revertedWith('Unexpected round');
+    await expect(c.expireIncomplete(1n,1)).to.be.revertedWith('Unexpected round');
+    const round2=await c.roundStatus(1n,2);
+    expect(round2.challengerSealed).to.equal(false);
+    expect(round2.defenderSealed).to.equal(false);
+    expect(round2.resolved).to.equal(false);
+    expect((await c.matchStatus(1n)).challengerGambitSpent).to.equal(false);
+    await (await submit(c,challenger,w)).wait();
+    await (await submit(c,defender,l)).wait();
+    await expect(c.resolveRound(1n,1)).to.be.revertedWith('Unexpected round');
+    await (await c.resolveRound(1n,2)).wait();
+    await expect(c.finalizeRound(1n,1,score,proof.decryptionProof)).to.be.revertedWith('Unexpected round');
+    const nextHandle=await c.publicResultHandle(1n,2);
+    const nextProof=await fhevm.publicDecrypt([nextHandle]);
+    await (await c.finalizeRound(1n,2,Number(nextProof.clearValues[nextHandle]),nextProof.decryptionProof)).wait();
+    expect((await c.matchStatus(1n)).currentRound).to.equal(3n);
+    console.log('GAMBIT_ARENA_V3_ROUND_BINDING '+JSON.stringify({
+      network:'Hardhat FHE mock',staleMethodsRejected:4,futureSealRejected:true,
+      untouchedNextRound:true,legitimateNextRoundFinalized:true,liveDeployment:false
+    }));
+  });
+
   it('cannot create self-match, duplicate a sealed round, forge proof or double-resolve',async function(){
     const {c,challenger,defender}=await fixture();
     await expect(c.connect(challenger).createMatch(await challenger.getAddress()))
@@ -247,16 +289,16 @@ describe('ArenaV3Research — five-round encrypted FHE lifecycle (MOCK ONLY)',fu
     await expect(c.roundStatus(1n,2)).to.be.revertedWith('Round not opened');
     await (await submit(c,challenger,A,0,1,true)).wait();
     await (await submit(c,defender,B,0,2,true)).wait();
-    await expect(c.expireIncomplete(1n)).to.be.revertedWith('Entry still open');
-    await expect(c.resolveRound(1n)).to.emit(c,'RoundReady');
-    await expect(c.resolveRound(1n)).to.be.revertedWith('Already resolved');
+    await expect(c.expireIncomplete(1n,1)).to.be.revertedWith('Entry still open');
+    await expect(c.resolveRound(1n,1)).to.emit(c,'RoundReady');
+    await expect(c.resolveRound(1n,1)).to.be.revertedWith('Already resolved');
     const h=await c.publicResultHandle(1n,1);
     const proof=await fhevm.publicDecrypt([h]);
     const packed=Number(proof.clearValues[h]);
-    await expect(c.finalizeRound(1n,packed,'0x0123')).to.be.reverted;
-    await expect(c.finalizeRound(1n,packed+1,proof.decryptionProof)).to.be.reverted;
-    await expect(c.finalizeRound(1n,packed,proof.decryptionProof)).to.emit(c,'RoundFinalized');
-    await expect(c.finalizeRound(1n,packed,proof.decryptionProof)).to.be.revertedWith('Not finalizable');
+    await expect(c.finalizeRound(1n,1,packed,'0x0123')).to.be.reverted;
+    await expect(c.finalizeRound(1n,1,packed+1,proof.decryptionProof)).to.be.reverted;
+    await expect(c.finalizeRound(1n,1,packed,proof.decryptionProof)).to.emit(c,'RoundFinalized');
+    await expect(c.finalizeRound(1n,1,packed,proof.decryptionProof)).to.be.revertedWith('Unexpected round');
     expect((await c.matchStatus(1n)).challengerGambitSpent).to.equal(true);
     expect((await c.matchStatus(1n)).defenderGambitSpent).to.equal(true);
   });
