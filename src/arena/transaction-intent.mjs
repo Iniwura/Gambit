@@ -10,7 +10,7 @@
  * The real smart contract still enforces all final transaction conditions.
  * A pre-sign fresh read cannot prevent state races before transaction mining.
  */
-import {Interface,getAddress,keccak256,toUtf8Bytes} from 'ethers';
+import {Interface,getAddress,keccak256,toUtf8Bytes,formatEther} from 'ethers';
 import {readArenaV3PublicMatch} from './public-match-reader.mjs';
 
 export const ARENA_V3_INTENT_VERSION=1;
@@ -157,8 +157,11 @@ function encodeAction(action,view,actor,payload){
       'once-per-match GAMBIT already used');
     return {method:'sealRound',params:[
       view.matchId,payload.encryptedHandles,proof,payload.useGambit
-    ],label:'Seal private squad as '+participant+' in round '+view.currentRound,
-      note:'The wallet sees ciphertext, NOT cleartext fighter tactics.'};
+    ],label:'Seal private squad as '+participant+' in round '+view.currentRound+
+      (payload.useGambit?' WITH once-only GAMBIT (sector encrypted)':
+        ' WITHOUT activating GAMBIT'),
+      note:'GAMBIT activation is public; only the target sector is encrypted. '+
+        'The wallet receives ciphertext, not cleartext fighter tactics.'};
   }
   if(action==='RESOLVE_ROUND'){
     exact(payload,[],'empty resolution payload');
@@ -179,7 +182,8 @@ function encodeAction(action,view,actor,payload){
       view.resultHandle?.toLowerCase()===payload.resultHandle.toLowerCase(),
       'proof is not bound to current live round handle');
     return {method:'finalizeRound',params:[view.matchId,packed,proof],
-      label:'Finalize round '+view.currentRound+' with a KMS proof',
+      label:'Finalize round '+view.currentRound+' with proposed public score '+
+        (packed>>3)+' : '+(packed&7)+' and a KMS proof',
       note:'Only the onchain contract can authenticate the proof and score.'};
   }
   if(action==='EXPIRE_INCOMPLETE'){
@@ -201,7 +205,8 @@ function publicFields(intent){
     matchId:intent.matchId,round:intent.round,
     observedBlock:intent.observedBlock,observedBlockHash:intent.observedBlockHash,
     stateFingerprint:intent.stateFingerprint,
-    calldataHash:intent.calldataHash,fee:intent.fee
+    calldataHash:intent.calldataHash,fee:intent.fee,
+    summary:intent.summary,warning:intent.warning,consentText:intent.consentText
   };
 }
 function identityOf(fields){return hashValue(fields);}
@@ -211,7 +216,10 @@ function validateIntent(intent){
     intent.version===ARENA_V3_INTENT_VERSION&&
     ARENA_V3_INTENT_ACTIONS.includes(intent.action)&&
     HASH.test(intent.id)&&HASH.test(intent.calldataHash)&&
-    HASH.test(intent.stateFingerprint)&&HASH.test(intent.observedBlockHash),
+    HASH.test(intent.stateFingerprint)&&HASH.test(intent.observedBlockHash)&&
+    typeof intent.summary==='string'&&intent.summary.length>0&&
+    typeof intent.warning==='string'&&intent.warning.length>0&&
+    typeof intent.consentText==='string'&&intent.consentText.length>0,
     'unsigned intent');
   check(identityOf(publicFields(intent))===intent.id,
     'intent mutated after staging');
@@ -240,15 +248,19 @@ export function stageArenaV3TransactionIntent(view,request){
     matchId:view.matchId,round:view.currentRound,
     observedBlock:view.blockTag,observedBlockHash:view.blockHash.toLowerCase(),
     stateFingerprint:hashValue(anchor),
-    calldataHash:keccak256(data),fee
-  };
-  const id=identityOf(fields);
-  return Object.freeze({...fields,id,
+    calldataHash:keccak256(data),fee,
     summary:encoded.label,warning:encoded.note,
     consentText:'EXPLICIT ONE-TIME APPROVAL REQUIRED. Chain 11155111; '+
-      encoded.label+'; maximum quoted EIP-1559 fee '+fee.maximumTotalFeeWei+
-      ' wei, transfer 0 wei. Check wallet fee and exact method before signing.'
-  });
+      'contract '+contract+'; actor '+actor+'; match '+view.matchId+
+      '; '+encoded.label+'; maximum consented EIP-1559 budget '+
+      formatEther(BigInt(fee.maximumTotalFeeWei))+' ETH ('+
+      fee.maximumTotalFeeWei+' wei), transfer 0 ETH. Confirm the exact '+
+      'wallet method and fee before signing.'
+  };
+  // The approved digest binds public ACTION TEXT as well as calldata,
+  // fee, chain, actor, round, runtime and the originally read state.
+  const id=identityOf(fields);
+  return Object.freeze({...fields,id});
 }
 /**
  * Re-check a staged intent against a NEW independently read, runtime-pinned
