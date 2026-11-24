@@ -19,6 +19,8 @@ import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
  * - The v3 score range is 0..7 per side, NOT v2's 0..5.
  * - One-sided expiry ABORTS UNSCORED; no timeout creates a winner.
  * - A round with two on-time seals remains resolvable after its deadline.
+ * - Every round-changing write includes an explicit expectedRound, checked
+ *   onchain before any input normalization, resolution or proof handling.
  *
  * Not audited, cost/HCU not measured on Sepolia; not authorized for deployment.
  */
@@ -75,9 +77,10 @@ contract ArenaV3Research is ZamaEthereumConfig {
     event MatchCompleted(uint256 indexed matchId, uint8 outcome);
     event MatchAbandonedUnscored(uint256 indexed matchId, uint8 indexed round);
 
-    modifier liveMatch(uint256 id) {
+    modifier liveRound(uint256 id, uint8 expectedRound) {
         require(matches[id].challenger != address(0), "Unknown match");
         require(!matches[id].complete && !matches[id].abandoned, "Match closed");
+        require(matches[id].currentRound == expectedRound, "Unexpected round");
         _;
     }
 
@@ -99,9 +102,9 @@ contract ArenaV3Research is ZamaEthereumConfig {
      * the chosen sector remains private but the round of use does not.
      */
     function sealRound(
-        uint256 id, externalEuint8[11] calldata encrypted,
+        uint256 id, uint8 expectedRound, externalEuint8[11] calldata encrypted,
         bytes calldata inputProof, bool useGambit
-    ) external liveMatch(id) {
+    ) external liveRound(id, expectedRound) {
         Match storage m = matches[id];
         require(msg.sender == m.challenger || msg.sender == m.defender, "Not participant");
         Round storage r = rounds[id][m.currentRound];
@@ -139,7 +142,7 @@ contract ArenaV3Research is ZamaEthereumConfig {
         emit RoundSealed(id, m.currentRound, msg.sender);
     }
 
-    function resolveRound(uint256 id) external liveMatch(id) {
+    function resolveRound(uint256 id, uint8 expectedRound) external liveRound(id, expectedRound) {
         Match storage m = matches[id];
         Round storage r = rounds[id][m.currentRound];
         require(r.challenger.submitted && r.defender.submitted, "Both orders required");
@@ -178,7 +181,7 @@ contract ArenaV3Research is ZamaEthereumConfig {
      * Only a KMS signature over EXACTLY the stored round handle can finalize.
      * As with v2, callers may relay the proof, but cannot change its score.
      */
-    function finalizeRound(uint256 id, uint8 packed, bytes calldata proof) external liveMatch(id) {
+    function finalizeRound(uint256 id, uint8 expectedRound, uint8 packed, bytes calldata proof) external liveRound(id, expectedRound) {
         Match storage m = matches[id];
         Round storage r = rounds[id][m.currentRound];
         require(r.resolved && !r.finalized, "Not finalizable");
@@ -210,7 +213,7 @@ contract ArenaV3Research is ZamaEthereumConfig {
      * Anyone may invoke this ONLY after the entry deadline and ONLY if at
      * least one player did not seal. No instant replays or forfeiture wins.
      */
-    function expireIncomplete(uint256 id) external liveMatch(id) {
+    function expireIncomplete(uint256 id, uint8 expectedRound) external liveRound(id, expectedRound) {
         Match storage m = matches[id];
         Round storage r = rounds[id][m.currentRound];
         require(block.timestamp > r.deadlineAt, "Entry still open");
