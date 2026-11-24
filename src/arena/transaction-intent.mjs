@@ -28,7 +28,10 @@ const HASH=/^0x[0-9a-fA-F]{64}$/;
 const HEX_BYTES=/^0x(?:[0-9a-fA-F]{2})+$/;
 const INTEGER=/^(0|[1-9][0-9]*)$/;
 const ZERO='0x0000000000000000000000000000000000000000';
-// EIP-7825 activated on Sepolia: a single transaction cannot exceed 2^24 gas.
+// Conservative application cap for existing-match and creation actions only.
+// Under Glamsterdam EIP-8037 the 2^24 cap is on execution gas, NOT total
+// execution + state gas. Revisit this project cap after live gameplay
+// estimates; deployment has its own independently reviewed budget.
 export const MAX_ARENA_V3_GAS_LIMIT=16_777_216n;
 const MAX_GAS_LIMIT=MAX_ARENA_V3_GAS_LIMIT;
 const check=(condition,reason)=>{
