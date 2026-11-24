@@ -1,4 +1,5 @@
 import './hotseat.css';
+import {mountArenaV3Lobby} from './online-lobby';
 import {startingSquadPlans,SQUAD_ROLES} from '../squad.mjs';
 import {
   createArenaHotseatSession,advanceArenaHotseat,publicArenaHotseat
@@ -143,6 +144,7 @@ export function mountArenaHotseatLab():void{
     document.querySelector('#gambit-mobile-deck .gambit-mobile-head');
   anchor?.after(mobileLaunch);
   const dialog=byId<HTMLElement>(overlay,'gambit-arena-hotseat-dialog');
+  const online=mountArenaV3Lobby(byId<HTMLElement>(overlay,'gambit-arena-hotseat-briefing'));
   const form=byId<HTMLFormElement>(overlay,'gambit-arena-hotseat-form');
   const roles=byId<HTMLElement>(overlay,'gambit-arena-hotseat-roles');
   const formation=byId<HTMLSelectElement>(overlay,'gambit-arena-hotseat-formation');
@@ -289,6 +291,7 @@ export function mountArenaHotseatLab():void{
   }
   function close(){
     if(overlay.hidden)return;
+    online.reset();
     overlay.hidden=true;overlay.dataset.phase='closed';
     shell=transitionGameShell(shell,{type:'BACK'});
     delete document.body.dataset.gambitFeatureOverlay;
@@ -325,7 +328,7 @@ export function mountArenaHotseatLab():void{
   }
   form.addEventListener('submit',submit);
   byId<HTMLButtonElement>(overlay,'gambit-arena-hotseat-start')
-    .addEventListener('click',()=>next('START'));
+    .addEventListener('click',()=>{online.reset();next('START');});
   byId<HTMLButtonElement>(overlay,'gambit-arena-hotseat-accept')
     .addEventListener('click',()=>next('ACCEPT_HANDOFF'));
   byId<HTMLButtonElement>(overlay,'gambit-arena-hotseat-resolve')
@@ -353,7 +356,7 @@ export function mountArenaHotseatLab():void{
     if(event.key==='Escape'){event.preventDefault();close();return;}
     if(event.key!=='Tab')return;
     const focusable=Array.from(dialog.querySelectorAll<HTMLElement>(
-      'button:not([disabled]),select:not([disabled]),a[href],input:not([disabled])'
+      'button:not([disabled]),select:not([disabled]),a[href],input:not([disabled]),summary'
     )).filter(node=>node.getClientRects().length>0&&!node.closest('[hidden]'));
     if(focusable.length===0)return;
     const first=focusable[0],last=focusable[focusable.length-1];
