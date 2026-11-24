@@ -22,7 +22,8 @@
     "probe:squad:sdk:readonly": "hardhat run --network sepolia scripts/probe-squad-sdk-readonly.ts",
     "seal:squad:sepolia": "hardhat run --network sepolia scripts/seal-squad-sepolia.ts",
     "quote:squad:sepolia": "hardhat run --network sepolia scripts/quote-squad-sepolia.ts",
-    "quote:duel1:submit:readonly": "hardhat run --network sepolia scripts/quote-duel1-submit-sepolia.ts"
+    "quote:duel1:submit:readonly": "hardhat run --network sepolia scripts/quote-duel1-submit-sepolia.ts",
+    "preflight:arena:v3:public": "hardhat run --network sepolia scripts/preflight-arena-v3-sepolia.ts"
   },
   "dependencies": {
     "@fhevm/solidity": "^0.11.1",
