@@ -59,12 +59,17 @@ assert.equal(actual.decodeEventLog('MatchCreated',created.data,created.topics).m
 
 const sample=Array.from({length:11},(_,n)=>
   '0x'+(n+1).toString(16).padStart(64,'0'));
-const encoded=write.encodeFunctionData('sealRound',[1,sample,'0x1234',true]);
+const encoded=write.encodeFunctionData('sealRound',[1,3,sample,'0x1234',true]);
 const decoded=actual.decodeFunctionData('sealRound',encoded);
 assert.equal(decoded[0],1n);
-assert.deepEqual([...decoded[1]],sample);
-assert.equal(decoded[2],'0x1234');
-assert.equal(decoded[3],true);
+assert.equal(decoded[1],3n);
+assert.deepEqual([...decoded[2]],sample);
+assert.equal(decoded[3],'0x1234');
+assert.equal(decoded[4],true);
+for(const name of expectedWrites){
+  assert.equal(actual.getFunction(name).inputs[1].name,'expectedRound');
+  assert.equal(actual.getFunction(name).inputs[1].type,'uint8');
+}
 const sealedArtifact=JSON.stringify(contract.abi);
 assert.equal(sealedArtifact.includes('"stateMutability":"payable"'),false,
   'No payable methods are allowed in the v3 research interface');
