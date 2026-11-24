@@ -12,6 +12,7 @@ import {resolve} from 'node:path';
 import {Interface} from 'ethers';
 import {ARENA_V3_WRITE_ABI} from '../src/arena/transaction-intent.mjs';
 import {ARENA_V3_READ_ONLY_ABI} from '../src/arena/public-match-reader.mjs';
+import {ARENA_V3_INVITATION_ABI} from '../src/arena/invitation.mjs';
 
 const file=resolve(process.cwd(),
   'fhe/artifacts/contracts/ArenaV3Research.sol/ArenaV3Research.json');
@@ -42,6 +43,20 @@ function compare(name,client,writable){
 }
 for(const name of expectedWrites)compare(name,write,true);
 for(const name of expectedReads)compare(name,read,false);
+const invitation=new Interface(ARENA_V3_INVITATION_ABI);
+compare('createMatch',invitation,true);
+compare('nextMatchId',invitation,false);
+const localEvent=invitation.getEvent('MatchCreated');
+const compiledEvent=actual.getEvent('MatchCreated');
+assert.ok(compiledEvent&&localEvent);
+assert.equal(localEvent.topicHash,compiledEvent.topicHash);
+assert.deepEqual(localEvent.inputs.map(x=>[x.type,x.indexed]),
+  compiledEvent.inputs.map(x=>[x.type,x.indexed]));
+assert.deepEqual(compiledEvent.inputs.map(x=>x.indexed),[true,true,true]);
+const created=invitation.encodeEventLog(localEvent,[7,
+  '0x'+'1'.repeat(40),'0x'+'2'.repeat(40)]);
+assert.equal(actual.decodeEventLog('MatchCreated',created.data,created.topics).matchId,7n);
+
 const sample=Array.from({length:11},(_,n)=>
   '0x'+(n+1).toString(16).padStart(64,'0'));
 const encoded=write.encodeFunctionData('sealRound',[1,sample,'0x1234',true]);
@@ -59,7 +74,9 @@ console.log('GAMBIT_ARENA_V3_ABI_PARITY '+JSON.stringify({
   writeSelectors:expectedWrites.map(name=>({
     method:name,selector:actual.getFunction(name).selector
   })),
-  verifiedReadMethods:expectedReads,
+  verifiedReadMethods:[...expectedReads,'nextMatchId'],
+  creationSelector:actual.getFunction('createMatch').selector,
+  matchCreatedTopic:compiledEvent.topicHash,
   ciphertextArrayWidth:11,
   transactionSending:false,chainProof:false,
   deploymentApproved:false
