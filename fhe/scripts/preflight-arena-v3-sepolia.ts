@@ -17,7 +17,8 @@ async function main(){
   }
   // Previously published deployer address, not a credential or private key.
   const from=getAddress('0x7d567Fa1d5fe35737BbF045f47667e13298Ee176');
-  const request={from,data:artifact.bytecode,value:0n};
+  const transactionGasCap=16_777_216n; // EIP-7825, active on Sepolia.
+  const request={from,data:artifact.bytecode,value:0n,gasLimit:transactionGasCap};
   const latest=await provider.getBlock('latest'),fees=await provider.getFeeData();
   let primary:bigint|null=null,independent:bigint|null=null;
   try{primary=await provider.estimateGas(request);}catch{/* Unknown, never guess. */}
@@ -25,7 +26,7 @@ async function main(){
     const response=await fetch('https://sepolia.drpc.org',{
       method:'POST',headers:{'content-type':'application/json'},
       body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_estimateGas',
-        params:[{from,data:artifact.bytecode,value:'0x0'}]}),
+        params:[{from,data:artifact.bytecode,value:'0x0',gas:'0x1000000'}]}),
       signal:AbortSignal.timeout(15000)
     });
     if(response.ok){
@@ -40,7 +41,7 @@ async function main(){
   const agreement=primary!==null&&independent!==null&&primary>0n&&independent>0n&&
     primary<=independent*2n&&independent<=primary*2n;
   const buffered=maxEstimate===null?null:(maxEstimate*120n+99n)/100n;
-  const bounded=agreement&&buffered!==null&&latest!==null&&buffered*100n<latest.gasLimit*90n&&
+  const bounded=agreement&&buffered!==null&&buffered<=transactionGasCap&&latest!==null&&buffered*100n<latest.gasLimit*90n&&
     maxFee!==null&&priority!==null&&maxFee>0n&&priority>=0n&&priority<=maxFee;
   const cap=bounded&&buffered!==null&&maxFee!==null?buffered*maxFee:null;
   console.log('GAMBIT_ARENA_V3_PUBLIC_PREFLIGHT '+JSON.stringify({
@@ -51,6 +52,10 @@ async function main(){
     compiledRuntimeTemplateBytes:(artifact.deployedBytecode.length-2)/2,
     note:'Runtime template hash is NOT the deployed runtime fingerprint; verify actual deployed bytes separately.',
     observedBlock:latest?.number??null,
+    eip7825TransactionGasCap:transactionGasCap.toString(),
+    primaryEstimateAboveTransactionCap:primary!==null&&primary>transactionGasCap,
+    independentEstimateAboveTransactionCap:independent!==null&&independent>transactionGasCap,
+    bufferedEstimateAboveTransactionCap:buffered!==null&&buffered>transactionGasCap,
     primaryEstimate:primary?.toString()??null,
     independentEstimate:independent?.toString()??null,
     estimatesAgreeWithin2x:agreement,
