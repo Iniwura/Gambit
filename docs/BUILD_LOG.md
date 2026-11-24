@@ -337,3 +337,9 @@ The deployed contract is reused unchanged. No redeployment, gameplay transaction
 - Defender’s separate mobile review is also prepared, with fresh gas `3566261`, max fee `34 wei`, priority `2 wei`, upper bound `121252874 wei`, and calldata hash `0x6c96f21bd1a7f7090fa2b70be14bda4b3d99dc0a123dd4f072a6091ca0d22fce`. Neither seal has been authorized or sent.
 
 Resolution latency, transaction costs for gameplay actions, KMS proof finalization and five-round receipts remain unmeasured because the workflow is correctly stopped at this first seal authorization checkpoint.
+
+## 2026-11-24 â€” Two-seal authorization held at payload-continuity gate
+
+The user authorized exactly two `SEAL_ROUND` transactions for Match `1`, Round `1`, binding the challenger and defender calldata hashes recorded above, their nonces, gas limits and fee ceilings. Before opening either wallet, the local review state was checked: no live browser process retained the prior unsigned encrypted payloads, and the application persists only public pending transaction hashes. Ciphertext handles and input proofs are intentionally volatile and are not recoverable from the build log or session storage.
+
+**Safe halt:** `eth_sendTransaction` calls `0`; signatures `0`; broadcasts `0`; retries `0`; regenerated payloads `0`. No exact authorized calldata was substituted, and no seal was sent. Resume requires reopening the original staged reviews or separate explicit authorization to generate new encrypted payloads and hashes.
