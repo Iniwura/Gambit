@@ -55,7 +55,7 @@ async function play(viewport,name){
     });
     const lobby=page.locator('#gambit-arena-online-lobby');
     await lobby.locator('summary').click();
-    await page.locator('#gambit-arena-online-wallet option').nth(1).waitFor();
+    await page.locator('#gambit-arena-online-wallet option').nth(1).waitFor({state:'attached'});
     await page.locator('#gambit-arena-online-wallet').selectOption({index:1});
     await page.locator('#gambit-arena-online-inspect').click();
     await page.getByText('Sepolia account: 0x'+'1'.repeat(40)+' · No approved v3 deployment. Live actions locked.',{exact:true}).waitFor();
