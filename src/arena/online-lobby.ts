@@ -5,7 +5,7 @@ import {approvedArenaV3Deployment} from './approved-deployment.mjs';
 import {createArenaV3SdkSession} from './sdk-session';
 import {
   arenaV3ReadOnlyWallet,readArenaV3SelectedAccount,prepareArenaV3Seal,
-  prepareArenaV3Finalization
+  prepareArenaV3Finalization,releaseArenaV3Prepared
 } from './fhe-preparation.mjs';
 import {
   ARENA_V3_INVITATION_ABI,arenaV3InviteToken,recoverArenaV3Invitation,
@@ -36,6 +36,15 @@ const manifest:Manifest=approvedArenaV3Deployment();
 
 function errorText(error:unknown):string{
   const message=error instanceof Error?error.message:'';
+  // Keep user-facing errors generic, but retain a non-sensitive class marker
+  // for diagnostics. Never log provider messages, URLs, request data, or keys.
+  try{
+    const safeMessage=message.replace(/https?:\/\/\S+/gi,'[url]')
+      .replace(/0x[0-9a-fA-F]{16,}/g,'[hex]');
+    console.warn('Arena v3 operation failed',error instanceof Error?error.name:typeof error,
+      safeMessage.slice(0,160));
+  }
+  catch{/* diagnostics must never affect the safety boundary */}
   if(/Sepolia|chain|network/i.test(message))
     return 'wallet network verification failed';
   if(/account|wallet|provider/i.test(message))
@@ -381,12 +390,28 @@ export function mountArenaV3Lobby(root:HTMLElement){
   }
   async function stageSeal():Promise<void>{
     if(!activeView||activeMatchId===null||!actor||!selected)return;
+    const matchId=activeMatchId;
     await run('Encrypting the current round for review…',async signal=>{
       const sdkSession=await createArenaV3SdkSession(selected!,signal);
       const prepared=await prepareArenaV3Seal({wallet:selected!,provider:currentProvider(),
-        manifest,sdk:sdkSession.sdk,matchId:activeMatchId,expectedActor:actor!,
+        manifest,sdk:sdkSession.sdk,matchId,expectedActor:actor!,
         expectedRound:activeView.currentRound,order:collectOrder(),feeQuote:await feeQuote(),signal});
-      reviewEstimate=null;reviewData=prepared;renderReview();planner.hidden=true;
+      // Revalidate the opaque payload once more, then estimate the exact
+      // transaction that the next approval would open in the wallet.
+      const unsigned=await releaseArenaV3Prepared({wallet:selected!,provider:currentProvider(),
+        manifest,prepared,approval:prepared.intent.id,signal});
+      const estimate=await currentProvider().estimateGas({from:unsigned.from,to:unsigned.to,
+        data:unsigned.data,value:unsigned.value});
+      if(estimate<=0n||estimate>MAX_ARENA_V3_GAS_LIMIT)
+        throw Error('Fresh seal estimate exceeds the reviewed gas bound');
+      const fresh=await readArenaV3PublicMatch(currentProvider(),manifest,matchId,{signal});
+      const staged={...prepared,intent:stageArenaV3TransactionIntent(fresh,{
+        action:prepared.intent.action,actor,payload:prepared.payload,
+        feeQuote:{...await feeQuote(),gasLimit:estimate.toString()}
+      })};
+      if(staged.intent.calldataHash!==prepared.intent.calldataHash)
+        throw Error('Encrypted seal changed during final review');
+      reviewEstimate=estimate.toString();reviewData=staged;renderReview();planner.hidden=true;
       setStatus('Encrypted order prepared. Review the exact public transaction before opening the wallet.');
     });
   }

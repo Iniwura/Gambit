@@ -50,7 +50,11 @@ export function arenaV3ReadOnlyWallet(wallet){
     request(args){
       check(args&&READ_RPC.has(args.method),'RPC method is not read-only');
       return wallet.request(args);
-    }
+    },
+    // SDK lifecycle wiring expects the standard EIP-1193 event surface.
+    // Deliberately inert: the Arena session never subscribes to or emits
+    // account/network changes through this read-only facade.
+    on(){},removeListener(){}
   });
 }
 export function encodeArenaV3EncryptedOrder(order){

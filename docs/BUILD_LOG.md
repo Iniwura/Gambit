@@ -313,3 +313,27 @@ The deployed contract is reused unchanged. No redeployment, gameplay transaction
 - All other approved public fields remained bound to the fresh challenger, invited defender, pinned contract, zero value, gas limit `463929`, priority fee `2 wei`, and calldata hash `0x998c1d05b8fe81a31ce7b513f6599ad99182fd858bdb42526efa1d6f38cb42e8`.
 - The changed, **not authorized** request would have a quoted upper bound of `18557160 wei` (`463929 × 40`) and must not be sent under the prior authorization. No receipt, MatchCreated event, match ID, participant record, transaction cost, encryption latency or resolution latency exists yet.
 - Next gate: obtain a fresh explicit authorization whose max fee exactly matches the live interface review, then repeat the single guarded submission. No automatic retry or parameter substitution is permitted.
+
+## 2026-11-24 â€” Arena v3 creation verified; live seal reviews prepared
+
+**VERIFIED:** the authorized creation was dispatched exactly once through the integrated Arena lobby and independently reconciled. No gameplay action was signed or broadcast.
+
+- Creation transaction `0x4d64c77325c1fbff9cef31383b59f141172cad5a5163623c0de1e044c1297a0c` succeeded in block `12202616`. PublicNode, Tenderly and ethPandaOps agree on receipt status `1`, `459118` gas used, effective gas price `20 wei`, actual fee `9182360 wei`, type `2`, nonce `0`, gas limit `463929`, max fee `38 wei`, priority `2 wei`, zero value and the pinned contract. At the current verification snapshot it has `2559` confirmations.
+- The receipt contains exactly one `MatchCreated` event: match ID `1`, challenger `0xEa0C73e7a8D7149e641805e7Eb4eC0D4195C403C`, defender `0xC3e1CE842aDB49FC7B3e0fA5Cc6A0684fFd5D0c2`. Explorer: https://sepolia.etherscan.io/tx/0x4d64c77325c1fbff9cef31383b59f141172cad5a5163623c0de1e044c1297a0c.
+- The deployed runtime remains exact at all three providers: `12286` bytes and `0xf4f31fff6b4ec7f90e573bba95362a49d43ffeb12d971f515cef6301afbde8a9`. The local deployment journal and public manifest remain preserved; no redeployment occurred.
+
+### Live integrated gameplay preflight
+
+- Both fresh DPAPI-backed wallets recovered the public invitation through the actual lobby. The challenger desktop path and defender `390x844` mobile path each reached `MATCH 1 Â· WAITING_FOR_BOTH` and the encrypted tactical planner. The UI used the pinned contract and read-only Tenderly Sepolia path; no account request, signature or send RPC occurred.
+- The real Zama Sepolia SDK path completed both encryptions. Final post-fix latency from `ENCRYPT & REVIEW SEAL` to the public review was `80079 ms` for the challenger and `67411 ms` for the defender. The read-only traces included `eth_estimateGas`; signing and sending method count was `0` for both paths. No ciphertext handle or input proof was persisted, logged or printed.
+- A genuine integration defect was fixed and verified: the SDK needs the standard provider event surface and the same verified read provider for chain access. The Arena read-only facade now exposes inert `on`/`removeListener` hooks, still rejects account requests, network switching, signatures and sends, and the browser SDK uses the real Sepolia relayer/WASM path. Seal review now revalidates the opaque payload and estimates the exact calldata before staging the wallet request.
+
+### Next authorization checkpoint â€” challenger seal, unsigned
+
+- Action: `SEAL_ROUND`, match `1`, round `1`, challenger `0xEa0C73e7a8D7149e641805e7Eb4eC0D4195C403C`.
+- Network: Ethereum Sepolia, chain ID `11155111`; destination `0xBF56087EFF029594beeFf1B57B47b1419bCDF16b`; type `2`; value `0 ETH`.
+- Fresh gas estimate / gas limit: `3566168`; max fee per gas `34 wei`; priority fee `2 wei`; estimated upper bound `121249712 wei`, within the `1000000000 wei` maximum.
+- Calldata hash: `0xe2f5da336bd0940b34a5e223db1fe1810f977040fb9099fee7199b1e2328b240`. The exact calldata contains the freshly encrypted order and proof and remains held only in the live review path; it is intentionally not printed or persisted.
+- Defender’s separate mobile review is also prepared, with fresh gas `3566261`, max fee `34 wei`, priority `2 wei`, upper bound `121252874 wei`, and calldata hash `0x6c96f21bd1a7f7090fa2b70be14bda4b3d99dc0a123dd4f072a6091ca0d22fce`. Neither seal has been authorized or sent.
+
+Resolution latency, transaction costs for gameplay actions, KMS proof finalization and five-round receipts remain unmeasured because the workflow is correctly stopped at this first seal authorization checkpoint.
