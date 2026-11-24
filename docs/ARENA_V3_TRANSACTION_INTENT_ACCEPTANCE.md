@@ -2,7 +2,7 @@
 
 **Recorded:** 24 November 2026.  
 **Branch:** `build/verified-first-slice`, PR #5 DRAFT.  
-**Status:** research implementation committed; GitHub quality run for final copy-integrity tightening pending. **Not a wallet connector and not authorization to deploy or transact.**
+**Status:** **VERIFIED LOCAL SOURCE/CI**: [GitHub Actions run 45320612652](https://github.com/Iniwura/Gambit/actions/runs/45320612652) passed all **4/4 jobs** (224/224 Node, 25/25 FHE mock, compiled seven-method ABI parity, and full desktop/mobile/tablet browser QA). **Not a wallet connector, live v3 verification or authorization to deploy/transact.**
 
 ## Why this layer exists
 
@@ -47,7 +47,13 @@ For conservatism the client only lets **invited participants** stage even otherw
 
 [Adversarial Node suite](../tests/arena-v3-transaction-intent.test.mjs) uses a fake ABI-coded read-only provider and covers all four operations, exact ciphertext and KMS proof binding, unauthorized actors, duplicate seal, used GAMBIT, expired incomplete rounds, fee-cap violations, malformed data, stale public match, original block reorg, blank intervening block, mutated human approval text, absent consent fingerprint and no signing/network writes.
 
-The **first CI run** was red from a test expecting the longer phrase "exact encrypted seal payload" while the code correctly refused an extra private field as "encrypted seal payload"; test and message are now aligned. The state-safety condition was never bypassed. [First run 45320074365](https://github.com/Iniwura/Gambit/actions/runs/45320074365). Final evidence link and counts must be added only after the latest run is complete.
+The **first CI run** was red from a test expecting the longer phrase "exact encrypted seal payload" while the code correctly refused an extra private field as "encrypted seal payload"; test and message were aligned. The state-safety condition was never bypassed. [First run 45320074365](https://github.com/Iniwura/Gambit/actions/runs/45320074365). **Successful final run:** [45320612652](https://github.com/Iniwura/Gambit/actions/runs/45320612652), 4/4 green; **224/224 deterministic Node tests**; **25/25 Hardhat FHE mock tests**, including 81 independent encrypted formation/sector cases; compiler-verified **four write selectors and three read methods**; responsive five-round local Hotseat and Academy, BLACKSITE, Commander and 710px/820px tablet regression. No wallet actions or real v3 testnet writes were made.
+
+## Submission constraints (checked against official Zama rules on 24 November 2026)
+
+Official Season 5 page: https://www.zama.org/post/zama-developer-program-mainnet-season-5-confidential-gaming and https://forms.zama.org/zama-developer-program-mainnet-season-5-confidential-gaming. **Submission deadline is December 14, 2026, 23:59 AOE.** To qualify, submit a **functioning FHE-based game deployed on Sepolia with a website**, documentation, a post/thread on X, and a **3-minute real-person video pitch**. The organizers say an **AI-generated voice or video will not be considered**.
+
+**Engineering implication:** this unsigned research guard is not a working game. The near-term priority is an actual end-to-end user-playable onchain confidential match with verifiable receipts and a real demo. Do not spend the remaining engineering cycle on purely local polish or cosmetic redesign. The larger four-pillar product remains the roadmap, but working live Arena is the critical judging dependency.
 
 ## Next meaningful functional gates
 
