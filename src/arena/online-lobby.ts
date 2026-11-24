@@ -404,10 +404,17 @@ export function mountArenaV3Lobby(root:HTMLElement){
         data:unsigned.data,value:unsigned.value});
       if(estimate<=0n||estimate>MAX_ARENA_V3_GAS_LIMIT)
         throw Error('Fresh seal estimate exceeds the reviewed gas bound');
+      // Sepolia FHE estimation can drift between the public review and the
+      // immediate wallet revalidation. Keep the measured estimate visible,
+      // but stage a small bounded headroom so the exact reviewed request does
+      // not fail before the wallet prompt solely because of that drift.
+      const bufferedGasLimit=estimate+(estimate+99n)/100n;
+      if(bufferedGasLimit>MAX_ARENA_V3_GAS_LIMIT)
+        throw Error('Buffered seal estimate exceeds the reviewed gas bound');
       const fresh=await readArenaV3PublicMatch(currentProvider(),manifest,matchId,{signal});
       const staged={...prepared,intent:stageArenaV3TransactionIntent(fresh,{
         action:prepared.intent.action,actor,payload:prepared.payload,
-        feeQuote:{...await feeQuote(),gasLimit:estimate.toString()}
+        feeQuote:{...await feeQuote(),gasLimit:bufferedGasLimit.toString()}
       })};
       if(staged.intent.calldataHash!==prepared.intent.calldataHash)
         throw Error('Encrypted seal changed during final review');
@@ -541,7 +548,10 @@ export function mountArenaV3Lobby(root:HTMLElement){
   reviewSubmit.addEventListener('click',()=>{void submitReview();});
   reviewCancel.addEventListener('click',()=>{reviewData=null;reviewEstimate=null;renderReview();setStatus('Transaction review cancelled. No wallet request was made.');});
   pendingCheck.addEventListener('click',()=>{void checkPending();});
-  refreshMatch.addEventListener('click',()=>{void run('Refreshing public match state…',signal=>refreshActiveMatch(signal));});
+  refreshMatch.addEventListener('click',()=>{void run('Refreshing public match state…',async signal=>{
+    await refreshActiveMatch(signal);
+    setStatus('Match state refreshed.');
+  });});
   sealStage.addEventListener('click',()=>{void stageSeal();});
   if(pending)renderPending();
   return {reset:stop};
