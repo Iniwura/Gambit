@@ -10,10 +10,10 @@ import {
 
 const READ=new Interface(ARENA_V3_READ_ONLY_ABI);
 const WRITE=new Interface([
-  'function sealRound(uint256 id,bytes32[11] encrypted,bytes inputProof,bool useGambit)',
-  'function resolveRound(uint256 id)',
-  'function finalizeRound(uint256 id,uint8 packed,bytes proof)',
-  'function expireIncomplete(uint256 id)'
+  'function sealRound(uint256 id,uint8 expectedRound,bytes32[11] encrypted,bytes inputProof,bool useGambit)',
+  'function resolveRound(uint256 id,uint8 expectedRound)',
+  'function finalizeRound(uint256 id,uint8 expectedRound,uint8 packed,bytes proof)',
+  'function expireIncomplete(uint256 id,uint8 expectedRound)'
 ]);
 const A='0x'+'1'.repeat(40),B='0x'+'2'.repeat(40),C='0x'+'3'.repeat(40);
 const CODE='0x6080604052600080fd';
@@ -115,7 +115,7 @@ function assertNoSecret(intent,payload){
   assert.ok(Object.isFrozen(intent));
 }
 test('intent exposes four explicitly allowlisted v3 writes, no create or generic send',()=>{
-  assert.equal(ARENA_V3_INTENT_VERSION,1);
+  assert.equal(ARENA_V3_INTENT_VERSION,2);
   assert.deepEqual(ARENA_V3_INTENT_ACTIONS,[
     'SEAL_ROUND','RESOLVE_ROUND','FINALIZE_ROUND','EXPIRE_INCOMPLETE'
   ]);
@@ -148,9 +148,10 @@ test('encrypted squad needs genuine invited player, no prior seal, exact ciphert
   const decoded=WRITE.parseTransaction({data:proposal.data});
   assert.equal(decoded.name,'sealRound');
   assert.equal(decoded.args[0],1n);
-  assert.deepEqual([...decoded.args[1]],payload.encryptedHandles);
-  assert.equal(decoded.args[2],payload.inputProof);
-  assert.equal(decoded.args[3],false);
+  assert.equal(decoded.args[1],1n,'round is bound in calldata');
+  assert.deepEqual([...decoded.args[2]],payload.encryptedHandles);
+  assert.equal(decoded.args[3],payload.inputProof);
+  assert.equal(decoded.args[4],false);
   assert.deepEqual(p.calls.signer,0);
   assert.deepEqual(p.calls.send,0);
   assert.deepEqual(p.calls.gas,0);
@@ -263,6 +264,7 @@ test('resolution cannot be created until both accepted encrypted orders are pres
   const {p,intent}=await stage(fx,'RESOLVE_ROUND',B,{});
   const tx=await release(p,intent,{});
   assert.equal(WRITE.parseTransaction({data:tx.data}).name,'resolveRound');
+  assert.equal(WRITE.parseTransaction({data:tx.data}).args[1],1n);
   assert.equal(tx.from,B);
   fx.rows[0].defenderSealed=false;
   await assert.rejects(release(p,intent,{}),/match state changed/);
@@ -283,8 +285,9 @@ test('signed KMS bytes are bound to exactly the current result handle and callda
   const tx=await release(p,intent,payload);
   const parsed=WRITE.parseTransaction({data:tx.data});
   assert.equal(parsed.name,'finalizeRound');
-  assert.equal(parsed.args[1],40n);
-  assert.equal(parsed.args[2],'0x1234');
+  assert.equal(parsed.args[1],1n,'finalize expected round');
+  assert.equal(parsed.args[2],40n);
+  assert.equal(parsed.args[3],'0x1234');
   await assert.rejects(stage(fx,'FINALIZE_ROUND',A,{
     ...payload,resultHandle:'0x'+'e'.repeat(64)
   }),/proof is not bound to current live round handle/);
@@ -302,6 +305,7 @@ test('expiry only closes incomplete match; it NEVER creates a win intent',async(
   const {p,intent}=await stage(fx,'EXPIRE_INCOMPLETE',B,{});
   const tx=await release(p,intent,{});
   assert.equal(WRITE.parseTransaction({data:tx.data}).name,'expireIncomplete');
+  assert.equal(WRITE.parseTransaction({data:tx.data}).args[1],1n);
   assert.match(intent.summary,/NO winner/);
   await assert.rejects(stage(fixture(),'EXPIRE_INCOMPLETE',A,{}),
     /not an incomplete expired round/);
