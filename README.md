@@ -8,6 +8,8 @@ GAMBIT is a playable 3v3 squad-tactics game with a confidential, asynchronous he
 
 **Permanent development history:** [GAMBIT Build Log](docs/BUILD_LOG.md) records every verified milestone, failed/passed CI check, unresolved system and next priority.
 
+**Latest engineering checkpoint (24 Nov):** [Arena v3 unsigned action intent and compiled ABI acceptance](docs/ARENA_V3_TRANSACTION_INTENT_ACCEPTANCE.md) has passed [224/224 Node, 25/25 FHE mock and full 4/4 CI](https://github.com/Iniwura/Gambit/actions/runs/45320612652). It has no signer or live v3 deployment. Gameplay is still only local Hotseat and previously verified onchain v2 single-encounter.
+
 **Two-Commander LOCAL HOTSEAT:** the game includes a playable five-round same-device duel with independent player decisions and actual aggregate outcomes, not encrypted remote multiplayer. [Native desktop/mobile acceptance](docs/ARENA_V3_HOTSEAT_ACCEPTANCE.md): real local **3 : 17** five-round result, 710px/820px tablet navigation, no wallet. **New future-chain safety layer:** [v3 read-only match recovery adapter](docs/ARENA_V3_PUBLIC_READER_ACCEPTANCE.md) is tested against strict simulated ABI/public block data and requires an independently approved contract manifest; no v3 contract is deployed. Latest [4/4 CI run 44962888818](https://github.com/Iniwura/Gambit/actions/runs/44962888818) passed **212/212 Node tests** and all real browser regressions.
 
 **Current research, not deployed:** [Arena v3 FHE mock acceptance](docs/ARENA_V3_FHE_MOCK_ACCEPTANCE.md) describes a separate five-round encrypted match prototype. Its 25/25 Hardhat mock tests and 81/81 formation/hidden-sector oracle checks passed; it is neither a released feature nor permission to deploy a new contract.
