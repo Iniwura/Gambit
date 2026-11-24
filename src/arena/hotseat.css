@@ -121,3 +121,13 @@
 @media(prefers-reduced-motion:reduce){
   #gambit-arena-hotseat-dialog button:active{transform:none}
 }
+
+/* Online readiness shares the existing responsive dialog, not another overlay. */
+#gambit-arena-online-lobby{margin:18px 0 8px;padding:14px;border:1px solid #527a94;border-radius:8px;background:#16283a}
+#gambit-arena-online-lobby summary{cursor:pointer;font-weight:750;min-height:30px}
+#gambit-arena-online-lobby label{display:block;margin-top:12px;font-weight:650}
+#gambit-arena-online-lobby select,#gambit-arena-online-lobby input{display:block;width:100%;min-height:44px;margin:5px 0 10px;padding:10px;border:1px solid #7798aa;background:#101e30;color:#ebf9ff;border-radius:6px;font:inherit}
+#gambit-arena-online-lobby button{margin:0 8px 6px 0}
+#gambit-arena-online-lobby button:disabled,#gambit-arena-online-lobby input:disabled{opacity:.65;cursor:not-allowed}
+#gambit-arena-online-lobby p{overflow-wrap:anywhere}
+#gambit-arena-online-lobby summary:focus-visible,#gambit-arena-online-lobby input:focus-visible{outline:3px solid #ffd47f;outline-offset:3px}
