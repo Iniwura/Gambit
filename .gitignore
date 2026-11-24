@@ -14,3 +14,10 @@ fhe/artifacts/
 fhe/cache/
 fhe/typechain-types/
 fhe/coverage/
+fhe/fhevmTemp/
+
+# Local wallet material; never place these under source control.
+*.dpapi
+.gambit-secrets/
+**/.env.local
+**/.env.*.local

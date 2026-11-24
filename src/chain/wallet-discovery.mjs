@@ -8,21 +8,23 @@ export function discoverInjectedWallets(scope){
   const choices=[];
   const byProvider=new Map();
   const isProvider=value=>!!value&&typeof value.request==='function';
+  const safeText=(value,max=70)=>typeof value==='string'
+    ?value.replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,max):'';
   const add=(provider,label,identifier)=>{
     if(!isProvider(provider))return;
-    const cleanLabel=typeof label==='string'&&label.trim()
-      ?label.trim().slice(0,70):'Browser wallet';
+    const cleanLabel=safeText(label)||'Browser wallet';
+    const cleanIdentifier=safeText(identifier,96);
     const known=byProvider.get(provider);
     if(known){
       // EIP-6963 naming is more informative than legacy "Injected wallet".
-      if(identifier&&known.identifier.startsWith('legacy:')){
+      if(cleanIdentifier&&known.identifier.startsWith('legacy:')){
         known.label=cleanLabel;
-        known.identifier=identifier;
+        known.identifier=cleanIdentifier;
       }
       return;
     }
     const entry={id:String(choices.length+1),label:cleanLabel,provider,
-      identifier:identifier||'legacy:'+choices.length};
+      identifier:cleanIdentifier||'legacy:'+choices.length};
     choices.push(entry);
     byProvider.set(provider,entry);
   };
@@ -38,11 +40,10 @@ export function discoverInjectedWallets(scope){
     const detail=event?.detail;
     if(!detail||!isProvider(detail.provider))return;
     const info=detail.info??{};
-    const name=typeof info.name==='string'&&info.name.trim()
-      ?info.name:detail.provider?.isMetaMask?'MetaMask':'Browser wallet';
+    const name=safeText(info.name)||(detail.provider?.isMetaMask?'MetaMask':'Browser wallet');
     // rdns/uuid are descriptive display data, not authentication.
-    add(detail.provider,name,typeof info.uuid==='string'
-      ?'eip6963:'+info.uuid:'eip6963:unnamed');
+    const uuid=safeText(info.uuid,80);
+    add(detail.provider,name,uuid?'eip6963:'+uuid:'eip6963:unnamed');
     onChange?.();
   };
   let onChange=null;
@@ -58,5 +59,10 @@ export function discoverInjectedWallets(scope){
     onChange=null;
   };
   collectLegacy();
-  return {refresh,list:()=>choices.slice(),subscribe,close};
+  // Consumers that need diagnostics must use metadata(), which deliberately
+  // excludes the live provider object and all arbitrary EIP-6963 fields.
+  const metadata=()=>choices.map(({id,label,identifier})=>(
+    Object.freeze({id,label,identifier})
+  ));
+  return {refresh,list:()=>choices.slice(),metadata,subscribe,close};
 }

@@ -51,3 +51,24 @@ test('malformed EIP-6963 data is ignored and wallet discovery never requests acc
   assert.equal(requests,0,'discovery is inert; only the user Connect button may request accounts');
   discovery.close();
 });
+
+test('wallet metadata is bounded and never exposes provider or arbitrary announcement fields',()=>{
+  const browser=new EventTarget();
+  const wallet={request:async()=>null};
+  browser.addEventListener('eip6963:requestProvider',()=>{
+    const event=new Event('eip6963:announceProvider');
+    event.detail={info:{name:'  Safe\u0000 Wallet  ',uuid:'u'.repeat(500),secret:'must-not-copy'},
+      provider:wallet,privateKey:'must-not-copy'};
+    browser.dispatchEvent(event);
+  });
+  const discovery=discoverInjectedWallets(browser);
+  discovery.refresh();
+  const metadata=discovery.metadata();
+  assert.equal(metadata.length,1);
+  assert.equal(metadata[0].label,'Safe Wallet');
+  assert.ok(metadata[0].identifier.length<=96);
+  assert.deepEqual(Object.keys(metadata[0]).sort(),['id','identifier','label']);
+  assert.equal('provider' in metadata[0],false);
+  assert.equal('secret' in metadata[0],false);
+  discovery.close();
+});

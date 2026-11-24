@@ -35,7 +35,17 @@ const FORMATIONS=Object.freeze(['HOLD','PIVOT','FEINT']);
 const manifest:Manifest=approvedArenaV3Deployment();
 
 function errorText(error:unknown):string{
-  return error instanceof Error?error.message:String(error);
+  const message=error instanceof Error?error.message:'';
+  if(/Sepolia|chain|network/i.test(message))
+    return 'wallet network verification failed';
+  if(/account|wallet|provider/i.test(message))
+    return 'wallet account verification failed';
+  if(/stale|reorg|reorganiz/i.test(message))
+    return 'public match state changed; refresh before continuing';
+  if(/fee|gas|estimate/i.test(message))
+    return 'fresh gas or fee quote unavailable';
+  // Provider errors can contain RPC URLs, request payloads or credentials.
+  return 'operation failed; no transaction was sent';
 }
 function addressEquals(a:string|null,b:string|null):boolean{
   return Boolean(a&&b&&a.toLowerCase()===b.toLowerCase());
