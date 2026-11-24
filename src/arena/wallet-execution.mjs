@@ -152,6 +152,9 @@ export async function recoverArenaV3ActionReceipt(provider,manifest,intent,trans
     tx.gasLimit*tx.maxFeePerGas<=BigInt(intent.fee.maximumTotalFeeWei),
     'mined transaction fee exceeds review');
   const number=safeInt(receipt.blockNumber),blockHash=hash(receipt.blockHash);
+  check(number>safeInt(intent.observedBlock),'receipt predates reviewed action');
+  const origin=await provider.getBlock(intent.observedBlock);
+  check(origin&&hash(origin.hash)===hash(intent.observedBlockHash),'review block reorg');
   check(tx.blockNumber===number&&hash(tx.blockHash)===blockHash,'receipt block identity');
   const block=await provider.getBlock(number),height=safeInt(await provider.getBlockNumber());
   check(block&&hash(block.hash)===blockHash,'receipt reorg');
