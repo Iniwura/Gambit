@@ -43,7 +43,7 @@ function provider(f){
       return {hash:f.badBlocks.has(n)?blockHash(n+10000):blockHash(n),
         timestamp:100000+(n-100)*12};
     },
-    async getCode(a,n){assert.equal(a,CONTRACT);return n===100?f.historicalCode:f.code;},
+    async getCode(a,n){assert.equal(a,CONTRACT);return n===f.created?f.historicalCode:f.code;},
     async getTransaction(h){assert.equal(h,TX);return f.tx;},
     async getTransactionReceipt(h){assert.equal(h,TX);return f.receipt;},
     async call(tx){
@@ -146,8 +146,16 @@ test('ambiguous wallet error or invalid hash consumes session without claiming f
     assert.equal(c.sends().length,1);
   }
 });
+function mine(c){
+  c.f.created=104;c.f.height=106;
+  for(const o of [c.f.tx,c.f.receipt,...c.f.receipt.logs]){
+    o.blockNumber=104;o.blockHash=blockHash(104);
+  }
+}
 test('creation receipt requires exact calldata, participants, fee, block and unique canonical event',async()=>{
   const c=ctx(),i=await c.intent();
+  await assert.rejects(recoverArenaV3ActionReceipt(c.p,MANIFEST,i,TX),/predates reviewed action/);
+  mine(c);
   const done=await recoverArenaV3ActionReceipt(c.p,MANIFEST,i,TX);
   assert.equal(done.state,'CONFIRMED_ACTION_RECEIPT');assert.equal(done.matchId,7);
   assert.equal(done.transactionHash,TX);assert.equal(c.sends().length,0);
@@ -158,14 +166,14 @@ test('creation receipt requires exact calldata, participants, fee, block and uni
   await assert.rejects(recoverArenaV3ActionReceipt(c.p,MANIFEST,i,TX),/fee exceeds/);
   c.f.tx.maxFeePerGas=2000000000n;c.f.tx.data=INVITE.encodeFunctionData('createMatch',[C]);
   await assert.rejects(recoverArenaV3ActionReceipt(c.p,MANIFEST,i,TX),/differs from reviewed/);
-  c.f.tx.data=INVITE.encodeFunctionData('createMatch',[B]);c.f.badBlocks.add(100);
+  c.f.tx.data=INVITE.encodeFunctionData('createMatch',[B]);c.f.badBlocks.add(104);
   await assert.rejects(recoverArenaV3ActionReceipt(c.p,MANIFEST,i,TX),/receipt reorg/);
 });
 test('pending and reverted receipt are never success',async()=>{
   const c=ctx(),i=await c.intent();
-  c.f.height=101;
+  mine(c);c.f.height=105;
   assert.equal((await recoverArenaV3ActionReceipt(c.p,MANIFEST,i,TX)).state,'UNCONFIRMED');
-  c.f.height=103;c.f.receipt.status=0;c.f.receipt.logs=[];
+  c.f.height=106;c.f.receipt.status=0;c.f.receipt.logs=[];
   assert.equal((await recoverArenaV3ActionReceipt(c.p,MANIFEST,i,TX)).state,'CONFIRMED_REVERTED');
   assert.equal(c.sends().length,0);
 });
@@ -180,6 +188,7 @@ test('round receipt is bound to exact match, expected round, and seal actor',asy
   const tx=c.sends()[0].params[0];c.f.tx.data=tx.data;
   const event=WRITE.encodeEventLog(WRITE.getEvent('RoundSealed'),[7,1,A]);
   Object.assign(c.f.receipt.logs[0],event);
+  mine(c);
   const confirmed=await recoverArenaV3ActionReceipt(c.p,MANIFEST,i,TX);
   assert.equal(confirmed.round,1);assert.equal(confirmed.matchId,7);
   Object.assign(c.f.receipt.logs[0],WRITE.encodeEventLog(WRITE.getEvent('RoundSealed'),[7,2,A]));
