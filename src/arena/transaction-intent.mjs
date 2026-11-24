@@ -13,15 +13,15 @@
 import {Interface,getAddress,keccak256,toUtf8Bytes,formatEther} from 'ethers';
 import {readArenaV3PublicMatch} from './public-match-reader.mjs';
 
-export const ARENA_V3_INTENT_VERSION=1;
+export const ARENA_V3_INTENT_VERSION=2;
 export const ARENA_V3_INTENT_ACTIONS=Object.freeze([
   'SEAL_ROUND','RESOLVE_ROUND','FINALIZE_ROUND','EXPIRE_INCOMPLETE'
 ]);
 export const ARENA_V3_WRITE_ABI=Object.freeze([
-  'function sealRound(uint256 id,bytes32[11] encrypted,bytes inputProof,bool useGambit)',
-  'function resolveRound(uint256 id)',
-  'function finalizeRound(uint256 id,uint8 packed,bytes proof)',
-  'function expireIncomplete(uint256 id)'
+  'function sealRound(uint256 id,uint8 expectedRound,bytes32[11] encrypted,bytes inputProof,bool useGambit)',
+  'function resolveRound(uint256 id,uint8 expectedRound)',
+  'function finalizeRound(uint256 id,uint8 expectedRound,uint8 packed,bytes proof)',
+  'function expireIncomplete(uint256 id,uint8 expectedRound)'
 ]);
 const WRITE_ABI=new Interface(ARENA_V3_WRITE_ABI);
 const HASH=/^0x[0-9a-fA-F]{64}$/;
@@ -158,7 +158,7 @@ function encodeAction(action,view,actor,payload){
     check(!payload.useGambit||!view.usedGambit[participant],
       'once-per-match GAMBIT already used');
     return {method:'sealRound',params:[
-      view.matchId,payload.encryptedHandles,proof,payload.useGambit
+      view.matchId,view.currentRound,payload.encryptedHandles,proof,payload.useGambit
     ],label:'Seal private squad as '+participant+' in round '+view.currentRound+
       (payload.useGambit?' WITH once-only GAMBIT (sector encrypted)':
         ' WITHOUT activating GAMBIT'),
@@ -169,7 +169,7 @@ function encodeAction(action,view,actor,payload){
     exact(payload,[],'empty resolution payload');
     check(view.status==='READY_TO_RESOLVE'&&r.challengerSealed&&
       r.defenderSealed&&!r.resolved,'both on-time orders required');
-    return {method:'resolveRound',params:[view.matchId],
+    return {method:'resolveRound',params:[view.matchId,view.currentRound],
       label:'Resolve round '+view.currentRound,
       note:'Neither a score nor a KMS proof is final yet.'};
   }
@@ -183,7 +183,7 @@ function encodeAction(action,view,actor,payload){
     check(view.status==='AWAITING_PROOF'&&r.resolved&&!r.finalized&&
       view.resultHandle?.toLowerCase()===payload.resultHandle.toLowerCase(),
       'proof is not bound to current live round handle');
-    return {method:'finalizeRound',params:[view.matchId,packed,proof],
+    return {method:'finalizeRound',params:[view.matchId,view.currentRound,packed,proof],
       label:'Finalize round '+view.currentRound+' with proposed public score '+
         (packed>>3)+' : '+(packed&7)+' and a KMS proof',
       note:'Only the onchain contract can authenticate the proof and score.'};
@@ -193,7 +193,7 @@ function encodeAction(action,view,actor,payload){
     check(view.status==='EXPIRED_INCOMPLETE_NOT_CLOSED'&&
       (!r.challengerSealed||!r.defenderSealed)&&
       !r.resolved&&!r.finalized,'not an incomplete expired round');
-    return {method:'expireIncomplete',params:[view.matchId],
+    return {method:'expireIncomplete',params:[view.matchId,view.currentRound],
       label:'Close incomplete match with NO winner',
       note:'Expiry does not award a win or a forfeit to either player.'};
   }
