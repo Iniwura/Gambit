@@ -50,6 +50,8 @@ jobs:
         run: npm run typecheck
       - name: Build browser release
         run: npm run build
+      - name: Verify v3 client method signatures against compiled Solidity (NO SIGNING)
+        run: npm run check:arena:v3:abi
       - name: Independent live SquadGambit public-RPC receipt/runtime verification (READ ONLY)
         continue-on-error: true
         timeout-minutes: 3
