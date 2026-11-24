@@ -257,15 +257,19 @@ export function mountArenaV3Lobby(root:HTMLElement){
     const intent=reviewData?.intent;
     review.hidden=!intent;
     if(!intent)return;
-    reviewSummary.textContent=intent.summary;
+    reviewSummary.textContent=intent.summary||
+      (intent.action==='CREATE_MATCH'?'Create one match for invited defender '+intent.defender:
+        intent.consentText);
     reviewDetails.replaceChildren();
     const fields:[string,string][]=[
       ['Chain','Ethereum Sepolia (11155111)'],['Contract',intent.contract],
-      ['From',intent.actor],['Value','0 ETH'],['Gas limit',intent.fee.gasLimit],
+      ['From',intent.actor],
+      ['Value','0 ETH'],['Calldata hash',intent.calldataHash],['Gas limit',intent.fee.gasLimit],
       ['Max fee / gas',intent.fee.maxFeePerGasWei+' wei'],
       ['Priority fee',intent.fee.maxPriorityFeePerGasWei+' wei'],
       ['Maximum fee',intent.fee.maximumTotalFeeWei+' wei']
     ];
+    if(intent.defender)fields.splice(3,0,['Defender',String(intent.defender)]);
     if(reviewEstimate)fields.splice(4,0,['Fresh gas estimate',reviewEstimate]);
     for(const [label,value] of fields){
       const term=document.createElement('dt');term.textContent=label;
