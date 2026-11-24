@@ -104,6 +104,10 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
         run: npm run preflight:squad:public
+      - name: Arena v3 candidate public Sepolia EVM quote (READ ONLY, non-gating)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run preflight:arena:v3:public
       - name: Export compiled SealedGambit ABI and bytecode
         uses: actions/upload-artifact@v4
         with:
