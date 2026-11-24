@@ -14,6 +14,15 @@ This is the **append-only work history** for GAMBIT. Read it alongside
 
 **Locked build order:** full four-pillar architecture/game plan → complete responsive functional greybox → adversarial and player QA → **only then** final original graphics, animation and sound. No automatic wallet signatures or deployment.
 
+## 2026-11-24 — Arena v3 invitation recovery and execution-time round binding
+
+**Status: RESEARCH / IMPLEMENTED; 235/235 deterministic tests VERIFIED.** [Invitation and round-binding acceptance](ARENA_V3_INVITATION_ROUND_BINDING.md). [Invitation run 45322086158](https://github.com/Iniwura/Gambit/actions/runs/45322086158) passed 235/235 tests and compiled invitation ABI. [Round-bound code run 45322300119](https://github.com/Iniwura/Gambit/actions/runs/45322300119) passed 235/235 deterministic tests. Inspect its exact remaining job conclusions before claiming full QA; no live v3 deployment.
+
+- Added [unsigned creation and invitation receipt recovery](../src/arena/invitation.mjs), exact two public participants, pinned runtime, fee cap, zero value, canonical transaction receipt with indexed event and three confirmations, historical runtime and current match reconciliation. No predicted match ID, no wallet-control or defender-acceptance claim, no signature or broadcast.
+- Added [11 deterministic invitation tests](../tests/arena-v3-invitation.test.mjs), including counterfeit events, wrong participants, stale or reorganized blocks, fee violations and counter races. Creation selector, public counter and indexed event added to compiled ABI parity gate.
+- Fixed deployment-blocking round ambiguity: all four round-changing Solidity methods now require explicit expectedRound and reject stale/future round execution before FHE work. Round intent schema v2; client/compiled ABI and Hardhat tests updated. New FHE regression replays all four stale actions after a round advance, verifies no mutation, then completes the legitimate new round. All 58 FHE-operation-containing source lines unchanged; re-pinned static HCU inventory. Prior v3 draft ABI is obsolete; deployed SquadGambit v2 unchanged.
+- **Next:** confirm the new contract/ABI/browser gates, then implement actual explicit account/chain-aware wallet and invite UI plus encryption/proof paths. Live HCU/depth, latency, fairness and signed deployment authorization remain required. No cosmetic pass; full four-pillar scope retained.
+
 ## 2026-11-24 — Arena v3 explicit unsigned transaction intent, fresh-state revalidation and compiled ABI guard
 
 **Status: VERIFIED 4/4 QUALITY JOBS FOR LOCAL SOURCE/RESEARCH; LIVE TWO-WALLET ARENA STILL NOT BUILT.** [Full GitHub Actions run 45320612652](https://github.com/Iniwura/Gambit/actions/runs/45320612652): **224/224 Node tests**, **25/25 Hardhat FHE mock tests**, Phaser/TypeScript/browser build, exact compiled v3 write/read ABI parity, authentic existing Hotseat/Academy/BLACKSITE/Profile desktop/mobile/tablet browser regression. [Exact technical acceptance](ARENA_V3_TRANSACTION_INTENT_ACCEPTANCE.md). PR #5 remains DRAFT.
