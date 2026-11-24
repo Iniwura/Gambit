@@ -319,6 +319,7 @@ test('fee caps are strict decimal EIP-1559 bounds; no ETH transfer ever allowed'
     {...fee(),gasLimit:'20000000.5'},
     {...fee(),gasLimit:'0'},
     {...fee(),gasLimit:'21000000'},
+    {...fee(),gasLimit:'16777217',maximumTotalFeeWei:'1000000000000000000'},
     {...fee(),maxFeePerGasWei:'1e9'},
     {...fee(),maxFeePerGasWei:'1000'},
     {...fee(),maxPriorityFeePerGasWei:'2000000001'},
