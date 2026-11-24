@@ -67,6 +67,8 @@ function feeOf(value){
     maximumTotalFeeWei:budget.toString()
   });
 }
+// Shared by the separate match-creation review guard.
+export {feeOf as normalizeArenaV3FeeQuote};
 function bytes(value,label,maxBytes){
   check(typeof value==='string'&&HEX_BYTES.test(value)&&
     (value.length-2)/2<=maxBytes,label);
