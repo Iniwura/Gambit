@@ -17,12 +17,13 @@ export const ARENA_V3_INTENT_VERSION=1;
 export const ARENA_V3_INTENT_ACTIONS=Object.freeze([
   'SEAL_ROUND','RESOLVE_ROUND','FINALIZE_ROUND','EXPIRE_INCOMPLETE'
 ]);
-const WRITE_ABI=new Interface([
+export const ARENA_V3_WRITE_ABI=Object.freeze([
   'function sealRound(uint256 id,bytes32[11] encrypted,bytes inputProof,bool useGambit)',
   'function resolveRound(uint256 id)',
   'function finalizeRound(uint256 id,uint8 packed,bytes proof)',
   'function expireIncomplete(uint256 id)'
 ]);
+const WRITE_ABI=new Interface(ARENA_V3_WRITE_ABI);
 const HASH=/^0x[0-9a-fA-F]{64}$/;
 const HEX_BYTES=/^0x(?:[0-9a-fA-F]{2})+$/;
 const INTEGER=/^(0|[1-9][0-9]*)$/;
@@ -141,7 +142,7 @@ function encodeAction(action,view,actor,payload){
   check(!view.complete&&!view.abandoned,'match is closed');
   if(action==='SEAL_ROUND'){
     exact(payload,['encryptedHandles','inputProof','useGambit'],
-      'encrypted seal payload');
+      'exact encrypted seal payload');
     check(typeof payload.useGambit==='boolean','public stake decision');
     check(Array.isArray(payload.encryptedHandles)&&
       payload.encryptedHandles.length===11,'exactly eleven encrypted handles');
