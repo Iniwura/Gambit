@@ -1,4 +1,4 @@
-import {BrowserProvider} from 'ethers';
+import {BrowserProvider,Interface} from 'ethers';
 import {discoverInjectedWallets} from '../chain/wallet-discovery.mjs';
 import {startingSquadPlans} from '../squad.mjs';
 import {approvedArenaV3Deployment} from './approved-deployment.mjs';
@@ -8,7 +8,8 @@ import {
   prepareArenaV3Finalization
 } from './fhe-preparation.mjs';
 import {
-  arenaV3InviteToken,recoverArenaV3Invitation,stageArenaV3Create
+  ARENA_V3_INVITATION_ABI,arenaV3InviteToken,recoverArenaV3Invitation,
+  stageArenaV3Create
 } from './invitation.mjs';
 import {readArenaV3PublicMatch} from './public-match-reader.mjs';
 import {
@@ -176,6 +177,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
   let controller:AbortController|null=null;
   let revision=0;
   let reviewData:Prepared|null=null;
+  let reviewEstimate:string|null=null;
   let pending:Pending|null=readPending();
 
   function setStatus(message:string):void{status.textContent=message;}
@@ -183,6 +185,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
     revision++;
     controller?.abort();controller=null;
     actor=null;provider=null;activeMatchId=null;activeView=null;reviewData=null;
+    reviewEstimate=null;
     review.hidden=true;pendingPanel.hidden=!pending;pendingCheck.disabled=!pending;
     match.hidden=true;planner.hidden=true;
     defender.disabled=true;createStage.disabled=true;invite.disabled=true;recover.disabled=true;
@@ -263,6 +266,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
       ['Priority fee',intent.fee.maxPriorityFeePerGasWei+' wei'],
       ['Maximum fee',intent.fee.maximumTotalFeeWei+' wei']
     ];
+    if(reviewEstimate)fields.splice(4,0,['Fresh gas estimate',reviewEstimate]);
     for(const [label,value] of fields){
       const term=document.createElement('dt');term.textContent=label;
       const detail=document.createElement('dd');detail.textContent=value;
@@ -368,7 +372,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
       const prepared=await prepareArenaV3Seal({wallet:selected!,provider:currentProvider(),
         manifest,sdk:sdkSession.sdk,matchId:activeMatchId,expectedActor:actor!,
         expectedRound:activeView.currentRound,order:collectOrder(),feeQuote:await feeQuote(),signal});
-      reviewData=prepared;renderReview();planner.hidden=true;
+      reviewEstimate=null;reviewData=prepared;renderReview();planner.hidden=true;
       setStatus('Encrypted order prepared. Review the exact public transaction before opening the wallet.');
     });
   }
@@ -378,7 +382,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
     await run('Preparing the current round resolution for review…',async signal=>{
       const fresh=await readArenaV3PublicMatch(currentProvider(),manifest,matchId,{signal});
       activeView=fresh;renderMatch();
-      reviewData={intent:stageArenaV3TransactionIntent(fresh,{action:'RESOLVE_ROUND',actor,
+      reviewEstimate=null;reviewData={intent:stageArenaV3TransactionIntent(fresh,{action:'RESOLVE_ROUND',actor,
         payload:{},feeQuote:await feeQuote()}),payload:{}};
       renderReview();setStatus('Resolution prepared. Review the exact public transaction before opening the wallet.');
     });
@@ -390,7 +394,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
       const prepared=await prepareArenaV3Finalization({wallet:selected!,provider:currentProvider(),
         manifest,sdk:sdkSession.sdk,matchId:activeMatchId,expectedActor:actor!,
         expectedRound:activeView.currentRound,feeQuote:await feeQuote(),signal});
-      reviewData=prepared;renderReview();
+      reviewEstimate=null;reviewData=prepared;renderReview();
       setStatus('KMS proof prepared. Review the proposed score and exact transaction before opening the wallet.');
     });
   }
@@ -400,7 +404,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
     await run('Preparing the expired-round close for review…',async signal=>{
       const fresh=await readArenaV3PublicMatch(currentProvider(),manifest,matchId,{signal});
       activeView=fresh;renderMatch();
-      reviewData={intent:stageArenaV3TransactionIntent(fresh,{action:'EXPIRE_INCOMPLETE',actor,
+      reviewEstimate=null;reviewData={intent:stageArenaV3TransactionIntent(fresh,{action:'EXPIRE_INCOMPLETE',actor,
         payload:{},feeQuote:await feeQuote()}),payload:{}};
       renderReview();setStatus('Expiry prepared. Review the exact public transaction before opening the wallet.');
     });
@@ -414,17 +418,17 @@ export function mountArenaV3Lobby(root:HTMLElement){
         approval:staged.intent.id,signal});
       const hash=result.transactionHash;
       if(!hash){
-        clearPending();pending=null;reviewData=null;renderReview();
+        clearPending();pending=null;reviewData=null;reviewEstimate=null;renderReview();
         throw Error('Wallet submission is uncertain; no transaction hash was returned. Do not retry automatically.');
       }
       if(staged.intent.action==='CREATE_MATCH'){
         const token=arenaV3InviteToken(hash);
         pending={kind:'CREATE',hash,token};writePending(pending);invite.value=token;
-        reviewData=null;renderReview();renderPending();copy.disabled=false;
+        reviewData=null;reviewEstimate=null;renderReview();renderPending();copy.disabled=false;
         setStatus('Match creation submitted once. Share the invitation token and recover after three confirmations.');
       }else{
         pending={kind:'ACTION',hash,intent:staged.intent,matchId:activeMatchId??undefined};
-        writePending(pending);reviewData=null;renderReview();renderPending();
+        writePending(pending);reviewData=null;reviewEstimate=null;renderReview();renderPending();
         setStatus('Action submitted once. Reconcile the exact receipt before reviewing another action.');
       }
     });
@@ -472,9 +476,17 @@ export function mountArenaV3Lobby(root:HTMLElement){
   createStage.addEventListener('click',async()=>{
     if(!actor)return;
     await run('Reading the live deployment and staging match creation…',async signal=>{
+      const invitedDefender=defender.value.trim();
+      const quote=await feeQuote();
+      const data=new Interface(ARENA_V3_INVITATION_ABI).encodeFunctionData(
+        'createMatch',[invitedDefender]);
+      const estimate=await currentProvider().estimateGas({from:actor!,to:manifest.address,
+        data,value:0n});
+      if(estimate<=0n||estimate>MAX_ARENA_V3_GAS_LIMIT)
+        throw Error('Fresh creation estimate exceeds the reviewed gas bound');
       const intent=await stageArenaV3Create(currentProvider(),manifest,{actor,
-        defender:defender.value.trim(),feeQuote:await feeQuote()},{signal});
-      reviewData={intent,payload:{}};renderReview();
+        defender:invitedDefender,feeQuote:{...quote,gasLimit:estimate.toString()}},{signal});
+      reviewEstimate=estimate.toString();reviewData={intent,payload:{}};renderReview();
       setStatus('Match creation prepared. Review the exact public transaction before opening the wallet.');
     });
   });
@@ -488,7 +500,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
     catch{setStatus('Clipboard unavailable. Select and copy the invitation token manually.');}
   });
   reviewSubmit.addEventListener('click',()=>{void submitReview();});
-  reviewCancel.addEventListener('click',()=>{reviewData=null;renderReview();setStatus('Transaction review cancelled. No wallet request was made.');});
+  reviewCancel.addEventListener('click',()=>{reviewData=null;reviewEstimate=null;renderReview();setStatus('Transaction review cancelled. No wallet request was made.');});
   pendingCheck.addEventListener('click',()=>{void checkPending();});
   refreshMatch.addEventListener('click',()=>{void run('Refreshing public match state…',signal=>refreshActiveMatch(signal));});
   sealStage.addEventListener('click',()=>{void stageSeal();});
