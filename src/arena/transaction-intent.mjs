@@ -28,7 +28,9 @@ const HASH=/^0x[0-9a-fA-F]{64}$/;
 const HEX_BYTES=/^0x(?:[0-9a-fA-F]{2})+$/;
 const INTEGER=/^(0|[1-9][0-9]*)$/;
 const ZERO='0x0000000000000000000000000000000000000000';
-const MAX_GAS_LIMIT=20_000_000n; // local safety cap; NOT a Sepolia quote.
+// EIP-7825 activated on Sepolia: a single transaction cannot exceed 2^24 gas.
+export const MAX_ARENA_V3_GAS_LIMIT=16_777_216n;
+const MAX_GAS_LIMIT=MAX_ARENA_V3_GAS_LIMIT;
 const check=(condition,reason)=>{
   if(!condition)throw Error('ARENA_V3_INTENT_INVALID '+reason);
 };
