@@ -62,7 +62,7 @@ function publicRecord(intent,state,extra={}){
     contract:intent.contract,chainId:intent.chainId,state,...extra});
 }
 /**
- * Exactly one wallet invocation per session/intent. Session is volatile:
+ * Exactly one wallet invocation per session, even across different intents. Session is volatile:
  * app reload does NOT establish durable replay protection. The UI must retain
  * the public transaction hash and reconcile uncertain submissions before
  * another approval. CREATE_MATCH is non-idempotent; never infer retry safety.
@@ -73,10 +73,11 @@ export function createArenaV3ExecutionSession({wallet,provider,manifest}){
   check(wallet&&typeof wallet.request==='function'&&provider&&manifest,
     'explicit selected wallet and independently pinned manifest required');
   const records=new Map();
-  let locked=false,uncertain=false;
+  let locked=false,consumed=false;
   async function submit({intent,payload,approval,signal}){
     canonicalIntent(intent);
-    check(!locked&&!uncertain&&!records.has(intent.id),'session busy, consumed or uncertain; reconcile first');
+    check(Object.isFrozen(intent)&&Object.isFrozen(intent.fee),'immutable staged review required');
+    check(!locked&&!consumed&&!records.has(intent.id),'session busy, consumed or uncertain; reconcile first');
     check(approval===intent.id,'exact explicit review required');
     // Synchronous reservation before any await blocks concurrent clicks.
     locked=true;
@@ -102,7 +103,7 @@ export function createArenaV3ExecutionSession({wallet,provider,manifest}){
       check(await readArenaV3SelectedAccount(wallet,signal)===address(intent.actor),'selected account changed');
       abort(signal);
       records.set(intent.id,publicRecord(intent,'DISPATCHED_UNKNOWN'));
-      dispatched=true;
+      dispatched=true;consumed=true;
       // The ONLY write RPC. The selected wallet still requires human approval.
       const result=await wallet.request({method:'eth_sendTransaction',params:[exact]});
       const txHash=hash(result);
@@ -113,14 +114,13 @@ export function createArenaV3ExecutionSession({wallet,provider,manifest}){
       if(dispatched){
         // Even error 4001 does not establish absence of a broadcast from a
         // dishonest provider. Do not reopen the retry path automatically.
-        uncertain=true;
         return records.get(intent.id);
       }
       throw error;
     }finally{locked=false;}
   }
   return Object.freeze({submit,record:id=>records.get(id)??null,
-    isLocked:()=>locked||uncertain});
+    isLocked:()=>locked||consumed});
 }
 /**
  * Reconcile only a known hash. Checks direct transaction, exact calldata,
