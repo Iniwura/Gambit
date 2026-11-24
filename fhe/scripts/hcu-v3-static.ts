@@ -15,8 +15,10 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {resolve} from 'node:path';
 
-// Git blob SHA is pinned to the audited exact source bytes.
-const REVIEWED_V3_GIT_BLOB_SHA='97d5459f8d3197500c93fe24495d52cec8c36004';
+// Git blob SHA is pinned to the reviewed exact source bytes.
+// 24 Nov: expectedRound adds a plaintext precondition only. All 58 FHE.
+// operation-containing lines and the encrypted loops are unchanged.
+const REVIEWED_V3_GIT_BLOB_SHA='34f13f4221ab5027f3d4b8406933df8acf16c3c6';
 const content=readFileSync(resolve(process.cwd(),'contracts/ArenaV3Research.sol'));
 const gitBlobSha=createHash('sha1')
   .update('blob '+content.length+String.fromCharCode(0))
