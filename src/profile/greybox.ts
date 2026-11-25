@@ -2,10 +2,13 @@ import './greybox.css';
 import {JsonRpcProvider,getAddress} from 'ethers';
 import {createGameShell,transitionGameShell}
   from '../architecture/game-shell.mjs';
-import {loadApprovedCommanderPublicHistory}
-  from './public-history.mjs';
-import {TRUSTED_SQUAD_GAMBIT_SEPOLIA as PIN}
-  from './trusted-deployments.mjs';
+import {loadApprovedArenaV3History}
+  from './arena-v3-history.mjs';
+import {createCommanderIdentity,deriveCommanderProfile,
+  loadCommanderIdentity,saveCommanderIdentity}
+  from './commander-profile.mjs';
+import {approvedArenaV3Deployment}
+  from '../arena/approved-deployment.mjs';
 
 /**
  * Phase 2: opt-in public RECORD viewer.
@@ -13,18 +16,17 @@ import {TRUSTED_SQUAD_GAMBIT_SEPOLIA as PIN}
  * No eth_requestAccounts, signer, transaction or browser storage.
  */
 type VerifiedRow={
-  duelId:string,transactionHash:string,blockNumber:number,
-  challenger:string,defender:string,
-  pointsChallenger:number,pointsDefender:number,outcome:number
+  matchId:string,creationTransaction:string,creationBlock:number,
+  challenger:string,defender:string,currentRound:number,complete:boolean,
+  cumulative:{challenger:number,defender:number},winner:0|1|2
 };
 type PublicView={
-  status:string,wallet:string,matches:number,wins:number,losses:number,
-  draws:number,pagesScanned:number,candidatesChecked:number,
-  verifiedHistory:readonly VerifiedRow[],fullHistoryObserved:boolean
+  authority:string,commander:string,matches:readonly VerifiedRow[],
+  fullHistoryObserved:boolean,pagesScanned:number,candidatesChecked:number
 };
-type Loading={pagesScanned:number,candidatesChecked:number,playerRecordsVerified:number,
-  completed:boolean,lastScannedBlock:number|null};
+type Loading={pagesScanned:number,candidatesChecked:number};
 const RPC='https://ethereum-sepolia-rpc.publicnode.com';
+const PIN=approvedArenaV3Deployment();
 function byId<T extends HTMLElement>(root:ParentNode,id:string):T{
   const element=root.querySelector<T>('#'+id);
   if(!element)throw Error('Commander public reader control missing: '+id);
@@ -58,14 +60,19 @@ export function mountCommanderPublicViewer():void{
         <button id="gambit-profile-close" type="button">RETURN TO ARENA</button>
       </header>
       <p>This viewer checks authentic GAMBIT match finalizations for one public
-        wallet address. It does not create an account, connect a wallet or
-        publish private fighter plans. Nothing is stored in this browser.</p>
+        wallet address. It never connects or signs with a wallet. Only the
+        public call sign is stored locally; private plans and proof bytes are
+        never stored.</p>
       <form id="gambit-profile-form">
         <label for="gambit-profile-address">PUBLIC ETHEREUM ADDRESS</label>
         <input id="gambit-profile-address" type="text"
           inputmode="text" autocomplete="off" autocapitalize="off"
           spellcheck="false" placeholder="0x...40 hexadecimal characters"
           aria-describedby="gambit-profile-consent" maxlength="42" required/>
+        <label for="gambit-profile-callsign">COMMANDER CALL SIGN (OPTIONAL)</label>
+        <input id="gambit-profile-callsign" type="text" autocomplete="off"
+          autocapitalize="characters" spellcheck="false" maxlength="24"
+          placeholder="COMMANDER" />
         <p id="gambit-profile-consent">Look up an address only if you intend to
           view its public match history. This reveals no private tactics.
           A single public RPC is not a full Ethereum light-client audit.</p>
@@ -81,14 +88,17 @@ export function mountCommanderPublicViewer():void{
           <div><span>LOSSES</span><strong id="gambit-profile-losses">0</strong></div>
           <div><span>DRAWS</span><strong id="gambit-profile-draws">0</strong></div>
         </div>
+        <p id="gambit-profile-progression"></p>
+        <h2>ARENA ACHIEVEMENTS</h2>
+        <ul id="gambit-profile-achievements"></ul>
         <h2>AUTHENTICATED FINALIZATIONS</h2>
         <ol id="gambit-profile-history"></ol>
         <p id="gambit-profile-empty" hidden>No matching finalized matches found
           in the confirmed log range scanned by this RPC.</p>
       </section>
-      <p class="gp-boundary">NOT A PERSISTENT COMMANDER PROFILE OR RANKING.
-        History is reverified on each request. No achievements are inferred
-        from local TRAINING or BLACKSITE missions.</p>
+      <p class="gp-boundary">HISTORY AND ACHIEVEMENTS ARE DERIVED ONLY FROM
+        VERIFIED ARENA V3 RECEIPTS. Local TRAINING and BLACKSITE practice do
+        not advance Commander rank.</p>
     </section>`;
   document.body.append(launch,backdrop);
   const mobileHead=document.querySelector('#gambit-blacksite-mobile-open');
@@ -97,6 +107,7 @@ export function mountCommanderPublicViewer():void{
     ?.after(mobileLaunch);
   const form=byId<HTMLFormElement>(backdrop,'gambit-profile-form');
   const address=byId<HTMLInputElement>(backdrop,'gambit-profile-address');
+  const callSign=byId<HTMLInputElement>(backdrop,'gambit-profile-callsign');
   const submit=byId<HTMLButtonElement>(backdrop,'gambit-profile-submit');
   const dialog=byId<HTMLElement>(backdrop,'gambit-profile-dialog');
   const results=byId<HTMLElement>(backdrop,'gambit-profile-results');
@@ -114,6 +125,8 @@ export function mountCommanderPublicViewer():void{
   function reset(){
     results.hidden=true;
     history.replaceChildren();
+    byId<HTMLElement>(backdrop,'gambit-profile-achievements').replaceChildren();
+    setText(backdrop,'gambit-profile-progression','');
     setText(backdrop,'gambit-profile-scan-status','');
     setPhase('ready','Enter a public address to begin a read-only lookup.');
   }
@@ -138,6 +151,7 @@ export function mountCommanderPublicViewer():void{
     for(const {element,inert} of priorInert)element.inert=inert;
     priorInert=[];
     address.value=''; // do not retain wallet addresses after closing
+    callSign.value='';
     reset();
     (focusBefore?.isConnected?focusBefore:launch)?.focus();
   }
@@ -167,34 +181,43 @@ export function mountCommanderPublicViewer():void{
     reset();
     address.focus();
   }
-  function display(view:PublicView){
+  function display(view:PublicView,profile:ReturnType<typeof deriveCommanderProfile>){
     results.hidden=false;
-    setText(backdrop,'gambit-profile-matches',String(view.matches));
-    setText(backdrop,'gambit-profile-wins',String(view.wins));
-    setText(backdrop,'gambit-profile-losses',String(view.losses));
-    setText(backdrop,'gambit-profile-draws',String(view.draws));
+    setText(backdrop,'gambit-profile-matches',String(profile.matches));
+    setText(backdrop,'gambit-profile-wins',String(profile.wins));
+    setText(backdrop,'gambit-profile-losses',String(profile.losses));
+    setText(backdrop,'gambit-profile-draws',String(profile.draws));
     setText(backdrop,'gambit-profile-scan-status',
       (view.fullHistoryObserved?
        'Complete scan of this RPC’s confirmed deployment logs.':
        'PARTIAL scan only. More older/newer matches may exist.')+
        ' '+view.pagesScanned+' pages scanned; '+view.candidatesChecked+
-       ' candidate finalizations independently verified.');
+       ' Arena v3 match candidates independently verified.');
+    setText(backdrop,'gambit-profile-progression',
+      'COMMANDER LEVEL '+profile.level+' / '+profile.xp+' VERIFIED XP');
+    const achievements=byId<HTMLUListElement>(backdrop,'gambit-profile-achievements');
+    achievements.replaceChildren(...profile.achievements.map(item=>{
+      const li=document.createElement('li');
+      li.textContent=item.title+' / Match receipt '+item.evidence.slice(0,10)+'...';
+      return li;
+    }));
     history.replaceChildren();
-    for(const event of view.verifiedHistory){
+    for(const event of view.matches){
       const li=document.createElement('li');
       const score=document.createElement('strong');
-      score.textContent='Duel #'+event.duelId+' · '+
-        event.pointsChallenger+' : '+event.pointsDefender;
+      score.textContent='Arena Match #'+event.matchId+' · '+
+        event.cumulative.challenger+' : '+event.cumulative.defender+
+        (event.complete?' · COMPLETE':' · '+event.currentRound+'/5');
       const link=document.createElement('a');
-      link.textContent='View verified transaction';
-      link.href='https://sepolia.etherscan.io/tx/'+event.transactionHash;
+      link.textContent='View creation receipt';
+      link.href='https://sepolia.etherscan.io/tx/'+event.creationTransaction;
       link.rel='noopener noreferrer';
       link.target='_blank';
       li.append(score,link);
       history.append(li);
     }
     byId<HTMLElement>(backdrop,'gambit-profile-empty').hidden=
-      view.matches!==0;
+      profile.matches!==0;
   }
   async function inspect(){
     stop();
@@ -213,18 +236,22 @@ export function mountCommanderPublicViewer():void{
     submit.disabled=true;
     setPhase('loading','Checking the approved contract and canonical Sepolia logs…');
     try{
-      const view=await loadApprovedCommanderPublicHistory(readProvider,wallet,{
+      const saved=loadCommanderIdentity(localStorage,wallet);
+      if(!callSign.value&&saved)callSign.value=saved.callSign;
+      const identity=createCommanderIdentity(wallet,{callSign:callSign.value||saved?.callSign});
+      try{saveCommanderIdentity(localStorage,identity);}catch{/* storage is optional */}
+      const view=await loadApprovedArenaV3History(readProvider,wallet,{
         signal:signalController.signal,maxPages:12,
         onProgress:(progress:Loading)=>{
           if(epoch!==myEpoch||backdrop.hidden)return;
           setText(backdrop,'gambit-profile-status',
             'Read-only scan: '+progress.pagesScanned+' pages · '+
-            progress.candidatesChecked+' candidate receipts checked · '+
-            progress.playerRecordsVerified+' verified for the selected wallet.');
+            progress.candidatesChecked+' Arena v3 candidates checked.');
         }
       }) as PublicView;
       if(epoch!==myEpoch||backdrop.hidden)return;
-      display(view);
+      const profile=deriveCommanderProfile(identity,view);
+      display(view,profile);
       setPhase(view.fullHistoryObserved?'verified':'partial',
         view.fullHistoryObserved?
           'Verified public results from the approved contract.':
@@ -232,8 +259,7 @@ export function mountCommanderPublicViewer():void{
     }catch(error){
       if(epoch!==myEpoch||backdrop.hidden)return;
       results.hidden=true;
-      const reason=error instanceof Error?error.message:'Unexpected public RPC error';
-      setPhase('error','Verification unavailable. No win or empty profile has been claimed. '+reason);
+      setPhase('error','Verification unavailable. No win or empty profile has been claimed.');
     }finally{
       if(epoch===myEpoch){
         submit.disabled=false;

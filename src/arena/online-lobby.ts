@@ -198,6 +198,11 @@ export function mountArenaV3Lobby(root:HTMLElement){
   let reviewData:Prepared|null=null;
   let reviewEstimate:string|null=null;
   let pending:Pending|null=readPending();
+  // WASM/relayer setup is expensive. Reuse one SDK session for the selected
+  // account across rounds, while invalidating it on every wallet lifecycle
+  // change. The session remains read-only; each write still gets a fresh
+  // public-state, fee and calldata review immediately before the wallet.
+  let sdkCache:{wallet:Wallet,actor:string,sdk:any}|null=null;
 
   function setStatus(message:string):void{status.textContent=message;}
   function invalidate(message:string):void{
@@ -205,6 +210,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
     controller?.abort();controller=null;
     actor=null;provider=null;activeMatchId=null;activeView=null;reviewData=null;
     reviewEstimate=null;
+    sdkCache=null;
     review.hidden=true;pendingPanel.hidden=!pending;pendingCheck.disabled=!pending;
     match.hidden=true;planner.hidden=true;
     defender.disabled=true;createStage.disabled=true;invite.disabled=true;recover.disabled=true;
@@ -253,6 +259,15 @@ export function mountArenaV3Lobby(root:HTMLElement){
   function currentProvider():BrowserProvider{
     if(!provider||!selected||!actor)throw Error('Check an authorized Sepolia account first');
     return provider;
+  }
+  async function currentSdk(signal:AbortSignal):Promise<{sdk:any}> {
+    if(!selected)throw Error('Check an authorized Sepolia account first');
+    const currentActor=await readArenaV3SelectedAccount(selected,signal);
+    if(sdkCache&&sdkCache.wallet===selected&&sdkCache.actor===currentActor)
+      return sdkCache;
+    const session=await createArenaV3SdkSession(selected,signal);
+    sdkCache={wallet:selected,actor:currentActor,sdk:session.sdk};
+    return sdkCache;
   }
   async function feeQuote(){
     const fees=await currentProvider().getFeeData();
@@ -392,7 +407,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
     if(!activeView||activeMatchId===null||!actor||!selected)return;
     const matchId=activeMatchId;
     await run('Encrypting the current round for review…',async signal=>{
-      const sdkSession=await createArenaV3SdkSession(selected!,signal);
+      const sdkSession=await currentSdk(signal);
       const prepared=await prepareArenaV3Seal({wallet:selected!,provider:currentProvider(),
         manifest,sdk:sdkSession.sdk,matchId,expectedActor:actor!,
         expectedRound:activeView.currentRound,order:collectOrder(),feeQuote:await feeQuote(),signal});
@@ -436,7 +451,7 @@ export function mountArenaV3Lobby(root:HTMLElement){
   async function stageFinalize():Promise<void>{
     if(!activeView||activeMatchId===null||!actor||!selected)return;
     await run('Requesting the exact public result handle from the KMS SDK…',async signal=>{
-      const sdkSession=await createArenaV3SdkSession(selected!,signal);
+      const sdkSession=await currentSdk(signal);
       const prepared=await prepareArenaV3Finalization({wallet:selected!,provider:currentProvider(),
         manifest,sdk:sdkSession.sdk,matchId:activeMatchId,expectedActor:actor!,
         expectedRound:activeView.currentRound,feeQuote:await feeQuote(),signal});

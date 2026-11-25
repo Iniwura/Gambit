@@ -1,7 +1,7 @@
 # GAMBIT: Sealed Orders — Master Product Scope and Build Roadmap
 
 **Status:** AUTHORITATIVE PRODUCT VISION — **NOT** an implementation/completion claim.  
-**Recorded:** 21 November 2026.  
+**Recorded:** 25 November 2026.
 **Project:** [GAMBIT](../README.md) · [Evidence and technical status](STATUS.md) · [Production acceptance gates](PRODUCTION_CHARTER.md) · [Game mechanics](GAME_DESIGN.md).  
 **Branch/release boundary:** Active build on `build/verified-first-slice`, draft PR #5. Keep historical plans, demo code and a single proven testnet encounter distinct from the future product.
 
@@ -32,18 +32,18 @@ Take command of three distinct fighters, outthink real human opponents with secr
 - **Full human PVP:** discover/coordinate a match, Create/Join, invite a distinct opponent, plan, commit, wait, recover, resolve, prove finality, view result and rematch. Every state should be understandable without knowledge of blockchain transaction internals.
 - **Presentation:** one cohesive arena world, intentional camera and combat staging, understandable reactor-control feedback, character identity, hit responses, transitions and satisfying victory/defeat. Do **not** reconstruct secret per-fighter results from an aggregate encrypted score.
 
-**CURRENT STATUS:** five-round cleartext *solo practice* and a verified confidential **single-encounter** 3v3 Duel #1 on Sepolia remain intact. A separate [five-round encrypted v3 contract](ARENA_V3_FHE_MOCK_ACCEPTANCE.md) compiles and passes 25/25 local mock FHE tests (81 confidential scoring oracle cases); it is **not** deployed or HCU-measured. An additional [playable two-commander LOCAL HOTSEAT](ARENA_V3_HOTSEAT_ACCEPTANCE.md) now lets two people genuinely take independent three-role decisions through all five reference rounds, native desktop/mobile/tablet tested and **4/4 full CI green** ([run 44962022483](https://github.com/Iniwura/Gambit/actions/runs/44962022483)). This is strictly same-device cleartext practice, not remote wallet-authenticated or encrypted competitive Arena. Live multiplayer, onchain recovery, fairness/cost acceptance, persistent Profile and final art/audio remain unfinished. A [separately verified unsigned v3 action intent and fresh-state guard](ARENA_V3_TRANSACTION_INTENT_ACCEPTANCE.md) now passes 224/224 deterministic tests and compiled-ABI parity ([4/4 run 45320612652](https://github.com/Iniwura/Gambit/actions/runs/45320612652)). It cannot sign or send; the actual five-round online wallet experience remains unbuilt. A [new source- and block-pinned read-only v3 recovery adapter](ARENA_V3_PUBLIC_READER_ACCEPTANCE.md) has passed **212/212 deterministic CI tests** ([full 4/4 run 44962888818](https://github.com/Iniwura/Gambit/actions/runs/44962888818)); it requires a real immutable deployment manifest and has **not read a live v3 match**.
+**CURRENT STATUS:** Arena v3 is deployed at the approved Sepolia address and Match #1 is a complete five-round, two-wallet encrypted match: all 20 gameplay transactions, the `MatchCreated`/round/finalization receipts, cumulative `6:4` score and `complete=true` state are preserved in [`docs/BUILD_LOG.md`](BUILD_LOG.md) and independently read through three public RPC providers. The live latency baseline is also recorded. The verified deployment and Match #1 are evidence, not permission for automatic additional matches. Same-device cleartext hotseat remains a separate practice surface. The online lobby now pins the deployment, recovers invitations, validates accounts/network/state and reuses compatible SDK sessions while every write still requires fresh user review. Signature GAMBIT intervention, broad matchmaking and final art/audio remain unfinished.
 
 ### B. BLACKSITE — confidential missions and codebreaking
 
-**Local training mode is now implemented as a functional greybox; competitive BLACKSITE is NOT built or FHE-validated.** The tested four-symbol tutorial has actual browser controls, but the intended confidential mission world remains a separate experience from the deployed `SquadGambit` contract.
+**Local training mode remains a functional greybox; competitive BLACKSITE now has a mechanically specified and mock-FHE-validated candidate, but is not live-deployed.** The intended confidential mission world remains separate from the deployed Arena v3 contract until its own deployment and mission receipts are explicitly approved.
 
 - Tactical infiltration into a sci-fi security facility, limited information and hard choices.
 - Confidential decisions, clues, vault-code/codebreaking mechanics and meaningful tradeoffs; puzzle solutions and hidden data should not be exposed before the rules permit.
 - Original mission environments, progression, tension, clear win/lose conditions and rewarding replay.
-- Design the exact secrecy/fairness model, interaction loop, verification mechanism, privacy boundaries, HCU budget and anti-bruteforce limits **before** implementing or describing a playable encrypted mission.
+- The approved candidate uses an encrypted four-glyph vault code, encrypted guess and approach, hidden feedback handles, route-specific heat/score tradeoffs, five attempts, expiry and KMS-authenticated finalization. It does not expose plaintext code/guess reads. Deployment, live HCU measurement, mission content, rankings and real receipts remain gated.
 
-**CURRENT STATUS:** [`src/blacksite/greybox.ts`](../src/blacksite/greybox.ts) now exposes an actual local-training flow (briefing, inputs, clues, breach/lock, debrief, retry), backed by the complete [256-code headless reference](../src/blacksite/mission.mjs). It is connected to the fail-closed `blacksite-training` scene, with real [desktop/mobile E2E](../tests/blacksite-greybox-browser-check.mjs) verified in [4/4 passing CI jobs](https://github.com/Iniwura/Gambit/actions/runs/44926274058). **Local training is functional; competitive BLACKSITE remains unbuilt.** The separate v2 research has 7,776 codes but no approved competitive scanner; **no encrypted FHE mission, cinematic infiltration, content, rankings or real mission receipt.**
+**CURRENT STATUS:** [`src/blacksite/greybox.ts`](../src/blacksite/greybox.ts) exposes the local-training flow (briefing, inputs, clues, breach/lock, debrief, retry), backed by the complete [256-code headless reference](../src/blacksite/mission.mjs), and desktop/mobile browser regression passes. [`fhe/contracts/BlacksiteMission.sol`](../fhe/contracts/BlacksiteMission.sol) and [`fhe/test/BlacksiteMission.ts`](../fhe/test/BlacksiteMission.ts) now provide the competitive FHE protocol candidate and adversarial mock coverage. **Competitive BLACKSITE is mechanically implemented and locally verified, but not deployed or live-verified.** No mission receipt or ranking progress is claimed.
 
 ### C. TRAINING — serious game onboarding and tactical mastery
 
@@ -62,7 +62,7 @@ Take command of three distinct fighters, outthink real human opponents with secr
 - Read history from authentic verified receipts/events; **do not seed fictional past opponents or outcomes**.
 - Protect private tactics, wallet addresses and personal data; no speculative rankings without fair repeated matches.
 
-**CURRENT STATUS:** one public Arena finalization is authenticated by [`src/profile/verified-arena-record.mjs`](../src/profile/verified-arena-record.mjs), protected by the immutable approved deployment registry. A bounded event indexer and [opt-in history loader](../src/profile/public-history.mjs) now verify public matches for an entered address; [live Sepolia workflow 44927551505](https://github.com/Iniwura/Gambit/actions/runs/44927551505) passed 23/23 tests and found **one authentic defender win** in eight log pages with no signing. The [temporary read-only player-facing greybox](../src/profile/greybox.ts) is implemented and its desktop/mobile E2E was reverified in [full QA run 44938866411](https://github.com/Iniwura/Gambit/actions/runs/44938866411). **No durable cross-session account history, consented personal identity, achievements, progression or complete Commander Profile yet.**
+**CURRENT STATUS:** [`src/profile/arena-v3-history.mjs`](../src/profile/arena-v3-history.mjs) independently authenticates the approved Arena v3 deployment, creation receipt, all five round finalizations and completion state across three public Sepolia RPC providers. [`src/profile/commander-profile.mjs`](../src/profile/commander-profile.mjs) persists only a public call sign keyed to the wallet address and derives authentic Arena history, XP, level and achievements; the player-facing greybox consumes that verified profile. Match #1 produces level 2, 150 XP and three Arena achievements for the challenger. BLACKSITE progression is deliberately unchanged at zero until a deployed mission receipt is approved. No private keys, mnemonics, tactics or fabricated history are stored.
 
 ## 3. The premium product experience we expect
 
@@ -84,9 +84,10 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 | Authenticated first result (Cyan 0 : 1 Violet), receipt and public recovery | **Verified** | Onchain aggregate only; hidden fighter plans remain secret |
 | No-wallet spectator / first-screen proof shortcut and result view | **Built and Chromium-tested** | Judge-friendly evidence route; not full Create/Join product |
 | Verified first-round Academy and four-pillar greybox regression | [**4/4 full quality jobs PASS, 182/182 rules tests, actual desktop/mobile browser**](https://github.com/Iniwura/Gambit/actions/runs/44934706796) | [710px/820px tablet navigation hit-tests also passed 4/4](https://github.com/Iniwura/Gambit/actions/runs/44935438197); CI does not prove human gameplay fun, security audit or final art quality |
-| Full multi-round confidential Arena, signature GAMBIT intervention, matchmaking and smooth end-to-end UX | **Not yet built / verified** | Requires design, actual implementation and separate live evidence |
-| BLACKSITE | **Playable local training greybox verified desktop/mobile** | Competitive mission/FHE contract not built; proposed scanner not approved; no ranked mission outcomes |
-| Commander Profile, persistent verified history/progression | **Verified real wallet history backend + functional read-only greybox implemented; browser QA pending** | No durable identity/history store, achievements or full persistent Profile |
+| Arena v3 deployment and five-round Arena Match #1 | **Verified live on Sepolia; three-provider read-only history proof; 20 gameplay receipts** | One bounded match; no automatic repeat, no signature GAMBIT intervention or broad matchmaking claim |
+| Full multi-round confidential Arena product and smooth end-to-end UX | **Core match evidence complete; product surface still in progress** | Invitation/lobby/recovery paths are implemented and tested; repeated live acceptance requires explicit wallet approvals |
+| BLACKSITE | **FHE mission candidate compiled and mock/adversarial tested; local greybox browser-tested** | Not deployed or HCU-measured; no live mission receipt/ranking progress |
+| Commander Profile, persistent verified history/progression | **Verified Arena v3 history, public identity, XP/level/achievements and browser surface implemented** | BLACKSITE progress remains zero; no private credential storage or synthetic history |
 | Premium original sprite art, audio, accessible UX and independent playtesting/security review | **Incomplete / not established** | No 90+/100 or release-ready claim |
 
 ### Real-chain evidence for the completed first duel
@@ -99,7 +100,7 @@ A real game home screen; playable practice/tutorial; Create Match and Join Match
 
 **Permanent progress record:** [BUILD_LOG.md](BUILD_LOG.md) is mandatory for every substantial milestone, with exact evidence, failures, unfinished systems and next action.
 
-**Current Phase-1 game/system specification:** [GAME_ARCHITECTURE_V1.md](GAME_ARCHITECTURE_V1.md), with an executable, fail-closed shell contract in [`src/architecture/game-shell.mjs`](../src/architecture/game-shell.mjs). The [Arena five-round feasibility / signature GAMBIT decision record](ARENA_V3_FEASIBILITY.md) is under research; its pure stake candidate has 432 symmetric/bounded test cases, **not** competitive validation or onchain deployment. Architecture status is **in progress**, not signed off. The BLACKSITE local research engine exists but has no UI or onchain deployment.
+**Current system specification:** [GAME_ARCHITECTURE_V1.md](GAME_ARCHITECTURE_V1.md), with an executable, fail-closed shell contract in [`src/architecture/game-shell.mjs`](../src/architecture/game-shell.mjs). Arena v3 Match #1 is the first live competitive evidence. The FHE BLACKSITE candidate is isolated and undeployed. Architecture and product acceptance remain in progress; no visual implementation begins before the locked functional gates pass.
 
 ## 5. Locked build order — architecture and working game BEFORE graphics
 
@@ -154,7 +155,7 @@ Adversarial security/privacy review, repeated complete match evidence, objective
 
 **Hackathon scheduling:** Submission is an intermediate deadline; do not misrepresent BLACKSITE, Profile, multi-round Arena or the planned signature mechanic as shipped when they are not. Document deferrals without silently deleting them from this master scope.
 
-**Current position (21 Nov 2026):** the architecture and full game plan are **not locked**. Training's local practice and one single-encounter Arena FHE vertical slice are implemented and verified, but that is not a finished four-pillar functional game. **Resume Phase 1 immediately. Do not start the premium graphics pass yet.**
+**Current position (25 Nov 2026):** Arena v3 Match #1, Training, Commander Arena history and the BLACKSITE FHE protocol candidate have substantive verified slices. The complete four-pillar product is still not finished: BLACKSITE needs an explicitly authorized deployment and live mission evidence, Arena needs broader repeated multiplayer acceptance and the planned GAMBIT intervention, and cross-pillar playtesting/security review remain. Continue Phases 1-3 and keep premium graphics frozen.
 
 ## 6. Anti-forgetting rules for every subsequent build session
 
@@ -167,6 +168,6 @@ Adversarial security/privacy review, repeated complete match evidence, objective
 
 ## 7. Current decision
 
-**We have completed one encrypted technical vertical slice, not the game architecture or complete product.** The next task is to lock the detailed four-pillar game design and system architecture (Phase 1), then implement and test all agreed functional interactions and responsiveness (Phases 2–3). **Final graphics, audio and aesthetic production begin only after those gates pass.**
+**We have completed one verified five-round encrypted Arena match and several functional pillar slices, not the complete product.** Continue locking the four-pillar mechanics, complete live BLACKSITE only after explicit deployment authorization, improve measured wait/encryption behavior, and run adversarial/regression acceptance across the product. **Final graphics, audio and aesthetic production begin only after those gates pass.**
 
 For status that might change after this document, consult live GitHub Actions and [`docs/STATUS.md`](STATUS.md), not an old percentage or obsolete checklist.

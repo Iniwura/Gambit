@@ -1,6 +1,20 @@
 # GAMBIT — verified engineering status
 
-Updated 2026-11-21. Engineering work is in **draft PR #5** (`build/verified-first-slice`), not merged to main.
+Updated 2026-11-25. Engineering work is in **draft PR #5** (`build/verified-first-slice`), not merged to main.
+
+## Current verified snapshot - Arena v3 Match #1 and four-pillar progress
+
+The approved Arena v3 deployment is preserved and unchanged: [`ArenaV3Research` at `0xBF56087EFF029594beeFf1B57B47b1419bCDF16b`](https://sepolia.etherscan.io/address/0xBF56087EFF029594beeFf1B57B47b1419bCDF16b), Ethereum Sepolia chain `11155111`, runtime hash `0xf4f31fff6b4ec7f90e573bba95362a49d43ffeb12d971f515cef6301afbde8a9`. No redeployment occurred in this build.
+
+Arena Match #1 is complete and independently read-only verified through PublicNode, ethPandaOps and Tenderly. The canonical players were challenger `0xEa0C73e7a8D7149e641805e7Eb4eC0D4195C403C` and defender `0xC3e1CE842aDB49FC7B3e0fA5Cc6A0684fFd5D0c2`; creation transaction [`0x4d64c77325c1fbff9cef31383b59f141172cad5a5163623c0de1e044c1297a0c`](https://sepolia.etherscan.io/tx/0x4d64c77325c1fbff9cef31383b59f141172cad5a5163623c0de1e044c1297a0c). All five rounds finalized with scorelines `0:1`, `2:0`, `2:1`, `0:1`, `2:1`, cumulative `6:4`, `complete=true`, and `abandoned=false`. The complete receipt/fee table remains in [`docs/BUILD_LOG.md`](BUILD_LOG.md).
+
+Commander now has a public persistent identity layer and an evidence-derived Arena v3 profile. The read-only verifier rejects unapproved deployments and unbranded/local evidence, independently authenticates the five-round history, and derives level 2, 150 XP, and `ARENA_FIRST_MATCH`, `ARENA_FIVE_ROUND`, and `ARENA_VICTORY` for the challenger. BLACKSITE progress remains zero until a separately approved deployed mission receipt exists.
+
+BLACKSITE now has an isolated `BlacksiteMission` FHE candidate with encrypted vault code, encrypted guesses and approaches, hidden feedback handles, authenticated KMS finalization, route tradeoffs, heat, score, expiry and five-attempt limits. Hardhat mock tests cover genuine strategies, tamper/replay/authorization failures and all 24 code permutations. It is **not deployed**, has no live mission receipts, and has generated no transactions. The local greybox remains the only player-facing BLACKSITE mode.
+
+Measured live Arena v3 Match #1 latency is preserved in the build log: challenger encryption average 89,515 ms, defender encryption average 85,252 ms, resolution review average 7,188 ms, and KMS finalization average 22,703 ms. The online lobby now reuses an SDK session across compatible rounds while retaining fresh state, fee and calldata review for each write. New live encryption measurements require a separately authorized match because Match #1 is complete.
+
+Graphics remain frozen pending functional acceptance. No unauthorized blockchain transaction, deployment, retry, or secret material was introduced by the current work.
 
 ## First real encrypted 3v3 duel — COMPLETED on Sepolia
 
