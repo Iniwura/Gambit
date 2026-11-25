@@ -18,3 +18,7 @@ Candidate: [Privy gaming](https://www.privy.io/gaming), [wallet security policie
 
 ## Execution
 Separate design branch then separate integration branch from latest verified functional base after quality gate. No main merge/publishing, new deployment, blockchain write, purchase, credential disclosure or automatic retry without explicit scoped approval. Every scheduled pass must make substantive progress, preserve evidence and report meaningful milestone or genuine blocker. Hourly continuation is scheduled, not continuous execution; no claim work runs nonstop. Do not stall on audits or repeat low-quality previews. Owner's PC may be offline; do not depend on it for cloud work.
+
+
+## Latest checkpoint
+Resume from [R08 interactive training review](R08_INTERACTIVE_TRAINING_REVIEW.md), superseding R07 as the latest offline review artifact. Both focused and full browser regression passed; visual quality gate is still unmet. Continue actual game art/UI/audio and verified account work without repeating completed training/vault basics.
