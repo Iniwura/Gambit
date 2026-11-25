@@ -1,0 +1,429 @@
+{
+  "status": "PROPOSED / NOT LOCKED",
+  "renderSlots": "Actual Blender artwork not included; review overlays are not full visual approval.",
+  "colors": {
+    "void": "#10161B",
+    "dark": "#182127",
+    "panel": "#222D33",
+    "edge": "#45565D",
+    "paper": "#EEE9D9",
+    "muted": "#B3C0BD",
+    "gold": "#E7CC82",
+    "ally": "#7DCEC8",
+    "rival": "#DB8C69",
+    "ok": "#A7D6A0",
+    "err": "#EF9B88"
+  },
+  "fonts": {
+    "display": "Barlow Condensed, Arial Narrow, sans-serif",
+    "body": "Inter, Arial, sans-serif",
+    "mono": "IBM Plex Mono, monospace"
+  },
+  "screens": [
+    {
+      "id": "01-boot",
+      "name": "Boot",
+      "asset": "boot.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "01-boot.overlay.svg",
+      "review": "01-boot.review.svg"
+    },
+    {
+      "id": "02-command",
+      "name": "Command deck",
+      "asset": "hq_title.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "02-command.overlay.svg",
+      "review": "02-command.review.svg"
+    },
+    {
+      "id": "03-first-run",
+      "name": "First decision",
+      "asset": "training.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "03-first-run.overlay.svg",
+      "review": "03-first-run.review.svg"
+    },
+    {
+      "id": "04-lobby",
+      "name": "Arena lobby",
+      "asset": "arena_clean.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "04-lobby.overlay.svg",
+      "review": "04-lobby.review.svg"
+    },
+    {
+      "id": "05-invite",
+      "name": "Create / invite",
+      "asset": "arena_clean.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "05-invite.overlay.svg",
+      "review": "05-invite.review.svg"
+    },
+    {
+      "id": "06-squad",
+      "name": "Squad preparation",
+      "asset": "squad_hero.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "06-squad.overlay.svg",
+      "review": "06-squad.review.svg"
+    },
+    {
+      "id": "07-deployment",
+      "name": "Arena deployment",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "07-deployment.overlay.svg",
+      "review": "07-deployment.review.svg"
+    },
+    {
+      "id": "08-planning",
+      "name": "Arena planning",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "08-planning.overlay.svg",
+      "review": "08-planning.review.svg"
+    },
+    {
+      "id": "09-gambit",
+      "name": "GAMBIT sector selection",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "09-gambit.overlay.svg",
+      "review": "09-gambit.review.svg"
+    },
+    {
+      "id": "10-wallet",
+      "name": "Seal review",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "10-wallet.overlay.svg",
+      "review": "10-wallet.review.svg"
+    },
+    {
+      "id": "11-encryption",
+      "name": "Encryption",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "11-encryption.overlay.svg",
+      "review": "11-encryption.review.svg"
+    },
+    {
+      "id": "12-waiting",
+      "name": "Waiting for opponent",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "12-waiting.overlay.svg",
+      "review": "12-waiting.review.svg"
+    },
+    {
+      "id": "13-resolve",
+      "name": "Both orders sealed",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "13-resolve.overlay.svg",
+      "review": "13-resolve.review.svg"
+    },
+    {
+      "id": "13b-finalize",
+      "name": "Proof finalization",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "13b-finalize.overlay.svg",
+      "review": "13b-finalize.review.svg"
+    },
+    {
+      "id": "14-round-result",
+      "name": "Round outcome",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "14-round-result.overlay.svg",
+      "review": "14-round-result.review.svg"
+    },
+    {
+      "id": "15-debrief",
+      "name": "Match debrief",
+      "asset": "squad_hero.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "15-debrief.overlay.svg",
+      "review": "15-debrief.review.svg"
+    },
+    {
+      "id": "15b-defeat",
+      "name": "Defeat alternative",
+      "asset": "squad_hero.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "15b-defeat.overlay.svg",
+      "review": "15b-defeat.review.svg"
+    },
+    {
+      "id": "15c-draw",
+      "name": "Draw alternative",
+      "asset": "squad_hero.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "15c-draw.overlay.svg",
+      "review": "15c-draw.review.svg"
+    },
+    {
+      "id": "16-proof",
+      "name": "Verified match evidence",
+      "asset": "commander.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "16-proof.overlay.svg",
+      "review": "16-proof.review.svg"
+    },
+    {
+      "id": "17-training",
+      "name": "Tactical Academy",
+      "asset": "training.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "17-training.overlay.svg",
+      "review": "17-training.review.svg"
+    },
+    {
+      "id": "17b-training-result",
+      "name": "Training debrief",
+      "asset": "training.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "17b-training-result.overlay.svg",
+      "review": "17b-training-result.review.svg"
+    },
+    {
+      "id": "18-blacksite",
+      "name": "Blacksite mode select",
+      "asset": "blacksite.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "18-blacksite.overlay.svg",
+      "review": "18-blacksite.review.svg"
+    },
+    {
+      "id": "19-warden",
+      "name": "Warden setup",
+      "asset": "blacksite.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "19-warden.overlay.svg",
+      "review": "19-warden.review.svg"
+    },
+    {
+      "id": "20-operative",
+      "name": "Operative terminal",
+      "asset": "blacksite.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "20-operative.overlay.svg",
+      "review": "20-operative.review.svg"
+    },
+    {
+      "id": "20b-local-vault",
+      "name": "Local Blacksite",
+      "asset": "blacksite.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "20b-local-vault.overlay.svg",
+      "review": "20b-local-vault.review.svg"
+    },
+    {
+      "id": "21-vault-processing",
+      "name": "Blacksite processing",
+      "asset": "blacksite.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "21-vault-processing.overlay.svg",
+      "review": "21-vault-processing.review.svg"
+    },
+    {
+      "id": "22-vault-debrief",
+      "name": "Blacksite debrief",
+      "asset": "blacksite_breached.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "22-vault-debrief.overlay.svg",
+      "review": "22-vault-debrief.review.svg"
+    },
+    {
+      "id": "22b-vault-locked",
+      "name": "Blacksite lockout",
+      "asset": "blacksite.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "22b-vault-locked.overlay.svg",
+      "review": "22b-vault-locked.review.svg"
+    },
+    {
+      "id": "23-commander",
+      "name": "Commander",
+      "asset": "commander.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "23-commander.overlay.svg",
+      "review": "23-commander.review.svg"
+    },
+    {
+      "id": "23b-empty-profile",
+      "name": "New commander",
+      "asset": "commander.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "23b-empty-profile.overlay.svg",
+      "review": "23b-empty-profile.review.svg"
+    },
+    {
+      "id": "24-settings",
+      "name": "Pause and settings",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "24-settings.overlay.svg",
+      "review": "24-settings.review.svg"
+    },
+    {
+      "id": "25-recovery",
+      "name": "Recover match",
+      "asset": "arena_clean.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "25-recovery.overlay.svg",
+      "review": "25-recovery.review.svg"
+    },
+    {
+      "id": "25b-wrong-chain",
+      "name": "Wrong network",
+      "asset": "arena_clean.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "25b-wrong-chain.overlay.svg",
+      "review": "25b-wrong-chain.review.svg"
+    },
+    {
+      "id": "25c-rejected",
+      "name": "Wallet rejected",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "25c-rejected.overlay.svg",
+      "review": "25c-rejected.review.svg"
+    },
+    {
+      "id": "25d-unknown",
+      "name": "Unknown dispatch",
+      "asset": "arena_units.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "25d-unknown.overlay.svg",
+      "review": "25d-unknown.review.svg"
+    },
+    {
+      "id": "25e-expired",
+      "name": "Expired match",
+      "asset": "arena_clean.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "25e-expired.overlay.svg",
+      "review": "25e-expired.review.svg"
+    },
+    {
+      "id": "25f-asset-error",
+      "name": "Load recovery",
+      "asset": "boot.png",
+      "width": 1600,
+      "height": 900,
+      "overlay": "25f-asset-error.overlay.svg",
+      "review": "25f-asset-error.review.svg"
+    },
+    {
+      "id": "m01-command",
+      "name": "Mobile command",
+      "asset": "hq_title.png",
+      "width": 390,
+      "height": 844,
+      "overlay": "m01-command.overlay.svg",
+      "review": "m01-command.review.svg"
+    },
+    {
+      "id": "m02-planning",
+      "name": "Mobile planning",
+      "asset": "arena_units.png",
+      "width": 390,
+      "height": 844,
+      "overlay": "m02-planning.overlay.svg",
+      "review": "m02-planning.review.svg"
+    },
+    {
+      "id": "m03-review",
+      "name": "Mobile wallet review",
+      "asset": "arena_units.png",
+      "width": 390,
+      "height": 844,
+      "overlay": "m03-review.overlay.svg",
+      "review": "m03-review.review.svg"
+    },
+    {
+      "id": "m04-wait",
+      "name": "Mobile waiting",
+      "asset": "arena_units.png",
+      "width": 390,
+      "height": 844,
+      "overlay": "m04-wait.overlay.svg",
+      "review": "m04-wait.review.svg"
+    },
+    {
+      "id": "m05-training",
+      "name": "Mobile Academy",
+      "asset": "training.png",
+      "width": 390,
+      "height": 844,
+      "overlay": "m05-training.overlay.svg",
+      "review": "m05-training.review.svg"
+    },
+    {
+      "id": "m06-blacksite",
+      "name": "Mobile Blacksite",
+      "asset": "blacksite.png",
+      "width": 390,
+      "height": 844,
+      "overlay": "m06-blacksite.overlay.svg",
+      "review": "m06-blacksite.review.svg"
+    },
+    {
+      "id": "m07-commander",
+      "name": "Mobile Commander",
+      "asset": "commander.png",
+      "width": 390,
+      "height": 844,
+      "overlay": "m07-commander.overlay.svg",
+      "review": "m07-commander.review.svg"
+    },
+    {
+      "id": "l01-planning",
+      "name": "Landscape planning",
+      "asset": "arena_units.png",
+      "width": 844,
+      "height": 390,
+      "overlay": "l01-planning.overlay.svg",
+      "review": "l01-planning.review.svg"
+    }
+  ]
+}
