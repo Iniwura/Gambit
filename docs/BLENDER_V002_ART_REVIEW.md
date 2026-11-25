@@ -1,0 +1,20 @@
+# Blender v002 independent art review — REJECTED
+
+25 November 2026. Inspected the eight PNGs supplied in GAMBIT-Art-Review.zip (all 1800×1100). Source .blend files, rig, materials and animation were not supplied, so no topology or rig quality claim is possible.
+
+## Evidence
+- arena_iso_v002.png and arena_sector_detail_v002.png render a three-sector diorama. Preserve its scene structure as a blockout only.
+- scout_portrait_v002.png, guardian_portrait_v002.png, striker_portrait_v002.png show only a background gradient. RGB pixel comparison found zero differing pixels between the three portraits.
+- All three turnaround renders fail to show the intended characters; the Striker sheet shows a tiny fragment at bottom left. No usable character sheet.
+- The Arena contains three visibly primitive robot-like figures with spherical joints, rectangular torsos, almost no anatomy or individual personality. It is not a professional finished character set.
+- The Arena has deep black shadows, oversized emissive markings, simple cylindrical machinery, repeated floor squares, an isolated floating pipe, sparse room architecture and large black negative space. Tall reactor/gantry props obscure usable sector space. Sector-specific character colors can be confused with factions.
+- No clean plate without characters, separate transparent sprites, final UI composite, animation or audio supplied.
+
+## Corrective production order
+1. Recover the existing editable v002 sources. Inspect actual camera visibility and world transforms, render-hide flags, collection visibility, clipping, backdrop position, target point and lights. Create an isolated studio scene per role. Compute evaluated world-space mesh bounds and aim an orthographic camera at those bounds. Render low-resolution test images with transparent background before expensive passes. Confirm all three distinct subjects visibly occupy most of the frame; verify front/side/back silhouette separately. Do not mark a render successful simply because PNG exists.
+2. Replace primitive robots with cohesive original stylized operators: light recon silhouette with hood/sensor, broad shield-bearing guardian, asymmetric breach specialist. Use original sculpted or appropriately licensed, verified free base meshes if necessary, then customize clothing, anatomy, equipment, posture, material and palette. No purchases, copied reference game assets, or indiscriminate procedural boxes/spheres. Show hero, portrait and turnaround at matching scale. Check at in-game sprite size.
+3. Build believable industrial environment rather than isolated board: rear cutaway architectural walls, structural supports, service access, panel joints, cable runs, intentional material contrast; move tall props to perimeter, leave all three sectors visible. Remove disconnected floating pipe. Use broad neutral key and fill so faces, floor and silhouettes are readable; use warm practical lamps and restrained cyan. Avoid pure black crushed shadows or dominant neon. Keep role silhouettes and friendly/rival markers distinct from sector color. Show three units per side in neutral illustrative staging only, no private rival formation claim.
+4. Render a single gameplay camera at 1600×900 or 1920×1080 with art occupying most of the frame, plus clean plate and independent unit passes. Check at 390px. Return actual .blend source paths, manifest/license provenance, six character views and test proof. Save new v003 outputs without overwriting v002. No more large render batches until thumbnails pass visual inspection.
+5. Only then compose new game HUD around real assets. R01–R04 UI rejected. No forced nine-step input wizard for experienced players; direct operator selection and editable compact conditional orders, optional guided training. Do not alter actual mechanics, encrypted confidentiality, transaction consent or gameplay branch.
+
+Target is 90+/100 for complete game design, not an inflated score from eight files. Current v002 art is a failed art checkpoint, not a full game. No graphics integration or design lock before approval. No deployment or wallet writes.
