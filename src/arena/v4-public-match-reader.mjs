@@ -1,5 +1,5 @@
 /**
- * GAMBIT Arena v3 — READ ONLY research contract public-state reader.
+ * GAMBIT Arena v4 — READ ONLY research contract public-state reader.
  *
  * No deployment is supplied by default. Caller MUST supply the independently
  * approved immutable deployment manifest. This module
@@ -18,6 +18,7 @@ export const ARENA_V4_READ_ONLY_ABI=Object.freeze([
 ]);
 const ABI=new Interface(ARENA_V4_READ_ONLY_ABI);
 const ONE_DAY=86400;
+const RECOVERY_GRACE=86400;
 const HASH=/^0x[0-9a-fA-F]{64}$/;
 const ZERO='0x0000000000000000000000000000000000000000';
 function check(value,label){
@@ -145,17 +146,19 @@ export async function readArenaV4PublicMatch(provider,providedManifest,matchId,o
   }
   check(sumA===totalA&&sumB===totalB,'cumulative score mismatch');
   const current=rounds.at(-1);
+  const bothSealed=current.challengerSealed&&current.defenderSealed;
+  const recoveryExpired=first.timestamp>current.deadlineAt+RECOVERY_GRACE;
   check(current&&(!current.finalized||complete),
     'current finalized without completed match');
   if(complete)check(currentRound===5&&rounds.length===5&&
     rounds.every(r=>r.finalized)&&!abandoned,'premature match victory');
-  if(abandoned)check(!current.resolved&&!current.finalized&&
-    (!current.challengerSealed||!current.defenderSealed)&&
-    first.timestamp>current.deadlineAt,'invalid abandoned state');
+  if(abandoned)check(!current.finalized&&(bothSealed?recoveryExpired:
+    !current.resolved&&first.timestamp>current.deadlineAt),'invalid abandoned state');
 
   let status='WAITING_FOR_BOTH';
   if(complete)status='COMPLETE';
-  else if(abandoned)status='ABANDONED_UNSCORED';
+  else if(abandoned)status=bothSealed?'TECHNICAL_ABORT_UNSCORED':'ABANDONED_UNSCORED';
+  else if(bothSealed&&recoveryExpired)status='RECOVERY_EXPIRED_NOT_CLOSED';
   else if(current.resolved)status='AWAITING_PROOF';
   else if(current.challengerSealed&&current.defenderSealed)
     status='READY_TO_RESOLVE';
