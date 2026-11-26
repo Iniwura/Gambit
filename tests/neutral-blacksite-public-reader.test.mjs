@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Interface,keccak256} from 'ethers';
 import {NEUTRAL_BLACKSITE_READ_ABI,readNeutralBlacksiteMission} from '../src/blacksite/neutral-public-mission-reader.mjs';
-const abi=new Interface(NEUTRAL_BLACKSITE_READ_ABI);
+const abi=new Interface([...NEUTRAL_BLACKSITE_READ_ABI,'function nextMissionId() view returns(uint256)']);
 const A='0x'+'1'.repeat(40),C='0x'+'2'.repeat(40),H='0x'+'3'.repeat(64),B='0x'+'4'.repeat(64),CODE='0x6000';
 const manifest={contract:'NeutralBlacksiteResearch',version:3,chainId:11155111,address:C,runtimeHash:keccak256(CODE)};
 const empty=()=>[false,false,false,0];
 function fixture(){
- const f={chain:11155111,code:CODE,time:100001,slot:7,state:[A,100000,186400,272800,0,0,0,0],
+ const f={chain:11155111,code:CODE,time:100001,slot:7,counter:7,state:[A,100000,186400,272800,0,0,0,0],
  rows:Array.from({length:4},empty),handle:H,reorg:false,reads:[],blockReads:0};
  const provider={
   async getNetwork(){return {chainId:BigInt(f.chain)}},
@@ -18,6 +18,7 @@ function fixture(){
    assert.equal(tx.to,C);assert.equal(tx.blockTag,42);
    const p=abi.parseTransaction({data:tx.data});f.reads.push(p.name);
    if(p.name==='activeMission'){assert.equal(p.args[0],A);return abi.encodeFunctionResult(p.name,[f.slot]);}
+   if(p.name==='nextMissionId')return abi.encodeFunctionResult(p.name,[f.counter]);
    assert.equal(p.args[0],7n);
    if(p.name==='missionStatus')return abi.encodeFunctionResult(p.name,f.state);
    if(p.name==='attemptStatus')return abi.encodeFunctionResult(p.name,f.rows[Number(p.args[1])-1]);
@@ -122,4 +123,87 @@ test('neutral mission exact resolve, finalize, expiry and abort intents follow p
  c.f.rows[0]=empty();s=await c.read();i=stageNeutralMissionIntent(s,request('EXPIRE_MISSION'));
  tx=await revalidateNeutralMissionIntent(c.provider,manifest,i,{},i.id);assert.equal(write.parseTransaction({data:tx.data}).name,'expireMission');
  assert.equal(s.eligibleForVerifiedProgression,false);
+});
+
+import {encodeNeutralBlacksiteAttempt,neutralBlacksiteReadOnlyWallet,prepareNeutralBlacksiteSeal,prepareNeutralBlacksiteFinalization,releaseNeutralBlacksitePrepared,prepareNeutralBlacksiteOpen,releaseNeutralBlacksiteOpen} from '../src/blacksite/neutral-fhe-preparation.mjs';
+function sdkFixture(){
+ const c=fixture(),w={account:A,chain:'0xaa36a7',calls:[]},counts={encrypt:0,proof:0};
+ const wallet={async request({method}){w.calls.push(method);if(method==='eth_accounts')return [w.account];if(method==='eth_chainId')return w.chain;throw Error('unexpected wallet action')}};
+ const sdk={async encrypt({contractAddress,userAddress,values}){
+  counts.encrypt++;assert.equal(contractAddress,C);assert.equal(userAddress,A);
+  assert.deepEqual(values.map(x=>x.value),[0n,1n,2n,3n,0n,1n]);
+  assert.ok(values.every(x=>x.type==='euint8'));
+  return {encryptedValues:sealed.encryptedHandles,inputProof:sealed.inputProof};
+ },decryption:{async decryptPublicValues(handles){counts.proof++;assert.deepEqual(handles,[H]);return {clearValues:{[H]:34n},decryptionProof:'0x1234'}}}};
+ return {...c,w,counts,sdk,wallet,args:()=>({wallet,provider:c.provider,manifest,sdk,missionId:7,expectedActor:A,expectedAttempt:1,order:{guess:[0,1,2,3,0],route:'PROBE'},feeQuote:fee})};
+}
+test('neutral exact glyph/route encoding refuses malformed and sparse orders',()=>{
+ const x=encodeNeutralBlacksiteAttempt({guess:[0,1,2,3,0],route:'BREACH'});
+ assert.deepEqual(x.map(v=>v.value),[0n,1n,2n,3n,0n,2n]);
+ for(const guess of [[0,1,2,3],[0,1,2,3,4],Array(5),[0,1,2,3,'0']])
+  assert.throws(()=>encodeNeutralBlacksiteAttempt({guess,route:'PROBE'}),/five glyphs/);
+ assert.throws(()=>encodeNeutralBlacksiteAttempt({guess:[0,1,2,3,0],route:1}),/valid route/);
+ assert.throws(()=>encodeNeutralBlacksiteAttempt({guess:[0,1,2,3,0],route:'PROBE',secret:0}),/exact attempt/);
+});
+test('neutral read-only wallet cannot request accounts, sign, send or switch chains',async()=>{
+ const c=sdkFixture(),wallet=neutralBlacksiteReadOnlyWallet(c.wallet);
+ assert.deepEqual(await wallet.request({method:'eth_accounts'}),[A]);
+ for(const method of ['eth_requestAccounts','eth_sendTransaction','personal_sign','eth_signTypedData_v4','wallet_switchEthereumChain'])
+  assert.throws(()=>wallet.request({method}),/not read-only/);
+ assert.deepEqual(c.w.calls,['eth_accounts']);
+});
+test('neutral seal preparation uses exact SDK payload; release remains unsigned',async()=>{
+ const c=sdkFixture(),prepared=await prepareNeutralBlacksiteSeal(c.args());
+ assert.equal(c.counts.encrypt,1);assert.equal(Object.hasOwn(prepared,'order'),false);
+ assert.equal(Object.hasOwn(prepared.payload,'guess'),false);
+ const tx=await releaseNeutralBlacksitePrepared({...c.args(),prepared,approval:prepared.intent.id});
+ assert.equal(write.parseTransaction({data:tx.data}).name,'submitAttempt');
+ assert.equal(tx.sent,false);assert.equal(tx.signed,false);
+});
+test('wrong account, chain, attempt or pending state stops before SDK call',async()=>{
+ const c=sdkFixture();c.w.account=C;await assert.rejects(prepareNeutralBlacksiteSeal(c.args()),/account changed/);
+ c.w.account=A;c.w.chain='0x1';await assert.rejects(prepareNeutralBlacksiteSeal(c.args()),/Sepolia/);
+ c.w.chain='0xaa36a7';await assert.rejects(prepareNeutralBlacksiteSeal({...c.args(),expectedAttempt:2}),/expected attempt/);
+ c.f.rows[0]=[true,false,false,0];await assert.rejects(prepareNeutralBlacksiteSeal(c.args()),/not accepting/);
+ assert.equal(c.counts.encrypt,0);
+});
+test('SDK malformed response, changed account and changed mission state stop preparation',async()=>{
+ const c=sdkFixture();
+ for(const encryptedValues of [Array(6),sealed.encryptedHandles.slice(1),['0x'+'0'.repeat(64),...sealed.encryptedHandles.slice(1)]]){
+  c.sdk.encrypt=async()=>({encryptedValues,inputProof:'0x1234'});
+  await assert.rejects(prepareNeutralBlacksiteSeal(c.args()),/six ciphertext/);
+ }
+ c.sdk.encrypt=async()=>{c.w.account=C;return {encryptedValues:sealed.encryptedHandles,inputProof:'0x1234'}};
+ await assert.rejects(prepareNeutralBlacksiteSeal(c.args()),/account changed/);
+ c.w.account=A;c.sdk.encrypt=async()=>{c.f.rows[0]=[true,false,false,0];return {encryptedValues:sealed.encryptedHandles,inputProof:'0x1234'}};
+ await assert.rejects(prepareNeutralBlacksiteSeal(c.args()),/mission changed/);
+});
+test('neutral proof preparation accepts exact handle only and remains unauthenticated',async()=>{
+ const c=sdkFixture();c.f.rows[0]=[true,true,false,0];
+ const prepared=await prepareNeutralBlacksiteFinalization(c.args());
+ assert.equal(prepared.authenticated,false);assert.equal(prepared.payload.packet,34);
+ const tx=await releaseNeutralBlacksitePrepared({...c.args(),prepared,approval:prepared.intent.id});
+ assert.equal(write.parseTransaction({data:tx.data}).name,'finalizeAttempt');
+ for(const clearValues of [{[B]:34n},{[H]:34n,[B]:34n}]){
+  c.sdk.decryption.decryptPublicValues=async()=>({clearValues,decryptionProof:'0x1234'});
+  await assert.rejects(prepareNeutralBlacksiteFinalization(c.args()),/exact public result/);
+ }
+ c.sdk.decryption.decryptPublicValues=async()=>({clearValues:{[H]:49n},decryptionProof:'0x1234'});
+ await assert.rejects(prepareNeutralBlacksiteFinalization(c.args()),/impossible probe counts/);
+ c.f.time=272801;await assert.rejects(prepareNeutralBlacksiteFinalization(c.args()),/not awaiting public proof/);
+});
+test('neutral opening stages exact zero-value no-argument open; active slot, counter and actor races fail closed',async()=>{
+ const c=sdkFixture(),args=c.args();
+ await assert.rejects(prepareNeutralBlacksiteOpen(args),/existing active mission/);
+ c.f.slot=0;
+ const intent=await prepareNeutralBlacksiteOpen(args);
+ assert.equal(Object.hasOwn(intent,'missionId'),false);
+ const tx=await releaseNeutralBlacksiteOpen({...args,intent,approval:intent.id});
+ const open=new Interface(['function openMission() returns(uint256)']);
+ assert.equal(open.parseTransaction({data:tx.data}).name,'openMission');
+ assert.equal(tx.value,0n);assert.equal(tx.sent,false);
+ await assert.rejects(releaseNeutralBlacksiteOpen({...args,intent,approval:H}),/exact approval/);
+ c.f.counter=8;await assert.rejects(releaseNeutralBlacksiteOpen({...args,intent,approval:intent.id}),/opening state changed/);
+ c.f.counter=7;c.f.slot=8;await assert.rejects(releaseNeutralBlacksiteOpen({...args,intent,approval:intent.id}),/existing active mission/);
+ c.f.slot=0;c.w.account=C;await assert.rejects(releaseNeutralBlacksiteOpen({...args,intent,approval:intent.id}),/account changed/);
 });
