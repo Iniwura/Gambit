@@ -88,4 +88,31 @@ describe('ArenaV4ConfidentialActivationResearch (MOCK ONLY)',function(){
     await c.finalizeRound(1n,1,56,d.decryptionProof);
     await expect(seal(c,a,W,0,0,1)).to.be.revertedWith('Unexpected round');
   });
+  it('recovers only own allowance through user decryption and rejects public or rival decryption',async function(){
+    const {c,a,b,out}=await fixture();
+    const address=await c.getAddress();
+    const read=async(actor:any)=>c.connect(actor).ownSpentHandle(1n);
+    const decrypt=async(handle:string,actor:any)=>fhevm.userDecryptEbool(handle,address,actor);
+    const reject=async(fn:()=>Promise<any>)=>{
+      let rejected=false;
+      try{await fn();}catch{rejected=true;}
+      expect(rejected).to.equal(true);
+    };
+    await expect(read(out)).to.be.revertedWith('Not participant');
+    expect(await decrypt(await read(a),a)).to.equal(false);
+    expect(await decrypt(await read(b),b)).to.equal(false);
+    await seal(c,a,W,0);await seal(c,b,L,3);
+    await settle(c,1,56);
+    const ah=await read(a),bh=await read(b);
+    expect(await decrypt(ah,a)).to.equal(true);
+    expect(await decrypt(bh,b)).to.equal(false);
+    await reject(()=>decrypt(ah,b));
+    await reject(()=>decrypt(bh,a));
+    await reject(()=>decrypt(ah,out));
+    await reject(()=>fhevm.publicDecrypt([ah]));
+    await seal(c,a,W,1);await seal(c,b,L,0);
+    await settle(c,2,40);
+    expect(await decrypt(await read(a),a)).to.equal(true);
+    expect(await decrypt(await read(b),b)).to.equal(true);
+  });
 });
