@@ -4,6 +4,7 @@ on:
     # The engineering PR is the observable quality pipeline; no duplicate push run.
     paths:
       - 'fhe/scripts/preflight-research-sepolia.ts'
+      - 'fhe/scripts/deploy-neutral-blacksite-sepolia.ts'
       - 'fhe/contracts/NeutralBlacksiteResearch.sol'
       - 'fhe/contracts/ArenaV4ConfidentialActivationResearch.sol'
       - '.github/workflows/research-public-preflight.yml'
@@ -36,6 +37,10 @@ jobs:
         run: |
           set -o pipefail
           npx hardhat run --network sepolia --no-compile scripts/preflight-research-sepolia.ts | tee research-preflight.log
+      - name: Exact neutral deployment quote (CI hard-disabled signing)
+        run: |
+          set -o pipefail
+          npx hardhat run --network sepolia --no-compile scripts/deploy-neutral-blacksite-sepolia.ts | tee neutral-deployment-quote.log
       - name: Export exact artifacts and public simulation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -43,6 +48,7 @@ jobs:
           name: research-public-preflight
           path: |
             fhe/research-preflight.log
+            fhe/neutral-deployment-quote.log
             fhe/artifacts/contracts/NeutralBlacksiteResearch.sol/NeutralBlacksiteResearch.json
             fhe/artifacts/contracts/ArenaV4ConfidentialActivationResearch.sol/ArenaV4ConfidentialActivationResearch.json
           if-no-files-found: warn
