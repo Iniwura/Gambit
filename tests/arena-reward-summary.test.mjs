@@ -16,6 +16,9 @@ test('completed match reward accounting is idempotent and excludes pending/expir
  const x=summarize([w,{...w},l,d,p,e],a);
  assert.deepEqual([x.matches,x.observedMatches,x.activeMatches,x.abandonedMatches,x.wins,x.losses,x.draws,x.xp,x.level],[3,5,1,1,1,1,1,250,3]);
  assert.equal(x.achievements.length,3);
+ assert.equal(x.distinctOpponents,1);
+ assert.equal(summarize([w,{...l,defender:'0x'+'e'.repeat(40)}],a).distinctOpponents,2);
+ assert.equal(summarize([p,e],a).distinctOpponents,0);
  assert.equal(x.verifiedHistory.length,5);
  assert.equal(summarize([p,e],a).achievements.length,0);
  assert.equal(summarize([p,e],a).xp,0);
