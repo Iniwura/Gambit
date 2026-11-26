@@ -49,13 +49,13 @@ async function feedback(contract:any,attempt:number){
 describe('BlacksiteMission — encrypted competitive mission (MOCK ONLY)',function(){
   this.timeout(300000);
 
-  async function fixture(){
+  async function fixture(code:Code=CODE){
     if(!fhevm.isMock)this.skip();
     const [warden,operative,outsider]=await ethers.getSigners();
     const factory=await ethers.getContractFactory('BlacksiteMission');
     const contract:any=await factory.deploy();
     await contract.waitForDeployment();
-    await open(contract,warden,operative);
+    await open(contract,warden,operative,code);
     return {contract,warden,operative,outsider};
   }
 
@@ -79,13 +79,13 @@ describe('BlacksiteMission — encrypted competitive mission (MOCK ONLY)',functi
     await submit(contract,operative,[0,1,2,0],2,3);
     await contract.resolveAttempt(1n,3);
     const three=await feedback(contract,3);
-    expect(three.value).to.equal(51); // BREACH progress: 48 + 3 exact.
+    expect(three.value).to.equal(67); // BREACH progress: 64 + 3 exact.
     await contract.finalizeAttempt(1n,3,three.value,three.proof);
 
     await submit(contract,operative,CODE,2,4);
     await contract.resolveAttempt(1n,4);
     const four=await feedback(contract,4);
-    expect(four.value).to.equal(52); // BREACH: exact four.
+    expect(four.value).to.equal(68); // BREACH: exact four.
     await expect(contract.finalizeAttempt(1n,4,four.value,four.proof))
       .to.emit(contract,'MissionCompleted').withArgs(1n,1,35,5);
 
@@ -125,7 +125,7 @@ describe('BlacksiteMission — encrypted competitive mission (MOCK ONLY)',functi
     await expect(contract.resolveAttempt(1n,2)).to.be.revertedWith('Unexpected attempt');
     await contract.resolveAttempt(1n,1);
     const result=await feedback(contract,1);
-    await expect(contract.finalizeAttempt(1n,1,52,result.proof)).to.be.reverted;
+    await expect(contract.finalizeAttempt(1n,1,68,result.proof)).to.be.reverted;
     await expect(contract.finalizeAttempt(1n,1,result.value,'0x1234')).to.be.reverted;
     await contract.finalizeAttempt(1n,1,result.value,result.proof);
     await expect(contract.resolveAttempt(1n,1)).to.be.revertedWith('Unexpected attempt');
@@ -154,6 +154,56 @@ describe('BlacksiteMission — encrypted competitive mission (MOCK ONLY)',functi
       .to.be.revertedWith('Mission closed');
   });
 
+  it('separates a perfect PROBE from a zero-match BREACH and charges correct heat',async()=>{
+    const {contract,operative}=await fixture([0,0,0,0]);
+    await submit(contract,operative,[0,0,0,0],1,1);
+    await contract.resolveAttempt(1n,1);
+    const probe=await feedback(contract,1);
+    expect(probe.value).to.equal(48);
+    await expect(contract.finalizeAttempt(1n,1,64,probe.proof)).to.be.reverted;
+    await contract.finalizeAttempt(1n,1,probe.value,probe.proof);
+    let status=await contract.missionStatus(1n);
+    expect(status.heat).to.equal(1);
+    expect(status.outcome).to.equal(0);
+    await submit(contract,operative,[1,1,1,1],2,2);
+    await contract.resolveAttempt(1n,2);
+    const breach=await feedback(contract,2);
+    expect(breach.value).to.equal(64);
+    await contract.finalizeAttempt(1n,2,breach.value,breach.proof);
+    status=await contract.missionStatus(1n);
+    expect(status.heat).to.equal(3);
+    expect(status.outcome).to.equal(0);
+  });
+
+  it('matches multiplicity-aware clues across repeated glyph fixtures',async()=>{
+    const {contract,warden,operative}=await fixture();
+    const cases:{secret:Code;guess:Code;exact:number;misplaced:number}[]=[
+      {secret:[0,0,0,1],guess:[0,1,2,3],exact:1,misplaced:1},
+      {secret:[0,1,2,3],guess:[0,0,0,1],exact:1,misplaced:1},
+      {secret:[0,0,1,1],guess:[1,1,0,0],exact:0,misplaced:4},
+      {secret:[2,2,2,2],guess:[2,0,1,3],exact:1,misplaced:0},
+      {secret:[2,2,3,3],guess:[2,3,3,3],exact:3,misplaced:0},
+      {secret:[3,3,3,3],guess:[0,0,0,0],exact:0,misplaced:0},
+      {secret:[1,1,2,2],guess:[1,1,2,2],exact:4,misplaced:0}
+    ];
+    for(const [index,c] of cases.entries()){
+      const id=BigInt(index+2);
+      await open(contract,warden,operative,c.secret);
+      const guess=await encryptAttempt(contract,operative,c.guess,1);
+      await contract.connect(operative).submitAttempt(
+        id,1,guess.handles.slice(0,4),guess.handles[4],guess.inputProof);
+      await contract.resolveAttempt(id,1);
+      const handle=await contract.feedbackHandle(id,1);
+      const clear=await fhevm.publicDecrypt([handle]);
+      const value=Number(clear.clearValues[handle]);
+      expect(value).to.equal(16+8*c.exact+c.misplaced);
+      await contract.finalizeAttempt(id,1,value,clear.decryptionProof);
+      const state=await contract.missionStatus(id);
+      expect(state.heat).to.equal(1);
+      expect(state.outcome).to.equal(0);
+    }
+  });
+
   it('supports all distinct four-glyph codes without plaintext code reads',async()=>{
     const {contract,warden,operative}=await fixture();
     const codes:Code[]=[
@@ -178,7 +228,7 @@ describe('BlacksiteMission — encrypted competitive mission (MOCK ONLY)',functi
       const handle=await contract.feedbackHandle(id,1);
       const clear=await fhevm.publicDecrypt([handle]);
       const value=Number(clear.clearValues[handle]);
-      expect(value).to.equal(52);
+      expect(value).to.equal(68);
       await contract.finalizeAttempt(id,1,value,clear.decryptionProof);
       expect((await contract.missionStatus(id)).outcome).to.equal(1);
     }
