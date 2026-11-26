@@ -207,3 +207,43 @@ test('neutral opening stages exact zero-value no-argument open; active slot, cou
  c.f.counter=7;c.f.slot=8;await assert.rejects(releaseNeutralBlacksiteOpen({...args,intent,approval:intent.id}),/existing active mission/);
  c.f.slot=0;c.w.account=C;await assert.rejects(releaseNeutralBlacksiteOpen({...args,intent,approval:intent.id}),/account changed/);
 });
+
+import {verifyNeutralOpenReceipt} from '../src/blacksite/neutral-open-receipt.mjs';
+function receiptFixture(){
+ const c=fixture(),txHash='0x'+'5'.repeat(64),openAbi=new Interface(['function openMission() returns(uint256)','event MissionOpened(uint256 indexed missionId,address indexed operative)']);
+ const event=openAbi.encodeEventLog(openAbi.getEvent('MissionOpened'),[7n,A]);
+ const log={address:C,...event,transactionHash:txHash,blockNumber:41,blockHash:B,removed:false};
+ const tx={hash:txHash,from:A,to:C,data:openAbi.encodeFunctionData('openMission'),chainId:11155111n,value:0n,blockNumber:41,blockHash:B};
+ const receipt={hash:txHash,from:A,to:C,status:1,blockNumber:41,blockHash:B,logs:[log]};
+ const originalBlock=c.provider.getBlock,originalCode=c.provider.getCode,originalCall=c.provider.call;
+ c.provider.getBlock=async n=>n===41?{hash:B,timestamp:100000}:originalBlock(n);
+ c.provider.getCode=async (a,n)=>n===41?CODE:originalCode(a,n);
+ c.provider.call=async call=>call.blockTag===41?abi.encodeFunctionResult('nextMissionId',[7n]):originalCall(call);
+ c.provider.getTransaction=async()=>tx;c.provider.getTransactionReceipt=async()=>receipt;
+ return {...c,tx,receipt,log,verify:()=>verifyNeutralOpenReceipt(c.provider,manifest,txHash,A)};
+}
+test('neutral opening receipt authenticates exact transaction, event identity and current state without rewards',async()=>{
+ const c=receiptFixture(),r=await c.verify();
+ assert.equal(r.missionId,7);assert.equal(r.view.status,'ACCEPTING_ATTEMPT');assert.equal(r.observedConfirmations,2);
+ assert.equal(r.eligibleForVerifiedProgression,false);assert.ok(Object.isFrozen(r));
+});
+test('neutral opening rejects failed, wrong-chain, wrong-value, wrong calldata and missing receipt',async()=>{
+ const c=receiptFixture();c.receipt.status=0;await assert.rejects(c.verify(),/failed transaction/);c.receipt.status=1;
+ c.tx.chainId=1n;await assert.rejects(c.verify(),/failed transaction/);c.tx.chainId=11155111n;
+ c.tx.value=1n;await assert.rejects(c.verify(),/failed transaction/);c.tx.value=0n;
+ const data=c.tx.data;c.tx.data='0x12345678';await assert.rejects(c.verify(),/not exact opening/);c.tx.data=data;
+ c.provider.getTransactionReceipt=async()=>null;await assert.rejects(c.verify(),/missing transaction or receipt/);
+});
+test('neutral opening rejects duplicate or removed events and inconsistent current state',async()=>{
+ const c=receiptFixture();c.receipt.logs.push({...c.log});await assert.rejects(c.verify(),/exactly one opening/);c.receipt.logs.pop();
+ c.log.removed=true;await assert.rejects(c.verify(),/event identity/);c.log.removed=false;
+ c.f.state[1]=99999;c.f.state[2]=186399;c.f.state[3]=272799;
+ await assert.rejects(c.verify(),/opening event\/state mismatch/);
+});
+test('neutral opening rejects historical runtime mismatch and orphaned or reorganized opening block',async()=>{
+ const c=receiptFixture(),oldCode=c.provider.getCode,oldBlock=c.provider.getBlock;
+ c.provider.getCode=async(a,n)=>n===41?'0x6001':oldCode(a,n);await assert.rejects(c.verify(),/historical runtime/);c.provider.getCode=oldCode;
+ c.provider.getBlock=async n=>n===41?{hash:H,timestamp:100000}:oldBlock(n);await assert.rejects(c.verify(),/orphaned opening/);
+ let reads=0;c.provider.getBlock=async n=>n===41?{hash:++reads===1?B:H,timestamp:100000}:oldBlock(n);
+ await assert.rejects(c.verify(),/opening block reorganized/);
+});
