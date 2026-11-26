@@ -37,9 +37,10 @@ export function summarizeCanonicalArenaRecords(records,wallet){
  const won=r=>r.winner===(r.challenger.toLowerCase()===player?1:2);
  const wins=completed.filter(won).length,draws=completed.filter(r=>r.winner===0).length,losses=completed.length-wins-draws;
  const xp=completed.length*50+wins*100;
+ const distinctOpponents=new Set(completed.map(r=>r.challenger.toLowerCase()===player?r.defender.toLowerCase():r.challenger.toLowerCase())).size;
  const achievements=[];
  const award=(id,title,r)=>achievements.push(Object.freeze({id,title,evidence:r.creationTransaction,block:r.creationBlock}));
  if(completed.length){award('ARENA_FIRST_MATCH','First authenticated Arena match',completed[0]);award('ARENA_FIVE_ROUND','Five-round operator',completed[0]);}
  if(wins)award('ARENA_VICTORY','Arena victor',completed.find(won));
- return Object.freeze({matches:completed.length,observedMatches:unique.length,activeMatches:unique.length-completed.length-abandoned.length,abandonedMatches:abandoned.length,wins,losses,draws,xp,level:1+Math.floor(xp/100),achievements:Object.freeze(achievements),verifiedHistory:Object.freeze(unique)});
+ return Object.freeze({matches:completed.length,observedMatches:unique.length,activeMatches:unique.length-completed.length-abandoned.length,abandonedMatches:abandoned.length,wins,losses,draws,distinctOpponents,xp,level:1+Math.floor(xp/100),achievements:Object.freeze(achievements),verifiedHistory:Object.freeze(unique)});
 }
