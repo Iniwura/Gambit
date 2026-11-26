@@ -1,0 +1,5 @@
+# Solidity embeds source hashes in metadata. Preserve LF on every platform.
+fhe/**/*.sol text eol=lf
+fhe/**/*.ts text eol=lf
+fhe/package.json text eol=lf
+fhe/package-lock.json text eol=lf
