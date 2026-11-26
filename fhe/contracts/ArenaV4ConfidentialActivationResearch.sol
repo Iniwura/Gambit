@@ -19,6 +19,7 @@ import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
     uint8 public constant MAX_ROUNDS = 5;
     uint64 public constant ROUND_ENTRY_SECONDS = 1 days;
+    uint64 public constant RECOVERY_GRACE = 1 days;
 
     struct Tactic {
         bool submitted;
@@ -67,6 +68,7 @@ contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
     );
     event MatchCompleted(uint256 indexed matchId, uint8 outcome);
     event MatchAbandonedUnscored(uint256 indexed matchId, uint8 indexed round);
+    event MatchTechnicalAbort(uint256 indexed matchId, uint8 indexed round);
 
     modifier liveRound(uint256 id, uint8 expectedRound) {
         require(matches[id].challenger != address(0), "Unknown match");
@@ -125,6 +127,7 @@ contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
     function resolveRound(uint256 id, uint8 expectedRound) external liveRound(id, expectedRound) {
         Match storage m = matches[id];
         Round storage r = rounds[id][m.currentRound];
+        require(block.timestamp <= uint256(r.deadlineAt) + RECOVERY_GRACE, "Recovery expired");
         require(r.challenger.submitted && r.defender.submitted, "Both orders required");
         require(!r.resolved && !r.finalized, "Already resolved");
 
@@ -162,6 +165,7 @@ contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
     function finalizeRound(uint256 id, uint8 expectedRound, uint8 packed, bytes calldata proof) external liveRound(id, expectedRound) {
         Match storage m = matches[id];
         Round storage r = rounds[id][m.currentRound];
+        require(block.timestamp <= uint256(r.deadlineAt) + RECOVERY_GRACE, "Recovery expired");
         require(r.resolved && !r.finalized, "Not finalizable");
         uint8 a = packed >> 3;
         uint8 b = packed & 7;
@@ -199,6 +203,17 @@ contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
         require(!r.resolved && !r.finalized, "Already in settlement");
         m.abandoned = true;
         emit MatchAbandonedUnscored(id, m.currentRound);
+    }
+
+    /** A technical failure is never a victory. Prior finalized rounds remain
+     * available as history, but an abandoned match cannot grant W/L/D or XP. */
+    function abortUnsettled(uint256 id, uint8 expectedRound) external liveRound(id, expectedRound) {
+        Match storage m = matches[id];
+        Round storage r = rounds[id][expectedRound];
+        require(block.timestamp > uint256(r.deadlineAt) + RECOVERY_GRACE, "Recovery still active");
+        require(r.challenger.submitted && r.defender.submitted && !r.finalized, "No both-sealed pending round");
+        m.abandoned = true;
+        emit MatchTechnicalAbort(id, expectedRound);
     }
 
     function matchStatus(uint256 id) external view returns (
