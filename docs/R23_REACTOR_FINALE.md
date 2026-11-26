@@ -1,0 +1,9 @@
+# R23 — Reactor signage and match finale (internal, not approved)
+Continues exact R22. Original world-space painted floor markings, enlarged reactor landmark and stronger motivated corridor lighting; one new transparent mesh, 281 draws and 238634 triangles in isolated sample. All six desktop/mobile formation stills and matching two-frame loops rendered from the actual revised scene at 1280x720 and 780x540. Bounded 7% camera push during settled local combat playback, resets and honors reduced motion; full-screen outcome screen with actual score and five-round history, correct role and executed action pair labels. Reference principles: Vesperfall world signage/outcome screen, Gears Tactics cinematic camera, Into the Breach outcome clarity. No online confidentiality or score changes.
+ 
+PASS test-r23-regression.py (actual five rounds 3:12, four routes, six viewports, no page errors), test-r21-playback.py (grounding and validated local action playback), test-r23.py (18 synthetic outcome/viewport fixtures, camera reset, reduced motion, rematch, all twelve new asset dimensions and frame counts). Final focused test after CSS-only button alignment passed. All twelve isolated SwiftShader frames rendered; sustained physical-device performance not verified. Source archive CRC passed.
+ 
+GAMBIT-R23-internal.html SHA256 bb6de3e0d085a9c19573725f2a380b99741eb551770b2abd2725e88a87689d70
+GAMBIT-R23-source.zip SHA256 ee1b3100a31e179f680ca92e40d6902bb5d2dd95bff241427928413da7e49cb8
+ 
+Artifact bytes are conversation files, not committed in this record. Arena architecture and character meshes largely unchanged; finale background is a formation still rather than a recorded final frame. Major runtime art, cinematic choreography, other modes, hardware verification and production integration remain. No 90+ assessment, no production merge or chain actions. R22 rollback intact.
