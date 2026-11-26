@@ -52,3 +52,10 @@ test('Commander progression rejects local practice, JSON copies and unapproved h
     {authority:'APPROVED_ARENA_V3_CANONICAL',matches:[JSON.parse(JSON.stringify(fake))]}
   ])assert.throws(()=>deriveCommanderProfile(identity,history),/COMMANDER_PROFILE_INVALID/);
 });
+
+test('identity stored under another wallet key is not restored',()=>{
+ const store=storage();
+ const other='0xC3e1CE842aDB49FC7B3e0fA5Cc6A0684fFd5D0c2';
+ store.setItem(commanderIdentityStorageKey(WALLET),JSON.stringify(createCommanderIdentity(other,{createdAt:1700000000000})));
+ assert.equal(loadCommanderIdentity(store,WALLET),null);
+});
