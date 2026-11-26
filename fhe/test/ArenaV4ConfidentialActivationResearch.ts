@@ -115,4 +115,21 @@ describe('ArenaV4ConfidentialActivationResearch (MOCK ONLY)',function(){
     expect(await decrypt(await read(a),a)).to.equal(true);
     expect(await decrypt(await read(b),b)).to.equal(true);
   });
+  it('keeps allowance isolated across matches and preserves it through incomplete expiry',async function(){
+    const {c,a,b}=await fixture();
+    await c.connect(a).createMatch(await b.getAddress());
+    const address=await c.getAddress();
+    await seal(c,a,W,0);await seal(c,b,L,3);
+    await settle(c,1,56);
+    expect(await fhevm.userDecryptEbool(await c.connect(a).ownSpentHandle(1n),address,a)).to.equal(true);
+    expect(await fhevm.userDecryptEbool(await c.connect(a).ownSpentHandle(2n),address,a)).to.equal(false);
+    await seal(c,b,L,0);
+    await network.provider.send('evm_increaseTime',[86402]);
+    await network.provider.send('evm_mine');
+    await c.expireIncomplete(1n,2);
+    expect((await c.matchStatus(1n)).abandoned).to.equal(true);
+    expect(await fhevm.userDecryptEbool(await c.connect(b).ownSpentHandle(1n),address,b)).to.equal(false);
+    expect(await fhevm.userDecryptEbool(await c.connect(a).ownSpentHandle(1n),address,a)).to.equal(true);
+    expect((await c.matchStatus(2n)).abandoned).to.equal(false);
+  });
 });
