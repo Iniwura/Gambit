@@ -1,24 +1,45 @@
-# GAMBIT
+# GAMBIT: Sealed Orders
 
-**Sealed Orders. Real strategy. No exposed tactics.**
+**Your strategy is the secret, not your hand.**
 
-GAMBIT is a playable 3v3 squad-tactics game with a confidential, asynchronous head-to-head match powered by the **Zama Protocol** on Ethereum Sepolia. Three fighters each have a private conditional order. Each commander also selects a hidden formation. The contract computes a match without publishing either squad's tactics, and a Zama KMS-signed proof authenticates the **aggregate reactor score**.
+GAMBIT is a sci-fi 3v3 tactical game powered by Zama FHE. Program three independent conditional orders, secretly deploy your squad, risk a once-per-match GAMBIT, and fight for reactor pressure over five rounds. A compromised command channel makes sealed orders essential: a rival must commit without inspecting your tactics.
 
-**Master product plan:** [Full four-pillar game scope, roadmap and progress](docs/GAMBIT_MASTER_SCOPE.md) — ARENA, BLACKSITE, TRAINING and COMMANDER PROFILE. This governs what we're building beyond the first verified duel.
+**Pre-release.** Verified encrypted match infrastructure and playable training exist; the redesigned full-game presentation is a separate internal candidate, not an integrated hosted release.
 
-**Permanent development history:** [GAMBIT Build Log](docs/BUILD_LOG.md) records every verified milestone, failed/passed CI check, unresolved system and next priority.
+[Current hosted engineering build](https://iniwura.github.io/Gambit/) · [Full product roadmap](docs/GAMBIT_MASTER_SCOPE.md) · [Verified engineering status](docs/STATUS.md) · [Build history](docs/BUILD_LOG.md) · [R36 visual/disclosure checkpoint](https://github.com/Iniwura/Gambit/blob/design/arena-visual-track/docs/R36_DISCLOSURE_UX_AND_REVIEW.md)
 
-**Latest engineering checkpoint (24 Nov):** [Arena v3 unsigned action intent and compiled ABI acceptance](docs/ARENA_V3_TRANSACTION_INTENT_ACCEPTANCE.md) has passed [224/224 Node, 25/25 FHE mock and full 4/4 CI](https://github.com/Iniwura/Gambit/actions/runs/45320612652). It has no signer or live v3 deployment. Competitive Arena is not yet live multi-round PVP: current evidence is the same-device cleartext Hotseat and the separately verified onchain v2 single-encounter. The Tactical Academy and local BLACKSITE training are also playable.
+## What is real today
 
-**Two-Commander LOCAL HOTSEAT:** the game includes a playable five-round same-device duel with independent player decisions and actual aggregate outcomes, not encrypted remote multiplayer. [Native desktop/mobile acceptance](docs/ARENA_V3_HOTSEAT_ACCEPTANCE.md): real local **3 : 17** five-round result, 710px/820px tablet navigation, no wallet. **New future-chain safety layer:** [v3 read-only match recovery adapter](docs/ARENA_V3_PUBLIC_READER_ACCEPTANCE.md) is tested against strict simulated ABI/public block data and requires an independently approved contract manifest; no v3 contract is deployed. Latest [4/4 CI run 44962888818](https://github.com/Iniwura/Gambit/actions/runs/44962888818) passed **212/212 Node tests** and all real browser regressions.
+| Component | Evidence and boundary |
+| --- | --- |
+| Arena v3 encrypted competition | One completed two-wallet five-round Sepolia match, 6:4; 20 gameplay transactions, verified read-only through three RPC providers. See [STATUS](docs/STATUS.md). Repeatability and redesigned frontend integration remain open. |
+| Earlier SquadGambit v2 | One independently verified encrypted 3v3 encounter, 0:1; separate legacy protocol. |
+| Academy | Playable cleartext training; no wallet or cryptographic claims. |
+| Blacksite | Local codebreaking; separate encrypted mission contract mock-tested, not deployed. |
+| Commander | Verified Arena history, XP, level and achievements from authenticated receipts. Expanded reward and cosmetic system planned. |
+| R36 design track | Three animated textured operator models, live 3D Arena/Academy/Blacksite/studio, local progression and disclosure UX, tested offline; source archives supplied separately. Not merged into this engineering branch or hosted as the new game. |
 
-**Current research, not deployed:** [Arena v3 FHE mock acceptance](docs/ARENA_V3_FHE_MOCK_ACCEPTANCE.md) describes a separate five-round encrypted match prototype. Its 25/25 Hardhat mock tests and 81/81 formation/hidden-sector oracle checks passed; it is neither a released feature nor permission to deploy a new contract.
+**Arena v3 proof:** [Sepolia contract](https://sepolia.etherscan.io/address/0xBF56087EFF029594beeFf1B57B47b1419bCDF16b) · [Match #1 creation](https://sepolia.etherscan.io/tx/0x4d64c77325c1fbff9cef31383b59f141172cad5a5163623c0de1e044c1297a0c) · [all round receipts and timings](docs/BUILD_LOG.md). The older deployment manifest and contract comments are historical; current evidence in STATUS supersedes their pre-deployment labels.
 
-**Current engineering phase:** [Phase-1 Game Architecture and Mechanics v1](docs/GAME_ARCHITECTURE_V1.md) — functional design, state ownership, four-pillar integration, and pre-graphics gates. **Not a claim that all four modes are playable.**
+## The sealed-orders experience
 
-**Release status:** a genuine two-wallet encrypted match has been completed and independently verified on Sepolia. The game remains a **pre-release candidate** pending newcomer playtests, full product/visual polish and independent security review. We do not claim production readiness or a security audit.
+| Stage | What is public | What remains confidential |
+| --- | --- | --- |
+| Lock | Participants, seal status, timing, GAMBIT activation | Nine tactical values, formation, selected GAMBIT sector |
+| Resolve | Both seals, resolution status and aggregate result handle | Individual plans, actions and lane outcomes |
+| Reveal | KMS-authenticated aggregate pressure points and cumulative score after finalization | Private orders, formation and selected target; no automatic end-of-match disclosure |
 
-[Play GAMBIT](https://iniwura.github.io/Gambit/) · [Inspect real Duel #1](https://iniwura.github.io/Gambit/?squad=1&duel=1) · [Public Sepolia finalization](https://sepolia.etherscan.io/tx/0x57a19f25a234eca7db206781a18cc965a09818a04b87a9f30d8d659562a9bdad) · [Engineering evidence](docs/STATUS.md)
+Public results may enable strategic inference. No absolute privacy guarantee or independent security audit is claimed. The deployed contract permits incomplete-round expiry without awarding a win; both timely seals can still resolve after expiry. The new UI must reflect actual transaction/proof state, not fabricated decryption or individual attacks. R36 includes a labeled offline protocol illustration only.
+
+## Rewards and replayability — planned expansion
+
+Progression is earned, not purchased. Commander XP, mastery badges, medals, titles and cosmetic operator/equipment unlocks reward real activity without changing competitive power. Local practice and Academy mastery are separate from receipt-verified online achievements; Blacksite earns verified rewards only after its own approved live mission. Claim rewards idempotently from canonical event identities; handle duplicate/reorganized receipts, abandoned rounds and self-farming. Ranked divisions and public leaderboards require fair repeated live matches and abuse review. No new token, paid loot boxes, wagering, cash payouts or pay-to-win features. Confidential challenges are a later research candidate, not a shipped proof feature.
+
+## Design and release direction
+
+Reference standards: Vesperfall (world, art and HUD), Tactical Breach Wizards (tactical choices), Gears Tactics (cinematic presentation), XCOM: Chimera Squad (squad identity), Into the Breach (outcome clarity). Original or appropriately licensed assets only; no copied game identity. Complete all modes, not just Arena. Use honest local-versus-online labels, accessible faction markers, clear order summaries, useful wait/recovery states and a no-wallet spectator path. Measure newcomer comprehension, replay desire, strategic balance and real hardware performance. Target 90+/100 internal whole-game quality, with no category under 80% of its maximum; independent review and live integration are separate release gates. No score or win guaranteed.
+
+The sections below retain the engineering build's existing play instructions and v2 proof route; they do not describe a hosted R36 release.
 
 ## Play, train and verify
 
@@ -69,7 +90,7 @@ If every onchain opening action, contingency and formation were public, an oppon
 
 The one-use invitation limits simple repeated-query attacks on the same sealed squad. It does **not** prevent strategic inference or collusion across separately sealed squads. No general privacy guarantee or independent audit is claimed.
 
-The encrypted onchain game is **one confidential 3v3 encounter**. The local **five-round practice** is a separate training experience. Public score verification must never be passed off as disclosure of private lane outcomes.
+The v2 SquadGambit evidence is one confidential 3v3 encounter. Arena v3 separately proves one complete five-round encrypted match; the local five-round practice and R36 design candidate remain separate. Public score verification must never be passed off as disclosure of private lane outcomes.
 
 ## Genuine Sepolia match: independently verifiable evidence
 
@@ -86,7 +107,7 @@ Contract: [`SquadGambit`](https://sepolia.etherscan.io/address/0x493aBFFE4186913
 | Finalization | [`finalizeDuel(1)` transaction](https://sepolia.etherscan.io/tx/0x57a19f25a234eca7db206781a18cc965a09818a04b87a9f30d8d659562a9bdad) · [independent check](https://github.com/Iniwura/Gambit/actions/runs/44914775566) | Block **12182444**, stored packed score **1**, authentic `DuelFinalized` event, **Violet wins** |
 | Public browser recovery | [Chromium verification](https://github.com/Iniwura/Gambit/actions/runs/44915491170) | Real score and authenticated reactor view displayed with **no wallet, signing or broadcast** |
 
-Receipt-based checks validate the exact signer, contract, method, event, runtime fingerprint, stored state, and consistency with the signed aggregate. This is evidence of **one completed real match**, not evidence of exhaustive multiplayer reliability or a third-party security audit.
+Receipt-based checks validate the exact signer, contract, method, event, runtime fingerprint, stored state, and consistency with the signed aggregate. This table proves the v2 encounter only; see the separate v3 evidence above. Neither is evidence of exhaustive multiplayer reliability or a third-party security audit.
 
 ### Cost evidence
 
@@ -123,7 +144,7 @@ Mock FHE tests are **not** substitutes for live decryption or authentic chain re
 
 ## What's not finished
 
-GAMBIT has one proven encrypted vertical slice, not a finished award-winning game. Remaining release criteria: an independent security/privacy and gameplay review; repeated full live matches with a new pair of users; first-time-player playtests and measurable session experience; approved original production sprites, sound and motion; accessibility and responsive visual QA; and the official pitch/submission materials.
+GAMBIT has verified v2 and v3 encrypted match evidence, not a finished award-winning game. Remaining release criteria: an independent security/privacy and gameplay review; repeated full live matches with a new pair of users; first-time-player playtests and measurable session experience; approved original production sprites, sound and motion; accessibility and responsive visual QA; and the official pitch/submission materials.
 
 Zama's **Confidential Gaming** competition evaluates *fun and intuitive gameplay*, confidentiality design, fairness, real Sepolia functionality, demo quality and code quality. The [program page](https://www.zama.org/post/zama-developer-program-mainnet-season-5-confidential-gaming) and [submission form](https://forms.zama.org/zama-developer-program-mainnet-season-5-confidential-gaming) require a functioning deployed game, clear documentation, an X introduction, and a **three-minute pitch presented by a real person**. AI-generated pitch video or voice will not be considered. **Applications close 14 December 2026 at 23:59 AOE.**
 
