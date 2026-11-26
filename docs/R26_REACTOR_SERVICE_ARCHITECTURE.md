@@ -1,0 +1,9 @@
+# R26 — Reactor service architecture (internal, not approved)
+Continues R25. Replaced the old reactor with a visible amber fusion core, layered machinery, connected coolant conduits, pump modules and six low-profile cooling banks. Ten authored material batches, deterministic floor wear and procedural metal surface treatment. Existing six operator positions, sector positions, tactical rules and privacy boundaries unchanged. No new external assets.
+
+All six desktop/mobile formation stills and six two-frame idle loops regenerated from actual WebGL frames, decoded and integrated. PASS test-r26-world.py: ten geometry batches, matching attributes, machinery outside tactical lanes, reactor clearance, canonical sectors and settled playback. PASS test-r26-regression.py: five-round fixture 3:12, four routes, six viewport sizes, no page errors. PASS test-r25.py: action effects, reveal, cleanup, replay score invariance and controls. PASS test-r26-frame.py: isolated SwiftShader combat frame, six effects, 334 calls, 261534 triangles, GL error 0. Planning frames: 293 calls, 252746 triangles. Archive CRC clean.
+
+Internal HTML SHA256 9accb6ebd6be3ae3c5f7b03656ea62ee0276668737ffd1191904dcc631cfad37
+Source ZIP SHA256 4a4671899aaf9229f596d0315392cb491a8d4928618fb33728e46d9cd6361aaa
+
+Artifact bytes are conversation files, not committed by this record. Existing base facility geometry and character rigs remain. Increased draw calls versus R25; sustained hardware FPS and continuous WebGL match unverified. Art still below reference; no 90+ claim. Production integration remains pending. R25 preserved; no deployment or chain actions.
