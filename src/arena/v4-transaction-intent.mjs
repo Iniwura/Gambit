@@ -15,13 +15,14 @@ import {readArenaV4PublicMatch} from './v4-public-match-reader.mjs';
 
 export const ARENA_V4_INTENT_VERSION=2;
 export const ARENA_V4_INTENT_ACTIONS=Object.freeze([
-  'SEAL_ROUND','RESOLVE_ROUND','FINALIZE_ROUND','EXPIRE_INCOMPLETE'
+  'SEAL_ROUND','RESOLVE_ROUND','FINALIZE_ROUND','EXPIRE_INCOMPLETE','ABORT_UNSETTLED'
 ]);
 export const ARENA_V4_WRITE_ABI=Object.freeze([
   'function sealRound(uint256 id,uint8 expectedRound,bytes32[11] encrypted,bytes inputProof)',
   'function resolveRound(uint256 id,uint8 expectedRound)',
   'function finalizeRound(uint256 id,uint8 expectedRound,uint8 packed,bytes proof)',
-  'function expireIncomplete(uint256 id,uint8 expectedRound)'
+  'function expireIncomplete(uint256 id,uint8 expectedRound)',
+  'function abortUnsettled(uint256 id,uint8 expectedRound)'
 ]);
 const WRITE_ABI=new Interface(ARENA_V4_WRITE_ABI);
 const HASH=/^0x[0-9a-fA-F]{64}$/;
@@ -196,6 +197,14 @@ function encodeAction(action,view,actor,payload){
       label:'Close incomplete match with NO winner',
       note:'Expiry does not award a win or a forfeit to either player.'};
   }
+  if(action==='ABORT_UNSETTLED'){
+    exact(payload,[],'empty technical abort payload');
+    check(view.status==='RECOVERY_EXPIRED_NOT_CLOSED'&&r.challengerSealed&&
+      r.defenderSealed&&!r.finalized,'not an expired pending settlement');
+    return {method:'abortUnsettled',params:[view.matchId,view.currentRound],
+      label:'Close failed settlement with NO winner',
+      note:'Technical abort preserves previous round history but awards no match result or rewards.'};
+  }
   throw Error('ARENA_V4_INTENT_INVALID unsupported action');
 }
 function publicFields(intent){
@@ -317,10 +326,8 @@ export async function revalidateArenaV4UnsignedTransaction(
     maxPriorityFeePerGas:BigInt(f.maxPriorityFeePerGasWei),
     // Exact calldata must be handed to a wallet ONLY after explicit UI
     // approval. This return value is not a signature or broadcast.
-    data:WRITE_ABI.encodeFunctionData(regenerated.action==='SEAL_ROUND'?
-      'sealRound':regenerated.action==='RESOLVE_ROUND'?
-      'resolveRound':regenerated.action==='FINALIZE_ROUND'?
-      'finalizeRound':'expireIncomplete',
+    data:WRITE_ABI.encodeFunctionData(
+      encodeAction(intent.action,fresh,intent.actor,payload).method,
       encodeAction(intent.action,fresh,intent.actor,payload).params),
     signed:false,sent:false,
     warning:'UNSIGNED ONLY. A fresh read cannot guarantee transaction inclusion. '+
