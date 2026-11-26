@@ -1,0 +1,16 @@
+# R36 — Disclosure-aware UX (internal, not approved)
+Continues exact R35. External feedback reviewed against ArenaV3Research.sol and master scope at d93ea444c252493ca3377b8b93e69470a87a4705. No contract change, blockchain transaction, deployment, or production merge.
+
+Implemented: persistent practice/online-study privacy indicator; public/private field guide; four manually stepped illustrative protocol states with no actual wallet, cipher/proof, or fabricated score; local-only lock animation before settlement (reduced motion skips it); conditional sentence, adjacent 0–9 order count, legible disabled commit button, score and HUD contrast; three true local outcome explanations; moved graphics preferences/last sampled metrics into Settings. No online individual tactical reveals. Per-unit seal animation and live transaction-driven UI still pending.
+
+Contract truth: eleven encrypted payload inputs; formation, nine plans and selected GAMBIT sector are private, activation/timing/seal flags/participants public. resolveRound makes aggregate result handle publicly decryptable, finalizeRound checks proof against exact handle and updates canonical score; no HP or end-of-match order reveal. Public outcomes may permit inference. Entry deadline one day, incomplete expiry unscored, both accepted orders remain resolvable. Duplicate/stale-round/outsider/forged-proof tests exist in mock suite. Blacksite isolated candidate mock-tested, not deployed. Prior full five-round Arena live evidence preserved, not attributed to offline frontend. No cUSDT staking, new roster or leaderboard added. Do not confuse reward token with requirement.
+
+R36 full compatibility regression PASS: five rounds 3:12, all four routes, six viewport sizes, no page errors. Focused privacy test PASS: disclosure indicator, conditional summary, one local settlement, three reasons, all four hypothetical stages with invariant game state, mobile and Settings. Initial pointer-target failure fixed. Exact independent single-operator study of 729 pairings: no universal non-losing triple, side-swap symmetry, uniform opponent margin -4/9 to +4/9; fixed nine-entry repertoire margin -2/3 to 0. This is not full squad/game balance or playtest. No hardware performance claim.
+
+Official Zama Season 5 requirements: https://www.zama.org/post/zama-developer-program-mainnet-season-5-confidential-gaming and https://forms.zama.org/zama-developer-program-mainnet-season-5-confidential-gaming — live website, Sepolia, code/docs, real-person three-minute pitch, X thread/article. Deadline Dec 14 2026 23:59 AOE. cUSDT reward is not a staking requirement. Do not state face-camera specifically mandatory beyond official real-person pitch wording.
+
+Next: connect authoritative public states to presentation, finish artistic acceptance, expand canonical balance and recovery checks, hosted full-round playability and hardware validation. Preserve all modes, distinguish training from live evidence. No score inflation.
+
+Source ZIP SHA256 77b4d599e51b1eb68c4833c52229dac96eebaea137e67c73fa91cc806b452987 (CRC passed).
+Standalone SHA256 95f7423f941d9e08d505ab6d44445b36a5b8c5378589d3c50df5754c1215fa7e.
+Source bytes remain in conversation artifacts, not committed by this record. R35 rollback retained.
