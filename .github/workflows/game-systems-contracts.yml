@@ -5,6 +5,9 @@ on:
     paths:
       - 'src/blacksite/**'
       - 'src/profile/**'
+      - 'scripts/readonly-provider-policy.mjs'
+      - 'scripts/run-profile-readonly.mjs'
+      - 'tests/readonly-provider-policy.test.mjs'
       - 'tests/blacksite-mission-contract.test.mjs'
       - 'tests/profile-evidence-contract.test.mjs'
       - 'tests/profile-discovery-contract.test.mjs'
@@ -19,7 +22,7 @@ permissions:
 jobs:
   unit-and-real-chain-evidence:
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,13 +31,13 @@ jobs:
       - name: Install pinned public and local dependencies
         run: npm ci --no-audit --no-fund
       - name: BLACKSITE local mission and Commander Profile evidence contracts
-        run: node --test tests/blacksite-mission-contract.test.mjs tests/profile-evidence-contract.test.mjs tests/profile-discovery-contract.test.mjs tests/profile-public-history-contract.test.mjs
+        run: node --test tests/blacksite-mission-contract.test.mjs tests/profile-evidence-contract.test.mjs tests/profile-discovery-contract.test.mjs tests/profile-public-history-contract.test.mjs tests/readonly-provider-policy.test.mjs
       - name: Verify first real Commander Profile record from public Sepolia (NO TX)
         timeout-minutes: 5
-        run: node scripts/verify-profile-duel1-readonly.mjs
+        run: node scripts/run-profile-readonly.mjs verify-profile-duel1-readonly.mjs
       - name: Discover real Duel 1 from canonical log pages and verify receipt (NO TX)
         timeout-minutes: 5
-        run: node scripts/verify-profile-discovery-readonly.mjs
+        run: node scripts/run-profile-readonly.mjs verify-profile-discovery-readonly.mjs
       - name: Verify opt-in Commander history for real Sepolia wallet (NO TX)
         timeout-minutes: 5
-        run: node scripts/verify-commander-public-history-readonly.mjs
+        run: node scripts/run-profile-readonly.mjs verify-commander-public-history-readonly.mjs
