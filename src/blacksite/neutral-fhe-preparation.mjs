@@ -24,7 +24,7 @@ async function actorCheck(wallet,actor,signal){
 }
 export function encodeNeutralBlacksiteAttempt(order){
  check(order&&typeof order==='object'&&Object.keys(order).length===2&&Object.hasOwn(order,'guess')&&Object.hasOwn(order,'route'),'exact attempt order');
- check(Array.isArray(order.guess)&&order.guess.length===5&&order.guess.every(x=>Number.isInteger(x)&&x>=0&&x<4),'five glyphs');
+ check(Array.isArray(order.guess)&&order.guess.length===5&&Array.from(order.guess).every(x=>Number.isInteger(x)&&x>=0&&x<4),'five glyphs');
  check(routes.includes(order.route),'valid route');
  return Object.freeze([...order.guess,routes.indexOf(order.route)].map(x=>Object.freeze({type:'euint8',value:BigInt(x)})));
 }
@@ -51,7 +51,7 @@ export async function prepareNeutralBlacksiteSeal(args){
  const values=encodeNeutralBlacksiteAttempt(args.order);abort(args.signal);
  const result=await args.sdk.encrypt({contractAddress:view.contract,userAddress:actor,values:values.map(x=>({...x}))});
  abort(args.signal);
- check(result&&Array.isArray(result.encryptedValues)&&result.encryptedValues.length===6&&result.encryptedValues.every(handle)&&proof(result.inputProof),'SDK must return six ciphertext handles and proof');
+ check(result&&Array.isArray(result.encryptedValues)&&result.encryptedValues.length===6&&Array.from(result.encryptedValues).every(handle)&&proof(result.inputProof),'SDK must return six ciphertext handles and proof');
  const after=await fresh(args,actor,view);
  const payload=Object.freeze({encryptedHandles:Object.freeze([...result.encryptedValues]),inputProof:result.inputProof});
  const intent=stageNeutralMissionIntent(after,{action:'SUBMIT_ATTEMPT',actor,payload,feeQuote:args.feeQuote});
