@@ -145,17 +145,7 @@ contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
                 FHE.select(shiftOne, winsBByRoleA[(j + 2) % 3], winsBByRoleA[(j + 1) % 3]));
         }
 
-        ebool requestA = FHE.lt(r.challenger.gambitSector, FHE.asEuint8(3));
-        ebool requestB = FHE.lt(r.defender.gambitSector, FHE.asEuint8(3));
-        ebool useA = FHE.and(requestA, FHE.not(m.challengerGambitSpent));
-        ebool useB = FHE.and(requestB, FHE.not(m.defenderGambitSpent));
-        m.challengerGambitSpent = FHE.or(m.challengerGambitSpent, useA);
-        m.defenderGambitSpent = FHE.or(m.defenderGambitSpent, useB);
-        FHE.allowThis(m.challengerGambitSpent);
-        FHE.allowThis(m.defenderGambitSpent);
-        euint8 a = _points(r.challenger, winsA, winsB, useA);
-        euint8 b = _points(r.defender, winsB, winsA, useB);
-        r.encryptedPackedScore = FHE.add(FHE.shl(a, 3), b);
+        r.encryptedPackedScore = _computePacked(m, r, winsA, winsB);
         FHE.allowThis(r.encryptedPackedScore);
         FHE.makePubliclyDecryptable(r.encryptedPackedScore);
         r.resolved = true;
@@ -271,6 +261,26 @@ contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
             FHE.and(FHE.eq(aAction, FHE.asEuint8(2)), FHE.eq(bAction, FHE.asEuint8(1)))
         );
         return (aWins, FHE.and(FHE.not(draw), FHE.not(aWins)));
+    }
+
+    function _consumeGambit(Tactic storage t, ebool spent)
+        private returns (ebool effectiveUse, ebool nextSpent)
+    {
+        effectiveUse = FHE.and(FHE.lt(t.gambitSector, FHE.asEuint8(3)), FHE.not(spent));
+        nextSpent = FHE.or(spent, effectiveUse);
+        FHE.allowThis(nextSpent);
+    }
+
+    function _computePacked(Match storage m, Round storage r,
+        ebool[3] memory winsA, ebool[3] memory winsB) private returns (euint8)
+    {
+        ebool useA;
+        ebool useB;
+        (useA, m.challengerGambitSpent) = _consumeGambit(r.challenger, m.challengerGambitSpent);
+        (useB, m.defenderGambitSpent) = _consumeGambit(r.defender, m.defenderGambitSpent);
+        euint8 a = _points(r.challenger, winsA, winsB, useA);
+        euint8 b = _points(r.defender, winsB, winsA, useB);
+        return FHE.add(FHE.shl(a, 3), b);
     }
 
     function _points(Tactic storage t, ebool[3] memory own, ebool[3] memory other, ebool effectiveUse)
