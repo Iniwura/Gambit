@@ -132,4 +132,34 @@ describe('ArenaV4ConfidentialActivationResearch (MOCK ONLY)',function(){
     expect(await fhevm.userDecryptEbool(await c.connect(a).ownSpentHandle(1n),address,a)).to.equal(true);
     expect((await c.matchStatus(2n)).abandoned).to.equal(false);
   });
+  it('both on-time seals cannot be aborted before grace; unresolved round can close after cutoff without victory',async function(){
+    const {c,a,b,out}=await fixture();
+    await seal(c,a,W,0);await seal(c,b,L,3);
+    const round=await c.roundStatus(1n,1);
+    const cutoff=round.deadlineAt+86400n;
+    await network.provider.send('evm_setNextBlockTimestamp',[Number(cutoff)]);
+    await expect(c.connect(out).abortUnsettled(1n,1)).to.be.revertedWith('Recovery still active');
+    await expect(c.resolveRound(1n,1)).to.be.revertedWith('Recovery expired');
+    await expect(c.connect(out).abortUnsettled(1n,1)).to.emit(c,'MatchTechnicalAbort').withArgs(1n,1);
+    const state=await c.matchStatus(1n);
+    expect(state.abandoned).to.equal(true);expect(state.complete).to.equal(false);
+    expect(state.cumulativeChallenger).to.equal(0n);expect(state.cumulativeDefender).to.equal(0n);
+    await expect(c.resolveRound(1n,1)).to.be.revertedWith('Match closed');
+  });
+  it('late proof cannot turn technical abort into victory or alter previous finalized scores',async function(){
+    const {c,a,b,out}=await fixture();
+    await seal(c,a,W,3);await seal(c,b,L,3);await settle(c,1,40);
+    await seal(c,a,W,0);await seal(c,b,L,3);
+    await c.resolveRound(1n,2);
+    const h=await c.publicResultHandle(1n,2),d=await fhevm.publicDecrypt([h]);
+    const round=await c.roundStatus(1n,2),cutoff=round.deadlineAt+86400n;
+    await network.provider.send('evm_setNextBlockTimestamp',[Number(cutoff+1n)]);
+    await expect(c.finalizeRound(1n,2,Number(d.clearValues[h]),d.decryptionProof)).to.be.revertedWith('Recovery expired');
+    await expect(c.connect(out).abortUnsettled(1n,2)).to.emit(c,'MatchTechnicalAbort').withArgs(1n,2);
+    const state=await c.matchStatus(1n);
+    expect(state.abandoned).to.equal(true);expect(state.complete).to.equal(false);
+    expect(state.cumulativeChallenger).to.equal(5n);expect(state.cumulativeDefender).to.equal(0n);
+    expect((await c.roundStatus(1n,2)).finalized).to.equal(false);
+    await expect(c.finalizeRound(1n,2,Number(d.clearValues[h]),d.decryptionProof)).to.be.revertedWith('Match closed');
+  });
 });
