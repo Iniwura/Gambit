@@ -1,0 +1,48 @@
+name: Research contracts public deployment preflight
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'fhe/scripts/preflight-research-sepolia.ts'
+      - 'fhe/contracts/NeutralBlacksiteResearch.sol'
+      - 'fhe/contracts/ArenaV4ConfidentialActivationResearch.sol'
+      - '.github/workflows/research-public-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: research-public-preflight-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  public-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: fhe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install development dependencies
+        run: npm install --no-audit --no-fund
+      - name: Typecheck and compile exact candidates
+        run: |
+          npm run typecheck
+          npm run compile
+      - name: Public constructor simulations and fee quotes (NO SIGNER)
+        run: |
+          set -o pipefail
+          npx hardhat run --network sepolia --no-compile scripts/preflight-research-sepolia.ts | tee research-preflight.log
+      - name: Export exact artifacts and public simulation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-public-preflight
+          path: |
+            fhe/research-preflight.log
+            fhe/artifacts/contracts/NeutralBlacksiteResearch.sol/NeutralBlacksiteResearch.json
+            fhe/artifacts/contracts/ArenaV4ConfidentialActivationResearch.sol/ArenaV4ConfidentialActivationResearch.json
+          if-no-files-found: warn
+          retention-days: 7
