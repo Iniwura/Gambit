@@ -1,7 +1,7 @@
 name: Research contracts public deployment preflight
 on:
-  push:
-    branches: [build/verified-first-slice]
+  pull_request:
+    # The engineering PR is the observable quality pipeline; no duplicate push run.
     paths:
       - 'fhe/scripts/preflight-research-sepolia.ts'
       - 'fhe/contracts/NeutralBlacksiteResearch.sol'
@@ -15,6 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   public-preflight:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'build/verified-first-slice'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     defaults:
