@@ -1,0 +1,8 @@
+# R25 — Combat playback (internal, not approved)
+Continues R24. Six pooled faction-colored effects (swept strike arc, guard barrier, flank wake), both sides driven by actual settled local action pairs. World sector materials remain neutral until 1.2s capture onset; reduced motion snaps to final ownership. Local result report displays both roles and executed actions with equipment artwork. Replay 3D combat starts settled trace on the optional live renderer; no score changes or opponent secrets exposed. Removes duplicate DOM effects when live renderer active.
+ 
+PASS test-r25-regression.py (five rounds 3:12, four routes, six viewports, no page errors), test-r21-playback.py, test-r25.py (six effect mapping, reveal, cleanup, reduced motion, six result layouts, replay UI dispatch against stub with invariant scores). PASS test-r25-frame.py actual isolated SwiftShader WebGL2 combat frame, six visible effects, 322 draws, 247422 triangles, GL error zero. Archive CRC clean. No continuous hardware replay or FPS verification. Fallback artwork still depicts canonical rival positions; exact opposing deployment in live 3D. Architecture and character art remain below Vesperfall benchmark.
+ 
+Internal HTML SHA256 f43117079988fdd115109ebbc60b11dd4ab80ce0b9e1b738771837d43ca3f7a5
+Source ZIP SHA256 a20b7b277f045b15f319f182f132747c920799db8c627ba237c5f50004ee14c8
+Artifact bytes are conversation files, not committed by this record. R24 preserved. No 90+ claim, production merge, deployment or chain actions.
