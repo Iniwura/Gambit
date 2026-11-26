@@ -17,8 +17,8 @@ import {approvedArenaV3Deployment}
  */
 type VerifiedRow={
   matchId:string,creationTransaction:string,creationBlock:number,
-  challenger:string,defender:string,currentRound:number,complete:boolean,
-  cumulative:{challenger:number,defender:number},winner:0|1|2
+  challenger:string,defender:string,currentRound:number,complete:boolean,abandoned:boolean,
+  cumulative:{challenger:number,defender:number},winner:0|1|2|null
 };
 type PublicView={
   authority:string,commander:string,matches:readonly VerifiedRow[],
@@ -83,7 +83,7 @@ export function mountCommanderPublicViewer():void{
       <section id="gambit-profile-results" hidden>
         <p id="gambit-profile-scan-status"></p>
         <div class="gp-stat-row">
-          <div><span>VERIFIED MATCHES</span><strong id="gambit-profile-matches">0</strong></div>
+          <div><span>COMPLETED MATCHES</span><strong id="gambit-profile-matches">0</strong></div>
           <div><span>WINS</span><strong id="gambit-profile-wins">0</strong></div>
           <div><span>LOSSES</span><strong id="gambit-profile-losses">0</strong></div>
           <div><span>DRAWS</span><strong id="gambit-profile-draws">0</strong></div>
@@ -202,12 +202,12 @@ export function mountCommanderPublicViewer():void{
       return li;
     }));
     history.replaceChildren();
-    for(const event of view.matches){
+    for(const event of profile.verifiedHistory){
       const li=document.createElement('li');
       const score=document.createElement('strong');
       score.textContent='Arena Match #'+event.matchId+' · '+
         event.cumulative.challenger+' : '+event.cumulative.defender+
-        (event.complete?' · COMPLETE':' · '+event.currentRound+'/5');
+        (event.complete?' · COMPLETE':event.abandoned?' · EXPIRED / UNSCORED':' · ACTIVE '+event.currentRound+'/5');
       const link=document.createElement('a');
       link.textContent='View creation receipt';
       link.href='https://sepolia.etherscan.io/tx/'+event.creationTransaction;
@@ -217,7 +217,7 @@ export function mountCommanderPublicViewer():void{
       history.append(li);
     }
     byId<HTMLElement>(backdrop,'gambit-profile-empty').hidden=
-      profile.matches!==0;
+      profile.observedMatches!==0;
   }
   async function inspect(){
     stop();
