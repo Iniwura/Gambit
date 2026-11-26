@@ -13,7 +13,8 @@ import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
  * A repeat request is silently ineffective, never a public rejection.
  * Only aggregate score is publicly decryptable. Scores can leak inferences;
  * fixed source-level control flow is not a complete side-channel audit.
- * No owner-spent recovery API yet. No deployment or production approval.
+ * Participants may recover only their own encrypted spent state via user decryption.
+ * No deployment or production approval.
  */
 contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
     uint8 public constant MAX_ROUNDS = 5;
@@ -85,6 +86,8 @@ contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
         m.defenderGambitSpent = FHE.eq(FHE.asEuint8(0), FHE.asEuint8(1));
         FHE.allowThis(m.challengerGambitSpent);
         FHE.allowThis(m.defenderGambitSpent);
+        FHE.allow(m.challengerGambitSpent, m.challenger);
+        FHE.allow(m.defenderGambitSpent, m.defender);
         _openRound(id, 1);
         emit MatchCreated(id, msg.sender, invitedDefender);
     }
@@ -209,6 +212,14 @@ contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
             m.cumulativeChallenger, m.cumulativeDefender);
     }
 
+    /** The handle is not plaintext; ACL, not this getter, enforces confidentiality. */
+    function ownSpentHandle(uint256 id) external view returns (bytes32) {
+        Match storage m = matches[id];
+        require(m.challenger != address(0), "Unknown match");
+        require(msg.sender == m.challenger || msg.sender == m.defender, "Not participant");
+        return FHE.toBytes32(msg.sender == m.challenger ? m.challengerGambitSpent : m.defenderGambitSpent);
+    }
+
     function roundStatus(uint256 id, uint8 round) external view returns (
         uint64 openedAt, uint64 deadlineAt, bool challengerSealed, bool defenderSealed,
         bool resolved, bool finalized, uint8 packedScore
@@ -278,6 +289,8 @@ contract ArenaV4ConfidentialActivationResearch is ZamaEthereumConfig {
         ebool useB;
         (useA, m.challengerGambitSpent) = _consumeGambit(r.challenger, m.challengerGambitSpent);
         (useB, m.defenderGambitSpent) = _consumeGambit(r.defender, m.defenderGambitSpent);
+        FHE.allow(m.challengerGambitSpent, m.challenger);
+        FHE.allow(m.defenderGambitSpent, m.defender);
         euint8 a = _points(r.challenger, winsA, winsB, useA);
         euint8 b = _points(r.defender, winsB, winsA, useB);
         return FHE.add(FHE.shl(a, 3), b);
