@@ -1,0 +1,8 @@
+# R24 — Room cohesion and conditional tactics (internal)
+Continues R23. Five secondary rooms adopt consistent charcoal/warm-metal visual system and existing artwork; no new 3D geometry or assets. Academy now uses common equipment icons and an own-response explanation derived from the explicitly known training rival opening. Arena confirmation includes a formation-mapped table of hypothetical rival openings and own executed branch; no rival state read, no outcome prediction, no rule change. Applies to local and design-only online planning.
+ 
+PASS focused test: 2187 conditional cells across 27 order triples, three formations, three operators, three hypothetical openings and three viewport sizes; five room layouts, no horizontal overflow. PASS Academy exercises and keyboard vault; PASS complete five-round match 3:12, four routes, six viewports, no page errors. Final text-only clarification distinguishes planned and executed actions. One earlier sequential test command timed out before full regression; isolated rerun passed. Archive CRC clean.
+ 
+Internal HTML SHA256 0d1cfbbd464a56e6926fbd9c4457215f71310dea1b03724a04156ee8b921a62c
+Source ZIP SHA256 a6a007d369e598921d362671fae246ce7433b0dccd76afae5412da3fc1cbbbc7
+Artifact bytes are conversation files, not committed by this record. Runtime character fidelity, new architectural art, sustained GPU performance, cinematic choreography and production integration remain unapproved; no 90+ claim. R23 preserved. No blockchain actions.
