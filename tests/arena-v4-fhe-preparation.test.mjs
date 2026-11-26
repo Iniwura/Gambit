@@ -185,3 +185,44 @@ test('change selected account after preparation prevents releasing unsigned call
   c.w.account=B;
   await assert.rejects(releaseArenaV4Prepared({...c.args(),prepared,approval:prepared.intent.id}),/account changed/);
 });
+
+import {readArenaV4PublicMatch} from '../src/arena/v4-public-match-reader.mjs';
+import {stageArenaV4TransactionIntent,revalidateArenaV4UnsignedTransaction,ARENA_V4_WRITE_ABI} from '../src/arena/v4-transaction-intent.mjs';
+
+test('V4 recovery cutoff allows exact abort only after grace; late proof staging stops',async()=>{
+ const c=context();ready(c);
+ // Fixture block timestamps use 100000+(n-100)*12. Recovery ends at 272800.
+ c.f.height=14500;
+ const before=await readArenaV4PublicMatch(c.p,MANIFEST,7);
+ assert.equal(before.status,'AWAITING_PROOF');
+ const request={action:'ABORT_UNSETTLED',actor:A,payload:{},feeQuote:fee()};
+ assert.throws(()=>stageArenaV4TransactionIntent(before,request),/not an expired/);
+ c.f.height++;
+ const after=await readArenaV4PublicMatch(c.p,MANIFEST,7);
+ assert.equal(after.status,'RECOVERY_EXPIRED_NOT_CLOSED');
+ assert.equal(after.resultHandle,null);
+ await assert.rejects(prepareArenaV4Finalization(c.args()),/not awaiting a public proof/);
+ assert.equal(c.counts().proofCalls,0);
+ const intent=stageArenaV4TransactionIntent(after,request);
+ const tx=await revalidateArenaV4UnsignedTransaction(c.p,MANIFEST,intent,{},intent.id);
+ const decoded=new Interface(ARENA_V4_WRITE_ABI).parseTransaction({data:tx.data});
+ assert.equal(decoded.name,'abortUnsettled');assert.deepEqual([...decoded.args],[7n,1n]);
+ assert.equal(tx.sent,false);assert.equal(tx.value,0n);
+ c.f.match.abandoned=true;
+ const closed=await readArenaV4PublicMatch(c.p,MANIFEST,7);
+ assert.equal(closed.status,'TECHNICAL_ABORT_UNSCORED');assert.equal(closed.winner,null);
+ await assert.rejects(revalidateArenaV4UnsignedTransaction(c.p,MANIFEST,intent,{},intent.id),/match state changed/);
+});
+
+test('unresolved technical abort and ordinary incomplete abandonment remain distinct',async()=>{
+ const c=context();
+ c.f.height=14501;
+ Object.assign(c.f.rounds[0],{challengerSealed:true,defenderSealed:true});
+ assert.equal((await readArenaV4PublicMatch(c.p,MANIFEST,7)).status,'RECOVERY_EXPIRED_NOT_CLOSED');
+ c.f.match.abandoned=true;
+ assert.equal((await readArenaV4PublicMatch(c.p,MANIFEST,7)).status,'TECHNICAL_ABORT_UNSCORED');
+ c.f.height=14500;
+ await assert.rejects(readArenaV4PublicMatch(c.p,MANIFEST,7),/invalid abandoned state/);
+ c.f.rounds[0].defenderSealed=false;
+ assert.equal((await readArenaV4PublicMatch(c.p,MANIFEST,7)).status,'ABANDONED_UNSCORED');
+});
