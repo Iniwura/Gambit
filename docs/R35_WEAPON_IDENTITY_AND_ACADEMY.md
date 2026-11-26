@@ -1,0 +1,14 @@
+# R35 — Weapon identity and Academy resource allocation (internal, not approved)
+
+Continues exact R34 source SHA256 8a23fd878cc91d6ae7b735ab4dc62552e9ea59909e06779a6165ae5a5ef179d1. No scoring, production, or chain changes.
+
+- Both factions: Scout gauntlet pulses track hand bones; Guardian muzzle flash and short stylized tracers track the rifle/muzzle bones; Striker ribbon follows actual weighted blade vertices transformed through bind matrices. Bounded 12 samples/66 vertices with fading vertex alpha. Inactive effects hidden. No simulated damage or hidden online information. Guard/flank remain existing treatment. Timing stylized, not exact authored hit frames.
+- Role-specific own Strike illustrations in Arena draft/review, results and operator dossiers. Abstract predictions retain generic action icon. Three original deterministic synthetic weapon cues follow settled local role/action pairs; source and hashes included.
+- Academy now loads only the two participating rigs (Striker and opposing Guardian), not six instances; no Scout GLB load. Two effect groups; same validated trace and native animation logic. Full environment still shared.
+- Two actual runtime squad HQ art studies rendered, both rejected as weaker than current labeled cinematic concept. Preserved under experiments; not integrated.
+
+Evidence: final complete compatibility regression five rounds 3:12, all four routes, six viewport sizes, no page errors. Focused test confirms two actors, native clips, bounded effects/reset, role-specific audio event and icon mapping/abstract predictions; corrected earlier SVG serialization assertion to DOM equality. 72 weapon-anchor checks, max 2.22e-16 world-unit deviation; corrected initial oversized blade ribbon, final blade length 1.428 world units. Actual isolated corrected SwiftShader combat frame: 284 calls, 487746 triangles, six effects, GL error zero (before Academy-only allocation branch and UI/audio changes). Final actual Academy mount, failed/corrected exercise, next lesson and teardown passed with forced software capability and reduced motion. Earlier render timeout and headless WebGL failure retained as limitations. Physical GPU sustained performance, normal-motion complete match, subjective sound quality, third-party silhouette review and visual acceptance remain open.
+
+Source archive SHA256 a48b3b317dcf14872e88c566e9b33f765a72fd7dc741fa1254cf97c7ce1416db (501 files, CRC clean).
+Standalone SHA256 cf633d31e4feab923e03c58fe1f8f6cb1edbc923ce8108d43ce2f457ec0590e1.
+Source/asset bytes are conversation artifacts, not committed by this documentation record. R34 preserved. No new overall score or 90+ approval, no production merge/deployment/wallet actions.
