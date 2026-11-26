@@ -9,8 +9,8 @@ import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
  * @notice Isolated FHE mission protocol for the BLACKSITE pillar.
  *
  * The warden's four-glyph vault code, the operative's guesses and the
- * operative's approach are encrypted inputs. The contract never exposes any
- * of those values. Each attempt produces one encrypted feedback packet which
+ * operative's approach are encrypted inputs. The contract never publishes plaintext vault codes or guesses.
+ * The approach is confidential before settlement and decodable afterward. Each attempt produces one encrypted feedback packet which
  * is made publicly decryptable only after the attempt is submitted; the KMS
  * proof is then checked onchain before public progress is recorded.
  *
@@ -22,7 +22,7 @@ import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
  *
  * The packet ranges are intentionally disjoint so the authenticated public
  * result can be decoded without storing the hidden approach:
- *   0..4 stealth exact, 16..52 probe packed or breach exact.
+ *   0..4 stealth exact, 16..48 probe packed (valid counts only), 64..68 breach exact.
  * This is research code and is not deployed or authorized for deployment.
  */
 contract BlacksiteMission is ZamaEthereumConfig {
@@ -30,7 +30,7 @@ contract BlacksiteMission is ZamaEthereumConfig {
     uint8 public constant MAX_ATTEMPTS = 5;
     uint64 public constant MISSION_WINDOW = 1 days;
     uint8 private constant PROBE_BASE = 16;
-    uint8 private constant BREACH_BASE = 48;
+    uint8 private constant BREACH_BASE = 64;
 
     struct Attempt {
         bool submitted;
@@ -129,17 +129,28 @@ contract BlacksiteMission is ZamaEthereumConfig {
         require(a.submitted && !a.resolved && !a.finalized, "Attempt not resolvable");
 
         euint8 exact = FHE.asEuint8(0);
-        euint8 matched = FHE.asEuint8(0);
         for (uint8 i = 0; i < CODE_LENGTH; i++) {
             exact = FHE.add(exact, FHE.select(
                 FHE.eq(m.vaultCode[i], a.guess[i]), FHE.asEuint8(1), FHE.asEuint8(0)
             ));
-            ebool found = FHE.eq(m.vaultCode[i], a.guess[0]);
-            for (uint8 j = 1; j < CODE_LENGTH; j++) {
-                found = FHE.or(found, FHE.eq(m.vaultCode[i], a.guess[j]));
+        }
+        // Multiset intersection: each occurrence can contribute at most once.
+        // Counts and the minimum stay encrypted; loops depend only on public bounds.
+        euint8 matched = FHE.asEuint8(0);
+        for (uint8 glyph = 0; glyph < 4; glyph++) {
+            euint8 symbol = FHE.asEuint8(glyph);
+            euint8 secretCount = FHE.asEuint8(0);
+            euint8 guessCount = FHE.asEuint8(0);
+            for (uint8 i = 0; i < CODE_LENGTH; i++) {
+                secretCount = FHE.add(secretCount, FHE.select(
+                    FHE.eq(m.vaultCode[i], symbol), FHE.asEuint8(1), FHE.asEuint8(0)
+                ));
+                guessCount = FHE.add(guessCount, FHE.select(
+                    FHE.eq(a.guess[i], symbol), FHE.asEuint8(1), FHE.asEuint8(0)
+                ));
             }
             matched = FHE.add(matched, FHE.select(
-                found, FHE.asEuint8(1), FHE.asEuint8(0)
+                FHE.lt(secretCount, guessCount), secretCount, guessCount
             ));
         }
         euint8 misplaced = FHE.sub(matched, exact);
@@ -176,7 +187,7 @@ contract BlacksiteMission is ZamaEthereumConfig {
         if (publicFeedback <= 4) {
             exact = publicFeedback;
             approach = 0;
-        } else if (publicFeedback >= PROBE_BASE && publicFeedback < BREACH_BASE) {
+        } else if (publicFeedback >= PROBE_BASE && publicFeedback <= PROBE_BASE + 32) {
             uint8 packed = publicFeedback - PROBE_BASE;
             exact = packed >> 3;
             misplaced = packed & 7;
