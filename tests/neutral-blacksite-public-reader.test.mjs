@@ -78,3 +78,48 @@ test('rejects inconsistent slot, impossible packets, future actions and unfinali
  c.f.rows[0]=[true,true,false,0];c.f.state[4]=0;c.f.state[5]=0;c.f.handle='0x'+'0'.repeat(64);
  await assert.rejects(c.read(),/missing public result handle/);
 });
+
+import {NEUTRAL_MISSION_WRITE_ABI,stageNeutralMissionIntent,revalidateNeutralMissionIntent} from '../src/blacksite/neutral-mission-intent.mjs';
+const write=new Interface(NEUTRAL_MISSION_WRITE_ABI);
+const fee={gasLimit:'300000',maxFeePerGasWei:'2000000000',maxPriorityFeePerGasWei:'100000000',maximumTotalFeeWei:'600000000000000'};
+const request=(action,payload={})=>({action,actor:A,payload,feeQuote:fee});
+const sealed={encryptedHandles:Array.from({length:6},(_,i)=>'0x'+(i+1).toString(16).padStart(64,'0')),inputProof:'0x1234'};
+test('neutral mission exact six-input seal and explicit approval release only unsigned calldata',async()=>{
+ const c=fixture(),s=await c.read(),intent=stageNeutralMissionIntent(s,request('SUBMIT_ATTEMPT',sealed));
+ assert.equal(Object.hasOwn(intent,'encryptedHandles'),false);assert.equal(Object.hasOwn(intent,'inputProof'),false);
+ const tx=await revalidateNeutralMissionIntent(c.provider,manifest,intent,sealed,intent.id);
+ const parsed=write.parseTransaction({data:tx.data});
+ assert.equal(parsed.name,'submitAttempt');assert.equal(parsed.args[0],7n);assert.equal(parsed.args[1],1n);
+ assert.deepEqual([...parsed.args[2]],sealed.encryptedHandles.slice(0,5));assert.equal(parsed.args[3],sealed.encryptedHandles[5]);
+ assert.equal(tx.signed,false);assert.equal(tx.sent,false);assert.equal(tx.value,0n);
+ await assert.rejects(revalidateNeutralMissionIntent(c.provider,manifest,intent,sealed,H),/exact approval/);
+ await assert.rejects(revalidateNeutralMissionIntent(c.provider,manifest,intent,{...sealed,inputProof:'0xabcd'},intent.id),/calldata or deployment changed/);
+ c.f.rows[0]=[true,false,false,0];
+ await assert.rejects(revalidateNeutralMissionIntent(c.provider,manifest,intent,sealed,intent.id),/mission state changed/);
+});
+test('neutral mission consent is operative-bound, fee-bounded and rejects plaintext or malformed encrypted payloads',async()=>{
+ const c=fixture(),s=await c.read();
+ assert.throws(()=>stageNeutralMissionIntent(s,{...request('SUBMIT_ATTEMPT',sealed),actor:C}),/only operative/);
+ assert.throws(()=>stageNeutralMissionIntent(s,request('SUBMIT_ATTEMPT',{...sealed,guess:[0,0,0,0,0]})),/exact fields/);
+ assert.throws(()=>stageNeutralMissionIntent(s,request('SUBMIT_ATTEMPT',{...sealed,encryptedHandles:sealed.encryptedHandles.slice(0,5)})),/six encrypted/);
+ assert.throws(()=>stageNeutralMissionIntent(s,{...request('SUBMIT_ATTEMPT',sealed),feeQuote:{...fee,maximumTotalFeeWei:'1'}}),/budget/);
+});
+test('neutral mission exact resolve, finalize, expiry and abort intents follow public state and never award rewards',async()=>{
+ const c=fixture();c.f.rows[0]=[true,false,false,0];
+ let s=await c.read(),i=stageNeutralMissionIntent(s,request('RESOLVE_ATTEMPT'));
+ let tx=await revalidateNeutralMissionIntent(c.provider,manifest,i,{},i.id);
+ assert.equal(write.parseTransaction({data:tx.data}).name,'resolveAttempt');
+ c.f.rows[0]=[true,true,false,0];s=await c.read();
+ const p={packet:34,resultHandle:H,kmsProof:'0x1234'};
+ assert.throws(()=>stageNeutralMissionIntent(s,request('FINALIZE_ATTEMPT',{...p,resultHandle:B})),/wrong pending proof/);
+ i=stageNeutralMissionIntent(s,request('FINALIZE_ATTEMPT',p));
+ tx=await revalidateNeutralMissionIntent(c.provider,manifest,i,p,i.id);
+ assert.equal(write.parseTransaction({data:tx.data}).name,'finalizeAttempt');
+ c.f.time=272801;s=await c.read();
+ assert.throws(()=>stageNeutralMissionIntent(s,request('FINALIZE_ATTEMPT',p)),/wrong pending proof/);
+ i=stageNeutralMissionIntent(s,request('ABORT_UNSETTLED'));tx=await revalidateNeutralMissionIntent(c.provider,manifest,i,{},i.id);
+ assert.equal(write.parseTransaction({data:tx.data}).name,'abortUnsettled');
+ c.f.rows[0]=empty();s=await c.read();i=stageNeutralMissionIntent(s,request('EXPIRE_MISSION'));
+ tx=await revalidateNeutralMissionIntent(c.provider,manifest,i,{},i.id);assert.equal(write.parseTransaction({data:tx.data}).name,'expireMission');
+ assert.equal(s.eligibleForVerifiedProgression,false);
+});
