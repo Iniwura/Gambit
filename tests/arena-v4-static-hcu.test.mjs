@@ -50,8 +50,9 @@ test('V4 encrypted activation resolve operation inventory and critical path',()=
  const actual=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
  assert.equal(actual,sha,'V4 source drift: re-review FHE operations and ACL');
  const r=inventory();
- assert.deepEqual(r.counts,{eq:50,lt:2,and:45,or:28,not:8,select:46,add:13,sub:4,shl:1});
- assert.equal(r.complexity,8735016);
+ assert.deepEqual(r.counts,{eq:50,lt:2,and:45,or:28,not:8,select:48,add:13,sub:4,shl:1});
+ assert.equal(r.complexity,8845016);
+ assert.equal(r.depth,1362002);
  assert.ok(r.depth<5000000);assert.ok(r.complexity<20000000);
  console.log('ARENA_V4_STATIC_HCU '+JSON.stringify({...r,limits:'published devnet examples',liveHcuMeasured:false,liveDepthMeasured:false}));
 });
