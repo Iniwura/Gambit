@@ -7,6 +7,7 @@ import {mountBlacksiteGreybox} from './blacksite/greybox';
 import {mountCommanderPublicViewer} from './profile/greybox';
 import {mountTrainingCoach} from './training/coach-ui';
 import {mountArenaHotseatLab} from './arena/hotseat-ui';
+import {mountResearchDebriefs} from './architecture/research-debrief-ui';
 import {buildPracticeDebrief} from './tactical-report.mjs';
 import {renderReactorDeck} from './visual/arena';
 import {makeFighter} from './visual/characters';
@@ -814,6 +815,7 @@ mountTrainingCoach();
 // Real two-person SAME DEVICE local simulator; entirely separate from signed v2.
 // No browser navigation to incomplete encrypted competitive Arena is enabled.
 mountArenaHotseatLab();
+mountResearchDebriefs();
 
 const game=new Phaser.Game({
   type:Phaser.AUTO,parent:'app',width:W,height:H,backgroundColor:'#060b16',
