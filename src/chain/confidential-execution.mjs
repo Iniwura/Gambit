@@ -9,6 +9,7 @@ import {RESEARCH_DEBRIEF_PINS} from '../architecture/research-debrief.mjs';
 import {readArenaV4SelectedAccount} from '../arena/v4-fhe-preparation.mjs';
 import {revalidateArenaV4UnsignedTransaction,ARENA_V4_WRITE_ABI} from '../arena/v4-transaction-intent.mjs';
 import {revalidateNeutralMissionIntent,NEUTRAL_MISSION_WRITE_ABI} from '../blacksite/neutral-mission-intent.mjs';
+import {releaseArenaV4Create} from '../arena/v4-create-intent.mjs';
 import {releaseNeutralBlacksiteOpen} from '../blacksite/neutral-fhe-preparation.mjs';
 const HASH=/^0x[0-9a-f]{64}$/i;
 const check=(ok,reason)=>{if(!ok)throw Error('CONFIDENTIAL_EXEC '+reason)};
@@ -20,6 +21,8 @@ const MAX_FEE=5_000_000_000_000_000n;
 const ABI=new Interface([...ARENA_V4_WRITE_ABI,...NEUTRAL_MISSION_WRITE_ABI.filter(x=>!x.includes('abortUnsettled(uint256 id)')),
  'function abortUnsettled(uint256 id)',
  'function openMission() returns(uint256)',
+ 'function createMatch(address invitedDefender) returns(uint256)',
+ 'event MatchCreated(uint256 indexed matchId,address indexed challenger,address indexed defender)',
  'event RoundSealed(uint256 indexed matchId,uint8 indexed round,address indexed who)',
  'event RoundReady(uint256 indexed matchId,uint8 indexed round,bytes32 resultHandle)',
  'event RoundFinalized(uint256 indexed matchId,uint8 indexed round,uint8 challengerPoints,uint8 defenderPoints,uint16 cumulativeChallenger,uint16 cumulativeDefender)',
@@ -32,7 +35,7 @@ const ABI=new Interface([...ARENA_V4_WRITE_ABI,...NEUTRAL_MISSION_WRITE_ABI.filt
  'event MissionExpired(uint256 indexed missionId)',
  'event MissionTechnicalAbort(uint256 indexed missionId,uint8 pendingAttempt)']);
 const ACTIONS=Object.freeze({
- arena:Object.freeze({SEAL_ROUND:['sealRound','RoundSealed'],RESOLVE_ROUND:['resolveRound','RoundReady'],FINALIZE_ROUND:['finalizeRound','RoundFinalized'],EXPIRE_INCOMPLETE:['expireIncomplete','MatchAbandonedUnscored'],ABORT_UNSETTLED:['abortUnsettled','MatchTechnicalAbort']}),
+ arena:Object.freeze({CREATE_MATCH:['createMatch','MatchCreated'],SEAL_ROUND:['sealRound','RoundSealed'],RESOLVE_ROUND:['resolveRound','RoundReady'],FINALIZE_ROUND:['finalizeRound','RoundFinalized'],EXPIRE_INCOMPLETE:['expireIncomplete','MatchAbandonedUnscored'],ABORT_UNSETTLED:['abortUnsettled','MatchTechnicalAbort']}),
  blacksite:Object.freeze({OPEN_MISSION:['openMission','MissionOpened'],SUBMIT_ATTEMPT:['submitAttempt','AttemptSubmitted'],RESOLVE_ATTEMPT:['resolveAttempt','AttemptReady'],FINALIZE_ATTEMPT:['finalizeAttempt','AttemptFinalized'],EXPIRE_MISSION:['expireMission','MissionExpired'],ABORT_UNSETTLED:['abortUnsettled','MissionTechnicalAbort']})
 });
 function reviewed(mode,intent){
@@ -42,11 +45,12 @@ function reviewed(mode,intent){
  check(Object.isFrozen(intent)&&Object.isFrozen(intent.fee),'immutable review');
  const actor=getAddress(intent.actor),gas=BigInt(intent.fee.gasLimit),price=BigInt(intent.fee.maxFeePerGasWei),priority=BigInt(intent.fee.maxPriorityFeePerGasWei),budget=BigInt(intent.fee.maximumTotalFeeWei);
  check(gas>=21000n&&gas<=16_777_216n&&price>0n&&priority>=0n&&priority<=price&&gas*price<=budget&&budget<=MAX_FEE,'fee boundary');
- const id=action==='OPEN_MISSION'?null:mode==='arena'?intent.matchId:intent.missionId;
- const step=action==='OPEN_MISSION'?null:mode==='arena'?intent.round:intent.attempt;
+ const creating=action==='OPEN_MISSION'||action==='CREATE_MATCH';
+ const id=creating?null:mode==='arena'?intent.matchId:intent.missionId;
+ const step=creating?null:mode==='arena'?intent.round:intent.attempt;
  check(id===null||(Number.isSafeInteger(id)&&id>0),'record id');
  check(step===null||(Number.isInteger(step)&&step>=1&&step<=(mode==='arena'?5:4)),'round/attempt');
- return Object.freeze({mode,action,actor,contract:pin.address,runtimeHash:pin.runtimeHash,chainId:CHAIN,intentId:hash(intent.id),calldataHash:hash(intent.calldataHash),id,step,gasLimit:String(gas),maxFeePerGasWei:String(price),maxPriorityFeePerGasWei:String(priority),maximumFeeWei:String(budget),observedBlock:intent.observedBlock??intent.blockTag,observedBlockHash:hash(intent.observedBlockHash??intent.blockHash)});
+ return Object.freeze({mode,action,actor,contract:pin.address,runtimeHash:pin.runtimeHash,chainId:CHAIN,intentId:hash(intent.id),defender:action==='CREATE_MATCH'?getAddress(intent.defender):null,calldataHash:hash(intent.calldataHash),id,step,gasLimit:String(gas),maxFeePerGasWei:String(price),maxPriorityFeePerGasWei:String(priority),maximumFeeWei:String(budget),observedBlock:intent.observedBlock??intent.blockTag,observedBlockHash:hash(intent.observedBlockHash??intent.blockHash)});
 }
 function verifyProposal(r,p){
  check(p.intentId===r.intentId&&p.chainId===CHAIN&&p.signed===false&&p.sent===false&&p.value===0n&&eq(p.from,r.actor)&&eq(p.to,r.contract)&&hash(keccak256(p.data))===r.calldataHash,'proposal identity');
@@ -69,7 +73,8 @@ export function createConfidentialExecution({mode,wallet,provider,journal,lock})
    abort(signal);
    check(await readArenaV4SelectedAccount(wallet,signal)===record.actor,'wallet account changed');
    const manifest=RESEARCH_DEBRIEF_PINS[mode];
-   const proposal=mode==='arena'?await revalidateArenaV4UnsignedTransaction(provider,manifest,intent,payload,approval,{signal}):
+   const proposal=record.action==='CREATE_MATCH'?await releaseArenaV4Create({wallet,provider,manifest,intent,approval,signal}):
+    mode==='arena'?await revalidateArenaV4UnsignedTransaction(provider,manifest,intent,payload,approval,{signal}):
     record.action==='OPEN_MISSION'?await releaseNeutralBlacksiteOpen({wallet,provider,manifest,intent,approval,signal}):
     await revalidateNeutralMissionIntent(provider,manifest,intent,payload,approval,{signal});
    verifyProposal(record,proposal);
@@ -85,7 +90,8 @@ export function createConfidentialExecution({mode,wallet,provider,journal,lock})
    try{
     result=await wallet.request({method:'eth_sendTransaction',params:[{from:record.actor,to:record.contract,data:proposal.data,value:'0x0',chainId:toQuantity(CHAIN),nonce:toQuantity(nonce),gas:toQuantity(proposal.gasLimit),maxFeePerGas:toQuantity(proposal.maxFeePerGas),maxPriorityFeePerGas:toQuantity(proposal.maxPriorityFeePerGas),type:'0x2'}]});
     const pending=Object.freeze({...reserved,state:'HASH_RECEIVED',transactionHash:hash(result)});
-    journal.update(pending);return pending;
+    try{journal.update(pending);}catch{/* reservation stays locked; return known hash for manual reconciliation */}
+    return pending;
    }catch{return reserved;}
   });}finally{busy=false;}
  }
@@ -120,6 +126,7 @@ export async function reconcileConfidentialAction(provider,r,transactionHash,{si
   const log=logs[0];check(!log.removed&&eq(log.transactionHash,txHash)&&eq(log.blockHash,receipt.blockHash)&&log.blockNumber===block,'event identity');
   const args=ABI.decodeEventLog(eventName,log.data,log.topics);
   if(r.action==='OPEN_MISSION'){id=Number(args.missionId);check(Number.isSafeInteger(id)&&id>0&&eq(args.operative,r.actor),'opening event');}
+  else if(r.action==='CREATE_MATCH'){id=Number(args.matchId);check(Number.isSafeInteger(id)&&id>0&&eq(args.challenger,r.actor)&&eq(args.defender,r.defender)&&eq(parsed.args[0],r.defender),'creation event');}
   else {
    check(Number(args.matchId??args.missionId)===r.id&&Number(parsed.args[0])===r.id,'event id');
    if(r.action!=='EXPIRE_MISSION')check(Number(args.round??args.attempt??args.pendingAttempt)===r.step,'event step');
