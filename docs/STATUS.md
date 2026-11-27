@@ -100,3 +100,11 @@ This section supersedes earlier historical notes that describe Neutral BLACKSITE
 - Fee evidence: actual cumulative `598019875813210` wei; highest single actual fee `127763410166552` wei; all writes had zero value and stayed below the authorized per-transaction and cumulative limits.
 - Full transaction hashes, block numbers, gas, fees, deadlines, state and confidentiality-boundary evidence: [`fhe/deployments/sepolia-neutral-blacksite-mission-1.json`](../fhe/deployments/sepolia-neutral-blacksite-mission-1.json).
 - The outcome is research-only. No ranking, reward, additional mission, redeployment or automatic retry was performed.
+
+## 2026-11-27 - Latest canonical Arena V4 deployment evidence
+
+`ArenaV4ConfidentialActivationResearch` is now deployed for research-only validation at [`0x5F9e0030233370a913780EC9CCb58183C4672c13`](https://sepolia.etherscan.io/address/0x5F9e0030233370a913780EC9CCb58183C4672c13) on Ethereum Sepolia (`11155111`). The exact LF-compiled creation hash is `0x9e760de916b8e097c25ff79a7e6c103e79f1009b088f4883d1d20db45bd8b07c`; runtime hash is `0x6f58a369687239e1398f8f5d943825b59a1c47326fd450171ec78e150408544d`.
+
+- Deployment transaction: [`0xc8725e44231395e0cf19e15300f5c1f6a8792867d3dc12204cb7fd2ddd86b4bb`](https://sepolia.etherscan.io/tx/0xc8725e44231395e0cf19e15300f5c1f6a8792867d3dc12204cb7fd2ddd86b4bb), block `12221567`, nonce `1807`, gas used `21139337`, actual fee `5312653617492 wei`, zero value.
+- PublicNode and Tenderly independently matched the successful receipt, canonical block and historical/current runtime. Full evidence: [`fhe/deployments/sepolia-arena-v4.json`](../fhe/deployments/sepolia-arena-v4.json).
+- V4 gameplay is not authorized or completed. No `sealRound`, `resolveRound`, `finalizeRound`, expiry or abort transaction was sent.
