@@ -50,6 +50,8 @@ jobs:
         run: npm run typecheck
       - name: Build browser release
         run: npm run build
+      - name: Exact-runtime confidential wallet dispatch and receipt fixtures (OFFLINE, NO REAL WRITES)
+        run: node --test tests/confidential-execution-compiled-check.mjs
       - name: Verify v3 client method signatures against compiled Solidity (NO SIGNING)
         run: npm run check:arena:v3:abi
       - name: Independent live SquadGambit public-RPC receipt/runtime verification (READ ONLY)
