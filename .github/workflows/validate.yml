@@ -138,6 +138,10 @@ jobs:
         run: |
           VITE_GAMBIT_CONTRACT_ADDRESS=0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0 npm run dev -- --host 127.0.0.1 --port 4173 >/tmp/gambit-vite.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173 >/dev/null && break; sleep 1; done
+          # Isolated localhost-only signed UI fixture: no actual wallet or external RPC.
+          VITE_GAMBIT_CONFIDENTIAL_WRITES=true npm run dev -- --host 127.0.0.1 --port 4177 >/tmp/gambit-confidential-fixture.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4177 >/dev/null && break; sleep 1; done
+          node tests/confidential-signed-browser-check.mjs
           # Fail fast on the newest interactive surface before expensive regressions.
           node tests/arena-hotseat-browser-check.mjs
           node tests/browser-check.mjs
