@@ -91,7 +91,7 @@ try{
      await page.locator('#game-state[data-phase="intro"]').waitFor({timeout:20000});
      const prefix=mode==='arena'?'gambit-arena-hotseat':'gambit-blacksite';
      await page.locator('#'+prefix+(label==='mobile'?'-mobile-open':'-open')).click();
-     const panel=page.locator('#'+prefix+'-confidential');await panel.locator('summary').click();return panel;
+     const panel=page.locator('#'+prefix+'-confidential');await panel.locator(':scope > summary').click();return panel;
     }
     let panel=await open();
     const field=n=>panel.locator('[data-field="'+n+'"]'),button=n=>panel.locator('[data-action="'+n+'"]');
