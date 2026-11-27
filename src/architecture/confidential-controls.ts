@@ -26,8 +26,9 @@ export function mountConfidentialControls(){
 }
 function mount(mode:Mode){
  const prefix=mode==='arena'?'gambit-arena-hotseat':'gambit-blacksite',id=prefix+'-confidential';
- const overlay=document.getElementById(prefix+'-overlay'),host=document.getElementById(prefix+'-dialog');
- if(!overlay||!host||document.getElementById(id))return;
+ const parentOverlay=document.getElementById(prefix+'-overlay'),host=document.getElementById(prefix+'-dialog');
+ if(!parentOverlay||!host||document.getElementById(id))return;
+ const overlay:HTMLElement=parentOverlay;
  const panel=document.createElement('details');panel.id=id;
  const summary=document.createElement('summary');summary.textContent=mode==='arena'?'Arena V4 · Confidential match':'BLACKSITE · Confidential mission';
  panel.append(summary);
