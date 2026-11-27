@@ -142,6 +142,7 @@ jobs:
           VITE_GAMBIT_CONFIDENTIAL_WRITES=true npm run dev -- --host 127.0.0.1 --port 4177 >/tmp/gambit-confidential-fixture.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4177 >/dev/null && break; sleep 1; done
           node tests/confidential-signed-browser-check.mjs
+          node tests/confidential-live-debrief-browser-check.mjs
           # Fail fast on the newest interactive surface before expensive regressions.
           node tests/arena-hotseat-browser-check.mjs
           node tests/browser-check.mjs
