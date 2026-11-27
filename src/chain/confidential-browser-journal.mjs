@@ -42,7 +42,13 @@ export function createConfidentialBrowserJournal(storage){
   check(Number.isSafeInteger(receipt.blockNumber)&&receipt.blockNumber>old.observedBlock&&HASH.test(receipt.blockHash),'receipt identity');
   storage.removeItem(KEY);check(read()===null,'unable to clear reconciled reservation');
  }
- return Object.freeze({read,reserve,update,clearReconciled});
+ function clearReplacement(receipt){
+  const old=read();
+  check(old&&receipt?.state==='CONFIRMED_REPLACEMENT'&&HASH.test(receipt.transactionHash)&&(!old.transactionHash||old.transactionHash.toLowerCase()!==receipt.transactionHash.toLowerCase()),'replacement reconciliation required');
+  check(receipt.originalIntentId===old.intentId&&receipt.actor===old.actor&&receipt.nonce===old.nonce&&Number.isSafeInteger(receipt.blockNumber)&&receipt.blockNumber>old.observedBlock&&HASH.test(receipt.blockHash),'replacement identity');
+  storage.removeItem(KEY);check(read()===null,'unable to clear replacement reservation');
+ }
+ return Object.freeze({read,reserve,update,clearReconciled,clearReplacement});
 }
 export function createConfidentialBrowserLock(locks){
  check(locks&&typeof locks.request==='function','exclusive browser lock unavailable');
