@@ -82,7 +82,7 @@ async function play(viewport,name){
     // request during ordinary inspection and navigation.
     await page.evaluate(()=>window.__arenaLobbyFixture.resetChain());
     const v4=page.locator('#gambit-arena-hotseat-confidential');
-    await v4.locator('summary').click();
+    await v4.locator(':scope > summary').click();
     await v4.locator('[data-action="find"]').click();
     await v4.locator('[data-field="wallet"]').selectOption({index:1});
     await v4.locator('[data-action="inspect"]').click();
@@ -96,7 +96,7 @@ async function play(viewport,name){
     await page.evaluate(()=>window.__arenaLobbyFixture.changeAccount());
     assert.equal(await v4.locator('[data-action="prepare"]').isDisabled(),true);
     assert.ok((await page.evaluate(()=>window.__arenaLobbyFixture.calls)).every(m=>m==='eth_chainId'||m==='eth_accounts'));
-    await v4.locator('summary').click();
+    await v4.locator(':scope > summary').click();
     console.log('GAMBIT_V4_PREPARATION_BROWSER '+JSON.stringify({viewport:name,accountInspection:true,unreadMatchBlocked:true,accountChangeInvalidated:true,signatures:0,writes:0}));
     await page.locator('#gambit-arena-hotseat-start').click();
 
