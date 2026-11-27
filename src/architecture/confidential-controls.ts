@@ -7,7 +7,7 @@ import {readArenaV4PublicMatch} from '../arena/v4-public-match-reader.mjs';
 import {readNeutralBlacksiteMission} from '../blacksite/neutral-public-mission-reader.mjs';
 import {prepareConfidentialAction} from './confidential-action-controller.mjs';
 import {RESEARCH_DEBRIEF_PINS,RESEARCH_DEBRIEF_RPC} from './research-debrief.mjs';
-import {createConfidentialExecution,reconcileConfidentialAction} from '../chain/confidential-execution.mjs';
+import {createConfidentialExecution,reconcileConfidentialAction,reconcileConfidentialReplacement} from '../chain/confidential-execution.mjs';
 import {createConfidentialBrowserJournal,createConfidentialBrowserLock} from '../chain/confidential-browser-journal.mjs';
 type Mode='arena'|'blacksite';
 type Wallet={request:(args:{method:string,params?:unknown})=>Promise<unknown>,on?:(event:string,fn:()=>void)=>unknown,removeListener?:(event:string,fn:()=>void)=>unknown};
@@ -55,7 +55,9 @@ function mount(mode:Mode){
  <button type="button" data-action="discard">DISCARD REVIEW</button></section>
  <section><h3>Pending transaction recovery</h3><p data-field="pending" role="status"></p>
  <label>Transaction hash (if known) <input data-field="hash" autocomplete="off" spellcheck="false" maxlength="66"></label>
- <button type="button" data-action="reconcile">CHECK RECEIPT WITH TWO PROVIDERS</button></section>`;
+ <button type="button" data-action="reconcile">CHECK RECEIPT WITH TWO PROVIDERS</button>
+ <button type="button" data-action="replacement">VERIFY A KNOWN REPLACEMENT HASH</button>
+ <p>Only use replacement recovery for a different transaction already confirmed at the reserved nonce. This does not send or cancel a transaction.</p></section>`;
  panel.append(content);host.append(panel);
  function field<T extends HTMLElement>(name:string){const node=content.querySelector<T>('[data-field="'+name+'"]');if(!node)throw Error('Missing confidential field');return node;}
  function btn(name:string){return content.querySelector<HTMLButtonElement>('[data-action="'+name+'"]');}
@@ -88,7 +90,7 @@ function mount(mode:Mode){
  function find(){if(!discovery){discovery=discoverInjectedWallets(window);discovery.subscribe(renderWallets);}discovery.refresh();renderWallets();}
  function syncPending(){
   try{const p=journal().read();pendingText.textContent=p?p.state+' · '+p.mode+' · '+p.action:'No pending transaction.';
-   if(p?.transactionHash)field<HTMLInputElement>('hash').value=p.transactionHash;
+   if(p?.transactionHash&&!field<HTMLInputElement>('hash').value)field<HTMLInputElement>('hash').value=p.transactionHash;
    const send=btn('send');if(send)send.disabled=!SIGNING_ENABLED||!!p;
   }catch{pendingText.textContent='Recovery storage is unavailable or invalid. Signing is blocked.';const send=btn('send');if(send)send.disabled=true;}
  }
@@ -200,21 +202,23 @@ function mount(mode:Mode){
   if(result&&'transactionHash' in result&&typeof result.transactionHash==='string')field<HTMLInputElement>('hash').value=result.transactionHash;
   report(result?.state==='HASH_RECEIVED'?'Transaction submitted. Verify its receipt before another action.':'Wallet outcome uncertain. Do not repeat; recover the transaction hash.');
  }));
- btn('reconcile')?.addEventListener('click',()=>void run(async(signal,epoch)=>{
+ function reconcile(replacement:boolean){void run(async(signal,epoch)=>{
   const j=journal(),exclusive=lock();const hash=field<HTMLInputElement>('hash').value.trim();
   await exclusive(async()=>{
    const p=j.read();if(!p)throw Error('No pending transaction');const readers=RESEARCH_DEBRIEF_RPC.map(url=>new JsonRpcProvider(url));
    try{
-    const results=await Promise.all(readers.map(reader=>reconcileConfidentialAction(reader,p,hash,{signal})));
+    const results=await Promise.all(readers.map(reader=>replacement?reconcileConfidentialReplacement(reader,p,hash,{signal}):reconcileConfidentialAction(reader,p,hash,{signal})));
     if(!current(epoch,signal))return;
     if(results.some(r=>r.state==='UNCONFIRMED')){report('Receipt is not confirmed by both providers. No new action allowed.');return;}
     if(JSON.stringify(results[0])!==JSON.stringify(results[1]))throw Error('Provider disagreement');
-    const verified=results[0];j.clearReconciled(verified);
+    const verified=results[0];if(replacement)j.clearReplacement(verified);else j.clearReconciled(verified);
     if(p.mode===mode){if('id' in verified&&verified.id)record.value=String(verified.id);clearReview();clearView();}
-    report(verified.state==='CONFIRMED_REVERTED'?'Both providers confirmed the transaction reverted. Read current state before another action.':'Both providers reconciled the receipt. Read current state before another action.');
+    report(verified.state==='CONFIRMED_REPLACEMENT'?'Both providers confirmed a different transaction consumed the reserved nonce. Read current game state before another action.':verified.state==='CONFIRMED_REVERTED'?'Both providers confirmed the transaction reverted. Read current state before another action.':'Both providers reconciled the receipt. Read current state before another action.');
    }finally{readers.forEach(reader=>reader.destroy());}
   });
- }));
+ });}
+ btn('reconcile')?.addEventListener('click',()=>reconcile(false));
+ btn('replacement')?.addEventListener('click',()=>reconcile(true));
  function close(){detach();discovery?.close();discovery=null;cancel();walletSelect.replaceChildren(new Option('Choose wallet',''));record.value='';if(mode==='arena')field<HTMLInputElement>('defender').value='';field<HTMLInputElement>('hash').value='';panel.open=false;report('Choose a wallet to begin.');}
  new MutationObserver(()=>{if(overlay.hidden)close();}).observe(overlay,{attributes:true,attributeFilter:['hidden']});
  panel.addEventListener('toggle',()=>{if(panel.open){syncPending();renderActions();}else if(!overlay.hidden){clearReview();clearPlans();revision++;controller?.abort();controller=null;busy=false;}});
