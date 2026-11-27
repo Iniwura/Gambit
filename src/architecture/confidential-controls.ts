@@ -17,6 +17,7 @@ type Prepared=Awaited<ReturnType<typeof prepareConfidentialAction>>;
 type ArenaView={currentRound:number,challenger:string,defender:string,status:string,cumulative:{challenger:number,defender:number},rounds:readonly {round:number,deadlineAt:number,challengerSealed:boolean,defenderSealed:boolean,finalized:boolean,score:{challenger:number,defender:number}|null}[]};
 type MissionView={operative:string,status:string,deadlineAt:number,recoveryDeadlineAt:number,attemptsUsed:number,heat:number,score:number,history:readonly {attempt:number,route:string,exact:number,misplaced:number|null}[]};
 type View=ArenaView|MissionView;
+type PlayerGuide={heading:string,detail:string,next:{id:string,label:string,button:string}|null,deadline:{kind:string,at:number}|null,terminal:boolean};
 const ACTIONS=['STRIKE','GUARD','FLANK'],ROLES=['Scout','Guardian','Striker'];
 const activeABI=new Interface(['function activeMission(address) view returns(uint256)']);
 /** Greybox candidate. Explicit build opt-in is necessary for wallet dispatch
@@ -102,7 +103,7 @@ function mount(mode:Mode){
   }catch{pendingText.textContent='Recovery storage is unavailable or invalid. Signing is blocked.';const send=btn('send');if(send)send.disabled=true;}
  }
  function renderActions(){
-  const guide=confidentialPlayerGuide(mode,actor,view,!!record.value.trim());
+  const guide=confidentialPlayerGuide(mode,actor,view,!!record.value.trim()) as PlayerGuide;
   field('heading').textContent=guide.heading;field('guide').textContent=guide.detail;
   const deadline=field<HTMLElement>('deadline');deadline.hidden=!guide.deadline;
   deadline.textContent=guide.deadline?guide.deadline.kind+': '+new Date(guide.deadline.at*1000).toLocaleString():'';
