@@ -1,4 +1,6 @@
 import './confidential-controls.css';
+import {confidentialPlayerGuide,CONFIDENTIAL_BRIEF} from './confidential-player-guide.mjs';
+import {startingSquadPlans} from '../squad.mjs';
 import {BrowserProvider,JsonRpcProvider,formatEther,parseEther,Interface} from 'ethers';
 import {discoverInjectedWallets} from '../chain/wallet-discovery.mjs';
 import {createArenaV3SdkSession} from '../arena/sdk-session';
@@ -12,8 +14,8 @@ import {createConfidentialBrowserJournal,createConfidentialBrowserLock} from '..
 type Mode='arena'|'blacksite';
 type Wallet={request:(args:{method:string,params?:unknown})=>Promise<unknown>,on?:(event:string,fn:()=>void)=>unknown,removeListener?:(event:string,fn:()=>void)=>unknown};
 type Prepared=Awaited<ReturnType<typeof prepareConfidentialAction>>;
-type ArenaView={currentRound:number,challenger:string,defender:string,status:string,cumulative:{challenger:number,defender:number},rounds:readonly {round:number,challengerSealed:boolean,defenderSealed:boolean,finalized:boolean,score:{challenger:number,defender:number}|null}[]};
-type MissionView={operative:string,status:string,attemptsUsed:number,heat:number,score:number,history:readonly {attempt:number,route:string,exact:number,misplaced:number|null}[]};
+type ArenaView={currentRound:number,challenger:string,defender:string,status:string,cumulative:{challenger:number,defender:number},rounds:readonly {round:number,deadlineAt:number,challengerSealed:boolean,defenderSealed:boolean,finalized:boolean,score:{challenger:number,defender:number}|null}[]};
+type MissionView={operative:string,status:string,deadlineAt:number,recoveryDeadlineAt:number,attemptsUsed:number,heat:number,score:number,history:readonly {attempt:number,route:string,exact:number,misplaced:number|null}[]};
 type View=ArenaView|MissionView;
 const ACTIONS=['STRIKE','GUARD','FLANK'],ROLES=['Scout','Guardian','Striker'];
 const activeABI=new Interface(['function activeMission(address) view returns(uint256)']);
@@ -35,6 +37,7 @@ function mount(mode:Mode){
  const content=document.createElement('section');
  content.innerHTML=`
  <p>Sepolia research mode · ${SIGNING_ENABLED?'explicit wallet approval per action':'unsigned preparation only; signing awaits browser acceptance'}</p>
+ <details data-field="brief"><summary>How to play</summary><p data-field="goal"></p><ul data-field="rules"></ul></details>
  <label>Browser wallet <select data-field="wallet"><option value="">Choose wallet</option></select></label>
  <button type="button" data-action="find">FIND WALLETS</button>
  <button type="button" data-action="connect">AUTHORIZE SELECTED WALLET</button>
@@ -42,7 +45,9 @@ function mount(mode:Mode){
  <p data-field="status" role="status" aria-live="polite">Choose a wallet to begin.</p>
  <label>${mode==='arena'?'Match':'Mission'} ID <input data-field="record" type="number" min="1" step="1" inputmode="numeric"></label>
  <button type="button" data-action="read">READ CURRENT STATE</button>
+ ${mode==='arena'?'<button type="button" data-action="share" hidden>COPY MATCH ID</button>':''}
  ${mode==='blacksite'?'<button type="button" data-action="recover-active">RECOVER ACTIVE MISSION</button>':'<label>Invited defender <input data-field="defender" autocomplete="off" spellcheck="false" maxlength="42"></label>'}
+ <h3 data-field="heading"></h3><p data-field="guide"></p><p data-field="deadline" hidden></p>
  <p data-field="view" role="status" aria-live="polite"></p>
  <ol data-field="history" aria-label="Finalized public results"></ol>
  <button type="button" data-action="new-record" hidden>START ANOTHER ${mode==='arena'?'MATCH':'MISSION'}</button>
@@ -62,6 +67,8 @@ function mount(mode:Mode){
  function field<T extends HTMLElement>(name:string){const node=content.querySelector<T>('[data-field="'+name+'"]');if(!node)throw Error('Missing confidential field');return node;}
  function btn(name:string){return content.querySelector<HTMLButtonElement>('[data-action="'+name+'"]');}
  const walletSelect=field<HTMLSelectElement>('wallet'),record=field<HTMLInputElement>('record'),action=field<HTMLSelectElement>('action'),planner=field<HTMLElement>('planner'),review=field<HTMLElement>('review'),status=field<HTMLElement>('status'),pendingText=field<HTMLElement>('pending');
+ field('goal').textContent=CONFIDENTIAL_BRIEF[mode].goal;
+ field('rules').replaceChildren(...CONFIDENTIAL_BRIEF[mode].rules.map((rule:string)=>{const li=document.createElement('li');li.textContent=rule;return li;}));
  let discovery:ReturnType<typeof discoverInjectedWallets>|null=null,selected:Wallet|null=null,actor:string|null=null,provider:BrowserProvider|null=null,view:View|null=null,prepared:Prepared|null=null,sdk:Awaited<ReturnType<typeof createArenaV3SdkSession>>|null=null;
  let revision=0,busy=false,controller:AbortController|null=null;
  const journal=()=>createConfidentialBrowserJournal(window.localStorage);
@@ -69,7 +76,7 @@ function mount(mode:Mode){
  function report(s:string){status.textContent=s;}
  function clearReview(){prepared=null;review.hidden=true;field('consent').textContent='';}
  function clearPlans(){planner.replaceChildren();}
- function clearView(){view=null;field('view').textContent='';field('history').replaceChildren();const next=btn('new-record');if(next)next.hidden=true;renderActions();}
+ function clearView(){view=null;const share=btn('share');if(share)share.hidden=true;field('view').textContent='';field('history').replaceChildren();const next=btn('new-record');if(next)next.hidden=true;renderActions();}
  function cancel(){
   revision++;controller?.abort();controller=null;busy=false;clearReview();clearPlans();
   provider?.destroy();provider=null;sdk?.provider.destroy();sdk=null;actor=null;clearView();
@@ -95,39 +102,27 @@ function mount(mode:Mode){
   }catch{pendingText.textContent='Recovery storage is unavailable or invalid. Signing is blocked.';const send=btn('send');if(send)send.disabled=true;}
  }
  function renderActions(){
-  const choices:[string,string][]=[];
-  if(actor){
-   if(!view&&!record.value.trim())choices.push(mode==='arena'?['CREATE_MATCH','Create match']:['OPEN_MISSION','Open mission']);
-   else if(view&&'currentRound' in view){
-    const r=view.rounds.at(-1),side=view.challenger===actor?'challenger':view.defender===actor?'defender':null;
-    if(side&&r){
-     if(['WAITING_FOR_BOTH','WAITING_FOR_OPPONENT'].includes(view.status)&&!r[side==='challenger'?'challengerSealed':'defenderSealed'])choices.push(['SEAL_ROUND','Encrypt and seal orders']);
-     if(view.status==='READY_TO_RESOLVE')choices.push(['RESOLVE_ROUND','Resolve round']);
-     if(view.status==='AWAITING_PROOF')choices.push(['FINALIZE_ROUND','Authenticate and finalize']);
-     if(view.status==='EXPIRED_INCOMPLETE_NOT_CLOSED')choices.push(['EXPIRE_INCOMPLETE','Close incomplete match']);
-     if(view.status==='RECOVERY_EXPIRED_NOT_CLOSED')choices.push(['ABORT_UNSETTLED','Close failed settlement']);
-    }
-   }else if(view&&'operative' in view&&view.operative===actor){
-    const map:Record<string,[string,string]>={ACCEPTING_ATTEMPT:['SUBMIT_ATTEMPT','Encrypt attempt'],SEALED:['RESOLVE_ATTEMPT','Resolve attempt'],AWAITING_PROOF:['FINALIZE_ATTEMPT','Authenticate and finalize'],EXPIRED_NOT_CLOSED:['EXPIRE_MISSION','Close expired mission'],RECOVERY_EXPIRED_NOT_CLOSED:['ABORT_UNSETTLED','Close failed settlement']};
-    if(map[view.status])choices.push(map[view.status]);
-   }
-  }
-  action.replaceChildren(...(choices.length?choices.map(([v,t])=>new Option(t,v)):[new Option('No available action','')]));
-  const prepare=btn('prepare');if(prepare)prepare.disabled=!choices.length;
+  const guide=confidentialPlayerGuide(mode,actor,view,!!record.value.trim());
+  field('heading').textContent=guide.heading;field('guide').textContent=guide.detail;
+  const deadline=field<HTMLElement>('deadline');deadline.hidden=!guide.deadline;
+  deadline.textContent=guide.deadline?guide.deadline.kind+': '+new Date(guide.deadline.at*1000).toLocaleString():'';
+  action.replaceChildren(guide.next?new Option(guide.next.label,guide.next.id):new Option('No available action',''));
+  const prepare=btn('prepare');if(prepare){prepare.disabled=!guide.next;prepare.textContent=guide.next?guide.next.button:'No action available';}
   renderPlanner();
  }
- function selector(label:string,values:string[],name:string){
+ function selector(label:string,values:string[],name:string,value=0){
   const l=document.createElement('label');l.textContent=label+' ';
-  const s=document.createElement('select');s.dataset.order=name;values.forEach((v,i)=>s.append(new Option(v,String(i))));l.append(s);planner.append(l);
+  const s=document.createElement('select');s.dataset.order=name;values.forEach((v,i)=>s.append(new Option(v,String(i))));s.value=String(value);l.append(s);planner.append(l);
  }
  function renderPlanner(){
   clearPlans();
   if(action.value==='SEAL_ROUND'){
-   for(let i=0;i<3;i++){selector(ROLES[i]+' opening',ACTIONS,'base'+i);selector(ROLES[i]+' trigger',ACTIONS,'trigger'+i);selector(ROLES[i]+' response',ACTIONS,'response'+i);}
+   const defaults=startingSquadPlans();
+   for(let i=0;i<3;i++){const p=defaults[i];selector(ROLES[i]+' opening',ACTIONS,'base'+i,p.base);selector(ROLES[i]+' if rival opens with',ACTIONS,'trigger'+i,p.trigger);selector(ROLES[i]+' respond with',ACTIONS,'response'+i,p.response);}
    selector('Formation',['HOLD','PIVOT','FEINT'],'formation');selector('GAMBIT request',['None','Sector 1','Sector 2','Sector 3'],'stake');
   }else if(action.value==='SUBMIT_ATTEMPT'){
    for(let i=0;i<5;i++)selector('Glyph '+(i+1),['0','1','2','3'],'glyph'+i);
-   selector('Approach',['STEALTH','PROBE','BREACH'],'route');
+   selector('Approach',['STEALTH · exact only · 0 heat','PROBE · exact + misplaced · +1 heat','BREACH · opens on 5 exact · +2 heat'],'route',1);
   }
  }
  function order(){
@@ -155,6 +150,7 @@ function mount(mode:Mode){
   const fresh=(mode==='arena'?await readArenaV4PublicMatch(provider,RESEARCH_DEBRIEF_PINS.arena,n,{signal}):await readNeutralBlacksiteMission(provider,RESEARCH_DEBRIEF_PINS.blacksite,n,{signal})) as View;
   if(!current(epoch,signal))return;
   view=fresh;clearReview();renderActions();
+  const share=btn('share');if(share)share.hidden=false;
   field('view').textContent='currentRound' in fresh?'Round '+fresh.currentRound+' / 5 · '+fresh.status+' · '+fresh.cumulative.challenger+' : '+fresh.cumulative.defender:fresh.status+' · '+fresh.attemptsUsed+' / 4 attempts · heat '+fresh.heat+' · score '+fresh.score;
   const rows='currentRound' in fresh?fresh.rounds.filter(r=>r.finalized&&r.score).map(r=>'Round '+r.round+' · '+r.score!.challenger+' : '+r.score!.defender):fresh.history.map(r=>'Attempt '+r.attempt+' · '+r.route+' · '+r.exact+' exact'+(r.misplaced===null?'':' · '+r.misplaced+' misplaced'));
   field('history').replaceChildren(...rows.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
@@ -163,7 +159,7 @@ function mount(mode:Mode){
  walletSelect.addEventListener('change',selectWallet);
  action.addEventListener('change',()=>{clearReview();renderPlanner();});
  record.addEventListener('input',()=>{clearReview();clearView();});
- content.addEventListener('input',e=>{if(e.target!==record&&e.target!==walletSelect)clearReview();});
+ content.addEventListener('input',e=>{if(e.target!==record&&e.target!==walletSelect){const hadReview=!!prepared;clearReview();if(hadReview)renderActions();}});
  // Inputs edited while encryption or preparation runs invalidate the result.
  content.addEventListener('input',()=>{if(busy){revision++;controller?.abort();controller=null;busy=false;clearReview();}});
  action.addEventListener('change',()=>{if(busy){revision++;controller?.abort();controller=null;busy=false;clearReview();}});
@@ -171,6 +167,7 @@ function mount(mode:Mode){
  btn('connect')?.addEventListener('click',()=>void run(async(signal,epoch)=>{if(!selected)throw Error('Choose wallet');await selected.request({method:'eth_requestAccounts'});if(current(epoch,signal))await inspect(signal,epoch);}));
  btn('inspect')?.addEventListener('click',()=>void run(inspect));
  btn('read')?.addEventListener('click',()=>void run(readState));
+ btn('share')?.addEventListener('click',async()=>{if(!view||mode!=='arena')return;try{await navigator.clipboard.writeText(record.value);report('Match ID copied. Share it with the invited commander.');}catch{record.focus();record.select();report('Copy the match ID manually.');}});
  btn('new-record')?.addEventListener('click',()=>{if(busy)return;record.value='';clearReview();clearView();report('Choose a new action. The previous finalized record remains onchain.');});
  btn('recover-active')?.addEventListener('click',()=>void run(async(signal,epoch)=>{
   if(!provider||!actor)throw Error('Check account');const data=activeABI.encodeFunctionData('activeMission',[actor]),raw=await provider.call({to:RESEARCH_DEBRIEF_PINS.blacksite.address,data});
@@ -190,10 +187,11 @@ function mount(mode:Mode){
   const p=await prepareConfidentialAction({...args,sdk:sdk?.sdk});
   if(!current(epoch,signal))return;
   clearPlans();prepared=p;review.hidden=false;
+  const prepareButton=btn('prepare');if(prepareButton)prepareButton.disabled=true;
   field('consent').textContent=p.intent.consentText+' Quoted maximum fee: '+formatEther(BigInt(p.intent.fee.gasLimit)*BigInt(p.intent.fee.maxFeePerGasWei))+' ETH.';
   report(SIGNING_ENABLED?'Review the exact action before opening your wallet.':'Unsigned preparation succeeded. Signing is disabled in this build.');
  }));
- btn('discard')?.addEventListener('click',()=>{clearReview();renderPlanner();report('Review discarded.');});
+ btn('discard')?.addEventListener('click',()=>{clearReview();renderActions();report('Review discarded.');});
  btn('send')?.addEventListener('click',()=>void run(async(signal,epoch)=>{
   if(!SIGNING_ENABLED||!prepared||!selected||!provider)throw Error('No reviewed transaction');
   const p=prepared;clearReview();const execution=createConfidentialExecution({mode,wallet:selected,provider,journal:journal(),lock:lock()});
