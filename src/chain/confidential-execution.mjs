@@ -138,3 +138,34 @@ export async function reconcileConfidentialAction(provider,r,transactionHash,{si
  abort(signal);check(eq((await provider.getBlock(block))?.hash,receipt.blockHash),'receipt reorg');
  return Object.freeze({state:receipt.status===1?'CONFIRMED_ACTION_RECEIPT':'CONFIRMED_REVERTED',transactionHash:txHash,blockNumber:block,blockHash:receipt.blockHash,id,actualFeeWei:String(receipt.gasUsed*receipt.gasPrice)});
 }
+
+/** A different, confirmed canonical transaction at the reserved nonce proves
+ * that the original exact transaction cannot also be included on that chain.
+ * This is only a read-only escape from an ambiguous dispatch. It does NOT
+ * authorize a cancellation transaction or claim what the replacement did.
+ * The caller must corroborate with a second independent provider and refresh
+ * game state before allowing another action. Reorg risk is not eliminated.
+ */
+export async function reconcileConfidentialReplacement(provider,r,transactionHash,{signal}={}){
+ check(r&&Object.hasOwn(ACTIONS,r.mode)&&Object.hasOwn(ACTIONS[r.mode],r.action),'journal action');
+ const pin=RESEARCH_DEBRIEF_PINS[r.mode],txHash=hash(transactionHash);
+ check(r.chainId===CHAIN&&eq(r.contract,pin.address)&&eq(r.runtimeHash,pin.runtimeHash),'journal deployment');
+ check(Number.isSafeInteger(r.nonce)&&r.nonce>=0&&Number.isSafeInteger(r.observedBlock),'journal nonce/block');
+ abort(signal);check(BigInt((await provider.getNetwork()).chainId)===11155111n,'wrong chain');
+ const [tx,receipt]=await Promise.all([provider.getTransaction(txHash),provider.getTransactionReceipt(txHash)]);abort(signal);
+ if(!tx||!receipt)return Object.freeze({state:'UNCONFIRMED',transactionHash:txHash});
+ check(eq(tx.hash,txHash)&&eq(receipt.hash,txHash)&&eq(tx.from,r.actor)&&eq(receipt.from,r.actor)&&tx.chainId===11155111n&&tx.nonce===r.nonce,'replacement sender or nonce mismatch');
+ // Do not mistake a re-priced original action for a cancellation.
+ const originalAction=eq(tx.to,r.contract)&&tx.value===0n&&eq(keccak256(tx.data),r.calldataHash);
+ check(!originalAction,'original action; use exact receipt recovery');
+ check(!r.transactionHash||!eq(r.transactionHash,txHash),'not a replacement hash');
+ check(receipt.status===0||receipt.status===1,'receipt status');
+ const block=receipt.blockNumber,blockHash=hash(receipt.blockHash);
+ check(Number.isSafeInteger(block)&&block>r.observedBlock&&tx.blockNumber===block&&eq(tx.blockHash,blockHash),'replacement block');
+ const [origin,canonical,head,nonce]=await Promise.all([provider.getBlock(r.observedBlock),provider.getBlock(block),provider.getBlockNumber(),provider.getTransactionCount(r.actor,block)]);abort(signal);
+ check(eq(origin?.hash,r.observedBlockHash)&&eq(canonical?.hash,blockHash),'replacement block reorganized');
+ check(Number.isSafeInteger(nonce)&&nonce>r.nonce,'reserved nonce not consumed');
+ if(head-block<2)return Object.freeze({state:'UNCONFIRMED',transactionHash:txHash});
+ check(eq((await provider.getBlock(block))?.hash,blockHash),'replacement block reorganized');abort(signal);
+ return Object.freeze({state:'CONFIRMED_REPLACEMENT',transactionHash:txHash,blockNumber:block,blockHash,actor:r.actor,nonce:r.nonce,originalIntentId:r.intentId});
+}
