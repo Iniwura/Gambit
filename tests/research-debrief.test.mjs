@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {RESEARCH_DEBRIEF_PINS,corroborateResearchDebrief,loadResearchDebrief} from '../src/architecture/research-debrief.mjs';
 const blockHash='0x'+'a'.repeat(64);
 const common=mode=>({chainId:11155111,contract:RESEARCH_DEBRIEF_PINS[mode].address,runtimeHash:RESEARCH_DEBRIEF_PINS[mode].runtimeHash,blockTag:12222550,blockHash});
-const arena=()=>({...common('arena'),matchId:1,complete:true,abandoned:false,currentRound:5,winner:1,cumulative:{challenger:27,defender:0},rounds:[5,7,5,5,5].map((challenger,i)=>({round:i+1,resolved:true,finalized:true,score:{challenger,defender:0}})),privateSpentState:'do-not-project'});
-const mission=()=>({...common('blacksite'),missionId:1,status:'BREACHED',score:35,heat:5,attemptsUsed:4,history:[{attempt:1,route:'PROBE',exact:3,misplaced:0},{attempt:2,route:'PROBE',exact:0,misplaced:1},{attempt:3,route:'PROBE',exact:3,misplaced:1},{attempt:4,route:'BREACH',exact:5,misplaced:null}],privateGuess:'do-not-project'});
+const arena=()=>({...common('arena'),matchId:1,challenger:'0x7d567fa1d5fe35737bbf045f47667e13298ee176',defender:'0xcc427b61573eee146fc735159292f06e13bc8b80',complete:true,abandoned:false,currentRound:5,winner:1,cumulative:{challenger:27,defender:0},rounds:[5,7,5,5,5].map((challenger,i)=>({round:i+1,resolved:true,finalized:true,score:{challenger,defender:0}})),privateSpentState:'do-not-project'});
+const mission=()=>({...common('blacksite'),missionId:1,operative:'0x7d567fa1d5fe35737bbf045f47667e13298ee176',status:'BREACHED',score:35,heat:5,attemptsUsed:4,history:[{attempt:1,route:'PROBE',exact:3,misplaced:0},{attempt:2,route:'PROBE',exact:0,misplaced:1},{attempt:3,route:'PROBE',exact:3,misplaced:1},{attempt:4,route:'BREACH',exact:5,misplaced:null}],privateGuess:'do-not-project'});
 test('terminal public arena debrief is explicit, immutable and excludes private metadata',()=>{
  const a=arena(),b=arena();b.blockTag++;
  const result=corroborateResearchDebrief('arena',[a,b]);
@@ -33,4 +33,11 @@ test('rejects invalid provider count and never falls back to a single provider',
  await assert.rejects(loadResearchDebrief('arena',[p,p]),/independent provider/);
  await assert.rejects(loadResearchDebrief('blacksite',[p]),/independent provider/);
  await assert.rejects(loadResearchDebrief('arena',[p,{}]),/read-only provider/);
+});
+
+test('rejects wrong participant and same-height forks',()=>{
+ const a=arena(),b=arena();b.defender='0x'+'1'.repeat(40);
+ assert.throws(()=>corroborateResearchDebrief('arena',[a,b]),/participant mismatch/);
+ const m=mission(),n=mission();n.blockHash='0x'+'b'.repeat(64);
+ assert.throws(()=>corroborateResearchDebrief('blacksite',[m,n]),/fork disagreement/);
 });
