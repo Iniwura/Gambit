@@ -11,7 +11,9 @@ import {createConfidentialBrowserJournal,createConfidentialBrowserLock} from '..
 type Mode='arena'|'blacksite';
 type Wallet={request:(args:{method:string,params?:unknown})=>Promise<unknown>,on?:(event:string,fn:()=>void)=>unknown,removeListener?:(event:string,fn:()=>void)=>unknown};
 type Prepared=Awaited<ReturnType<typeof prepareConfidentialAction>>;
-type View=Awaited<ReturnType<typeof readArenaV4PublicMatch>>|Awaited<ReturnType<typeof readNeutralBlacksiteMission>>;
+type ArenaView={currentRound:number,challenger:string,defender:string,status:string,cumulative:{challenger:number,defender:number},rounds:readonly {challengerSealed:boolean,defenderSealed:boolean}[]};
+type MissionView={operative:string,status:string,attemptsUsed:number,heat:number,score:number};
+type View=ArenaView|MissionView;
 const ACTIONS=['STRIKE','GUARD','FLANK'],ROLES=['Scout','Guardian','Striker'];
 const activeABI=new Interface(['function activeMission(address) view returns(uint256)']);
 /** Greybox candidate. Explicit build opt-in is necessary for wallet dispatch
@@ -89,8 +91,8 @@ function mount(mode:Mode){
  function renderActions(){
   const choices:[string,string][]=[];
   if(actor){
-   if(!view)choices.push(mode==='arena'?['CREATE_MATCH','Create match']:['OPEN_MISSION','Open mission']);
-   else if('currentRound' in view){
+   if(!view&&!record.value.trim())choices.push(mode==='arena'?['CREATE_MATCH','Create match']:['OPEN_MISSION','Open mission']);
+   else if(view&&'currentRound' in view){
     const r=view.rounds.at(-1),side=view.challenger===actor?'challenger':view.defender===actor?'defender':null;
     if(side&&r){
      if(['WAITING_FOR_BOTH','WAITING_FOR_OPPONENT'].includes(view.status)&&!r[side==='challenger'?'challengerSealed':'defenderSealed'])choices.push(['SEAL_ROUND','Encrypt and seal orders']);
@@ -99,7 +101,7 @@ function mount(mode:Mode){
      if(view.status==='EXPIRED_INCOMPLETE_NOT_CLOSED')choices.push(['EXPIRE_INCOMPLETE','Close incomplete match']);
      if(view.status==='RECOVERY_EXPIRED_NOT_CLOSED')choices.push(['ABORT_UNSETTLED','Close failed settlement']);
     }
-   }else if(view.operative===actor){
+   }else if(view&&'operative' in view&&view.operative===actor){
     const map:Record<string,[string,string]>={ACCEPTING_ATTEMPT:['SUBMIT_ATTEMPT','Encrypt attempt'],SEALED:['RESOLVE_ATTEMPT','Resolve attempt'],AWAITING_PROOF:['FINALIZE_ATTEMPT','Authenticate and finalize'],EXPIRED_NOT_CLOSED:['EXPIRE_MISSION','Close expired mission'],RECOVERY_EXPIRED_NOT_CLOSED:['ABORT_UNSETTLED','Close failed settlement']};
     if(map[view.status])choices.push(map[view.status]);
    }
@@ -143,7 +145,7 @@ function mount(mode:Mode){
  async function readState(signal:AbortSignal,epoch:number){
   if(!provider||!actor)throw Error('Check account');const n=Number(record.value);
   if(!Number.isSafeInteger(n)||n<=0)throw Error('Record ID');
-  const fresh=mode==='arena'?await readArenaV4PublicMatch(provider,RESEARCH_DEBRIEF_PINS.arena,n,{signal}):await readNeutralBlacksiteMission(provider,RESEARCH_DEBRIEF_PINS.blacksite,n,{signal});
+  const fresh=(mode==='arena'?await readArenaV4PublicMatch(provider,RESEARCH_DEBRIEF_PINS.arena,n,{signal}):await readNeutralBlacksiteMission(provider,RESEARCH_DEBRIEF_PINS.blacksite,n,{signal})) as View;
   if(!current(epoch,signal))return;
   view=fresh;clearReview();renderActions();
   field('view').textContent='currentRound' in fresh?'Round '+fresh.currentRound+' / 5 · '+fresh.status+' · '+fresh.cumulative.challenger+' : '+fresh.cumulative.defender:fresh.status+' · '+fresh.attemptsUsed+' / 4 attempts · heat '+fresh.heat+' · score '+fresh.score;
@@ -152,6 +154,9 @@ function mount(mode:Mode){
  action.addEventListener('change',()=>{clearReview();renderPlanner();});
  record.addEventListener('input',()=>{clearReview();clearView();});
  content.addEventListener('input',e=>{if(e.target!==record&&e.target!==walletSelect)clearReview();});
+ // Inputs edited while encryption or preparation runs invalidate the result.
+ content.addEventListener('input',()=>{if(busy){revision++;controller?.abort();controller=null;busy=false;clearReview();}});
+ action.addEventListener('change',()=>{if(busy){revision++;controller?.abort();controller=null;busy=false;clearReview();}});
  btn('find')?.addEventListener('click',find);
  btn('connect')?.addEventListener('click',()=>void run(async(signal,epoch)=>{if(!selected)throw Error('Choose wallet');await selected.request({method:'eth_requestAccounts'});if(current(epoch,signal))await inspect(signal,epoch);}));
  btn('inspect')?.addEventListener('click',()=>void run(inspect));
@@ -199,6 +204,6 @@ function mount(mode:Mode){
  }));
  function close(){detach();discovery?.close();discovery=null;cancel();walletSelect.replaceChildren(new Option('Choose wallet',''));record.value='';if(mode==='arena')field<HTMLInputElement>('defender').value='';field<HTMLInputElement>('hash').value='';panel.open=false;report('Choose a wallet to begin.');}
  new MutationObserver(()=>{if(overlay.hidden)close();}).observe(overlay,{attributes:true,attributeFilter:['hidden']});
- panel.addEventListener('toggle',()=>{if(panel.open)syncPending();else if(!overlay.hidden){clearReview();clearPlans();revision++;controller?.abort();controller=null;busy=false;}});
+ panel.addEventListener('toggle',()=>{if(panel.open){syncPending();renderActions();}else if(!overlay.hidden){clearReview();clearPlans();revision++;controller?.abort();controller=null;busy=false;}});
  renderActions();syncPending();
 }
