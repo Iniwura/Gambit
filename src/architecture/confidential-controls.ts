@@ -1,3 +1,4 @@
+import './confidential-controls.css';
 import {BrowserProvider,JsonRpcProvider,formatEther,parseEther,Interface} from 'ethers';
 import {discoverInjectedWallets} from '../chain/wallet-discovery.mjs';
 import {createArenaV3SdkSession} from '../arena/sdk-session';
