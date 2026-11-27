@@ -46,7 +46,7 @@ async function main(){
  const gasLimit=ceilMargin(estimate);
  check(gasLimit>estimate,'gas safety margin missing');
  check(gasLimit<=4_294_967_295n&&gasLimit<head!.gasLimit,'gas limit exceeds protocol/block capacity');
- const simulated=await p.call({...request,gasLimit},head!.number);
+ const simulated=await p.call({...request,gasLimit,blockTag:head!.number});
  check(keccak256(simulated)===RUNTIME,'constructor simulation runtime changed');
  check((await p.getBlock(head!.number))?.hash===head!.hash,'reference block changed');
  const fees=await p.getFeeData();
