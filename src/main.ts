@@ -8,6 +8,7 @@ import {mountCommanderPublicViewer} from './profile/greybox';
 import {mountTrainingCoach} from './training/coach-ui';
 import {mountArenaHotseatLab} from './arena/hotseat-ui';
 import {mountResearchDebriefs} from './architecture/research-debrief-ui';
+import {mountConfidentialControls} from './architecture/confidential-controls';
 import {buildPracticeDebrief} from './tactical-report.mjs';
 import {renderReactorDeck} from './visual/arena';
 import {makeFighter} from './visual/characters';
@@ -816,6 +817,7 @@ mountTrainingCoach();
 // No browser navigation to incomplete encrypted competitive Arena is enabled.
 mountArenaHotseatLab();
 mountResearchDebriefs();
+mountConfidentialControls();
 
 const game=new Phaser.Game({
   type:Phaser.AUTO,parent:'app',width:W,height:H,backgroundColor:'#060b16',
