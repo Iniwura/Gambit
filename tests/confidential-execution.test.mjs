@@ -87,3 +87,23 @@ test('dynamic fee review uses actual calldata and refuses over-budget quotes',as
  balance=1n;await assert.rejects(quoteConfidentialAction(provider,tx,'5000000000000000'),/insufficient balance/);
  balance=1000000000000n;estimate=16777216n;await assert.rejects(quoteConfidentialAction(provider,tx,'5000000000000000'),/fee quote/);
 });
+
+import {reconcileConfidentialReplacement} from '../src/chain/confidential-execution.mjs';
+test('replacement recovery proves same nonce consumed and never treats original action as cancellation',async()=>{
+ const r={...record(),state:'HASH_RECEIVED',transactionHash:H};
+ const tx={hash:H2,from:A,to:A,chainId:11155111n,value:0n,nonce:r.nonce,data:'0x',blockNumber:43,blockHash:H2};
+ const receipt={hash:H2,from:A,status:1,blockNumber:43,blockHash:H2};
+ let head=45,nonce=2;
+ const p={getNetwork:async()=>({chainId:11155111n}),getTransaction:async()=>tx,getTransactionReceipt:async()=>receipt,getBlock:async n=>({hash:n===42?H:H2}),getBlockNumber:async()=>head,getTransactionCount:async()=>nonce};
+ const verified=await reconcileConfidentialReplacement(p,r,H2);
+ assert.equal(verified.state,'CONFIRMED_REPLACEMENT');
+ assert.equal(verified.originalIntentId,r.intentId);
+ const j=createConfidentialBrowserJournal(storage());j.reserve(record());j.update(r);
+ assert.throws(()=>j.clearReplacement({...verified,nonce:99}),/replacement identity/);
+ head=44;assert.equal((await reconcileConfidentialReplacement(p,r,H2)).state,'UNCONFIRMED');
+ head=45;nonce=1;await assert.rejects(reconcileConfidentialReplacement(p,r,H2),/nonce not consumed/);
+ nonce=2;tx.nonce=2;await assert.rejects(reconcileConfidentialReplacement(p,r,H2),/sender or nonce/);
+ tx.nonce=1;tx.to=r.contract;tx.data='0x1234';
+ await assert.rejects(reconcileConfidentialReplacement(p,{...r,calldataHash:keccak256(tx.data)},H2),/original action/);
+ j.clearReplacement(verified);assert.equal(j.read(),null);
+});
