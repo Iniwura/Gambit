@@ -90,3 +90,13 @@ Local practice added **HOLD, PIVOT, FEINT** squad formations and role-versus-rol
 ## Nov 19 — encrypted 3v3 integration staging (pre-alpha)
 
 The compiled v2 contract now exposes `duelForSquad` for abandoned receipt recovery and `openedAt` in duel status. A separate ten-input browser wallet adapter verifies Sepolia, public account, deployed bytecode hash and signed final KMS proof. Its UI is **not mounted in current previews** because no real v2 contract/runtime fingerprint has been provided. Synthetic browser negative tests reject missing/wrong-network wallets. A read-only-by-default deployment handoff and explicit sign-off gate are documented in `docs/SQUAD_DEPLOYMENT_GATE.md`. Additional Hardhat mock cross-duel proof-replay tests and EVM-only local gas numbers are under CI review. A successful mock gas result cannot establish Sepolia HCU viability.
+
+## 2026-11-27 - Latest canonical BLACKSITE Mission #1 evidence
+
+This section supersedes earlier historical notes that describe Neutral BLACKSITE as undeployed or without live mission receipts. The research contract is deployed at [`0x33c062aebeB425b53A25E0b370732Cee5f7F97F9`](https://sepolia.etherscan.io/address/0x33c062aebeB425b53A25E0b370732Cee5f7F97F9) on Ethereum Sepolia (`11155111`) with verified runtime hash `0x8b17d9514b5cce1220afc3428b5a51fd93198786f501755aa10d9d540572665e`. Mission #1 was independently reconciled through PublicNode and Tenderly after exactly four encrypted attempts and twelve authorized gameplay transactions.
+
+- Terminal result: `BREACHED`, `score=35`, `heat=5`, `attemptsUsed=4`, `MissionCompleted(1,1,35,5)`, `activeMission=0`.
+- Public feedback sequence: `40`, `17`, `41`, `69`; no plaintext vault code or confidential input is stored in the repository.
+- Fee evidence: actual cumulative `598019875813210` wei; highest single actual fee `127763410166552` wei; all writes had zero value and stayed below the authorized per-transaction and cumulative limits.
+- Full transaction hashes, block numbers, gas, fees, deadlines, state and confidentiality-boundary evidence: [`fhe/deployments/sepolia-neutral-blacksite-mission-1.json`](../fhe/deployments/sepolia-neutral-blacksite-mission-1.json).
+- The outcome is research-only. No ranking, reward, additional mission, redeployment or automatic retry was performed.
