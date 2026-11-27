@@ -92,7 +92,9 @@ async function main(){
  check(!!freshHead?.hash,'missing fresh reference block');
  const freshEstimate=await p.estimateGas(request);
  const freshGasLimit=ceilMargin(freshEstimate);
- const freshSimulated=await p.call({...request,gasLimit:freshGasLimit},freshHead!.number);
+ check(freshEstimate>0n&&freshGasLimit>freshEstimate&&freshGasLimit<=4_294_967_295n&&freshGasLimit<freshHead!.gasLimit,'fresh gas limit exceeds protocol/block capacity');
+ const freshSimulated=await p.call({...request,gasLimit:freshGasLimit,blockTag:freshHead!.number});
+ check((await p.getBlock(freshHead!.number))?.hash===freshHead!.hash,'fresh reference block changed');
  check(keccak256(freshSimulated)===RUNTIME,'fresh constructor simulation runtime changed');
  const freshFees=await p.getFeeData();
  const dispatchMaxFee=freshFees.maxFeePerGas,dispatchPriority=freshFees.maxPriorityFeePerGas;
