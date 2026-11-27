@@ -18,6 +18,18 @@ function n(value,label){const number=Number(value);require((typeof value==='numb
 function address(value,label){let result;try{result=getAddress(value)}catch{throw Error('NEUTRAL_BLACKSITE_READ_INVALID '+label)}
  require(!/^0x0{40}$/i.test(result),label);return result;}
 function abort(signal){if(signal?.aborted)throw Error('NEUTRAL_BLACKSITE_READ_ABORTED')}
+/**
+ * Strict assertion for the immediate post-transition terminal snapshot.
+ * The contract clears activeMission when a mission becomes terminal; this is
+ * intentionally stricter than the historical reader below, which permits a
+ * later mission to occupy the slot after the terminal mission is recorded.
+ */
+export function neutralBlacksiteTerminalActiveSlotMatches(missionId,outcome,activeMission){
+ const id=Number(missionId),result=Number(outcome),slot=Number(activeMission);
+ if(!Number.isSafeInteger(id)||id<1||!Number.isSafeInteger(result)||result<0||
+   !Number.isSafeInteger(slot)||slot<0)return false;
+ return result===0?slot===id:slot===0;
+}
 export async function readNeutralBlacksiteMission(provider,manifest,missionId,options={}){
  require(provider&&['getNetwork','getBlockNumber','getBlock','getCode','call'].every(k=>typeof provider[k]==='function'),'read-only provider');
  require(manifest&&manifest.contract==='NeutralBlacksiteResearch'&&manifest.version===3&&manifest.chainId===11155111&&hash.test(manifest.runtimeHash),'deployment manifest');

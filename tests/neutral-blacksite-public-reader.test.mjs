@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Interface,keccak256} from 'ethers';
-import {NEUTRAL_BLACKSITE_READ_ABI,readNeutralBlacksiteMission} from '../src/blacksite/neutral-public-mission-reader.mjs';
+import {NEUTRAL_BLACKSITE_READ_ABI,readNeutralBlacksiteMission,neutralBlacksiteTerminalActiveSlotMatches} from '../src/blacksite/neutral-public-mission-reader.mjs';
 const abi=new Interface([...NEUTRAL_BLACKSITE_READ_ABI,'function nextMissionId() view returns(uint256)']);
 const A='0x'+'1'.repeat(40),C='0x'+'2'.repeat(40),H='0x'+'3'.repeat(64),B='0x'+'4'.repeat(64),CODE='0x6000';
 const manifest={contract:'NeutralBlacksiteResearch',version:3,chainId:11155111,address:C,runtimeHash:keccak256(CODE)};
@@ -46,6 +46,11 @@ test('canonical feedback replay verifies heat, score and terminal breach, but no
  assert.deepEqual(s.history.map(x=>x.route),['PROBE','BREACH']);
  assert.equal(s.eligibleForVerifiedProgression,false);
  c.f.state[6]=66;await assert.rejects(c.read(),/score or heat mismatch/);
+});
+test('terminal helper accepts the cleared active slot and rejects the old mission id',()=>{
+ assert.equal(neutralBlacksiteTerminalActiveSlotMatches(7,0,7),true);
+ assert.equal(neutralBlacksiteTerminalActiveSlotMatches(7,1,0),true);
+ assert.equal(neutralBlacksiteTerminalActiveSlotMatches(7,1,7),false);
 });
 test('four failures lock the mission and another active mission does not invalidate history',async()=>{
  const c=fixture();c.f.rows=Array.from({length:4},()=>[true,true,true,0]);
