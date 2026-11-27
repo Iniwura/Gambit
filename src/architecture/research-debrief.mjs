@@ -9,6 +9,8 @@ const arena=Object.freeze({contract:'ArenaV4ConfidentialActivationResearch',vers
 const blacksite=Object.freeze({contract:'NeutralBlacksiteResearch',version:3,chainId:11155111,address:'0x33c062aebeB425b53A25E0b370732Cee5f7F97F9',runtimeHash:'0x8b17d9514b5cce1220afc3428b5a51fd93198786f501755aa10d9d540572665e'});
 export const RESEARCH_DEBRIEF_PINS=Object.freeze({arena,blacksite});
 export const RESEARCH_DEBRIEF_RPC=Object.freeze(['https://ethereum-sepolia-rpc.publicnode.com','https://gateway.tenderly.co/public/sepolia']);
+const operative='0x7d567fa1d5fe35737bbf045f47667e13298ee176';
+const defender='0xcc427b61573eee146fc735159292f06e13bc8b80';
 const check=(ok,msg)=>{if(!ok)throw Error('RESEARCH_DEBRIEF '+msg)};
 const int=(n,max)=>Number.isInteger(n)&&n>=0&&n<=max;
 function project(mode,s){
@@ -16,6 +18,7 @@ function project(mode,s){
  check(s.chainId===pin.chainId&&s.contract.toLowerCase()===pin.address.toLowerCase()&&s.runtimeHash===pin.runtimeHash,'deployment mismatch');
  if(mode==='arena'){
   check(s.matchId===1&&s.complete&&!s.abandoned&&s.currentRound===5&&s.rounds.length===5,'match not terminal');
+  check(s.challenger?.toLowerCase()===operative&&s.defender?.toLowerCase()===defender,'participant mismatch');
   const rows=s.rounds.map((r,i)=>{
    check(r.round===i+1&&r.finalized&&r.resolved&&r.score&&int(r.score.challenger,7)&&int(r.score.defender,7),'round mismatch');
    return Object.freeze({round:r.round,challenger:r.score.challenger,defender:r.score.defender});
@@ -25,6 +28,7 @@ function project(mode,s){
   return Object.freeze({mode,id:1,status:'COMPLETE',challenger:a,defender:b,winner:s.winner,rows:Object.freeze(rows)});
  }
  check(s.missionId===1&&['BREACHED','LOCKED','EXPIRED','TECHNICAL_ABORT'].includes(s.status)&&s.history.length===s.attemptsUsed&&int(s.attemptsUsed,4)&&int(s.heat,8)&&int(s.score,100),'mission not terminal');
+ check(s.operative?.toLowerCase()===operative,'operative mismatch');
  const rows=s.history.map((r,i)=>{
   check(r.attempt===i+1&&['STEALTH','PROBE','BREACH'].includes(r.route)&&int(r.exact,5)&&(r.misplaced===null||int(r.misplaced,5)),'feedback mismatch');
   return Object.freeze({attempt:r.attempt,route:r.route,exact:r.exact,misplaced:r.misplaced});
@@ -49,5 +53,6 @@ export function corroborateResearchDebrief(mode,snapshots){
  const results=snapshots.map(s=>project(mode,s));
  check(JSON.stringify(results[0])===JSON.stringify(results[1]),'provider disagreement');
  const blocks=snapshots.map(s=>{check(Number.isSafeInteger(s.blockTag)&&s.blockTag>0&&/^0x[0-9a-f]{64}$/i.test(s.blockHash),'block identity');return Object.freeze({number:s.blockTag,hash:s.blockHash})});
+ check(blocks[0].number!==blocks[1].number||blocks[0].hash.toLowerCase()===blocks[1].hash.toLowerCase(),'same-block fork disagreement');
  return Object.freeze({...results[0],authority:'CORROBORATED_PUBLIC_STATE',blocks:Object.freeze(blocks),eligibleForVerifiedProgression:false});
 }
