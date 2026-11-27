@@ -11,14 +11,14 @@ export function mountNeutralPractice(){
  <p>Five glyphs. Four attempts. Choose your approach. Local practice only; not encrypted or ranked.</p>
  <div class="np-stats"><span data-field="remaining">4 attempts</span><span data-field="heat">Heat 0</span><span data-field="score">Score 0</span></div>
  <p role="status" aria-live="polite" data-field="message">Open a practice vault when ready.</p>
- <button type="button" data-action="start">START REHEARSAL</button>
+ <button type="button" data-np-action="start">START REHEARSAL</button>
  <div data-field="planner" hidden><fieldset><legend>Enter five glyphs (0–3)</legend><div class="np-glyphs" data-field="glyphs"></div></fieldset>
  <label>Approach <select data-field="route"><option value="STEALTH">STEALTH · exact only · 0 heat</option><option value="PROBE" selected>PROBE · exact + misplaced · +1 heat</option><option value="BREACH">BREACH · opens on 5 exact · +2 heat</option></select></label>
- <button type="button" data-action="attempt">TEST CODE</button></div>
+ <button type="button" data-np-action="attempt">TEST CODE</button></div>
  <ol data-field="history" aria-label="Rehearsal attempt history"></ol>`;
  host.append(panel);
  const field=<T extends HTMLElement>(name:string)=>panel.querySelector<T>('[data-field="'+name+'"]')!;
- const button=(name:string)=>panel.querySelector<HTMLButtonElement>('[data-action="'+name+'"]')!;
+ const button=(name:string)=>panel.querySelector<HTMLButtonElement>('[data-np-action="'+name+'"]')!;
  const glyphs=field('glyphs'),selects:HTMLSelectElement[]=[];
  for(let i=0;i<5;i++){
   const label=document.createElement('label');label.textContent='Glyph '+(i+1);
