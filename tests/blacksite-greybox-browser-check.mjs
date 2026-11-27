@@ -39,6 +39,32 @@ async function runScenario(label,viewport){
     }
     assert.match(await overlay.textContent(),/NOT ENCRYPTED/);
     assert.match(await overlay.textContent(),/NO WALLET/);
+    // Confidential BLACKSITE is a separate opt-in research panel, not local
+    // guesses or wallet signing. Inspect an already authorized fixture wallet.
+    await page.evaluate(()=>{
+      const listeners=new Map(),calls=[];
+      let account='0x'+'1'.repeat(40);
+      const wallet={async request({method}){calls.push(method);if(method==='eth_chainId')return '0xaa36a7';if(method==='eth_accounts')return [account];throw Error('unexpected wallet action '+method);},
+        on(event,fn){if(!listeners.has(event))listeners.set(event,new Set());listeners.get(event).add(fn);},
+        removeListener(event,fn){listeners.get(event)?.delete(fn);}};
+      Object.defineProperty(window,'ethereum',{value:wallet,configurable:true});
+      window.__blacksiteConfidentialFixture={calls,changeAccount(){account='0x'+'2'.repeat(40);for(const fn of listeners.get('accountsChanged')??[])fn([account]);}};
+    });
+    const confidential=page.locator('#gambit-blacksite-confidential');
+    await confidential.locator('summary').click();
+    await confidential.locator('[data-action="find"]').click();
+    await confidential.locator('[data-field="wallet"]').selectOption({index:1});
+    await confidential.locator('[data-action="inspect"]').click();
+    await confidential.getByText(/Sepolia account: 0x1111111111111111111111111111111111111111/).waitFor();
+    assert.equal(await confidential.locator('[data-field="action"]').inputValue(),'OPEN_MISSION');
+    assert.equal(await confidential.locator('[data-action="send"]').isDisabled(),true);
+    await confidential.locator('[data-field="record"]').fill('1');
+    assert.equal(await confidential.locator('[data-action="prepare"]').isDisabled(),true);
+    await page.evaluate(()=>window.__blacksiteConfidentialFixture.changeAccount());
+    assert.equal(await confidential.locator('[data-action="prepare"]').isDisabled(),true);
+    assert.ok((await page.evaluate(()=>window.__blacksiteConfidentialFixture.calls)).every(m=>m==='eth_chainId'||m==='eth_accounts'));
+    await confidential.locator('summary').click();
+    console.log('GAMBIT_NEUTRAL_BLACKSITE_PREPARATION_BROWSER '+JSON.stringify({viewport:label,accountInspection:true,unreadMissionBlocked:true,accountChangeInvalidated:true,signatures:0,writes:0}));
     await page.locator('#gambit-blacksite-begin').click();
     assert.equal(await overlay.getAttribute('data-phase'),'active');
     assert.equal(await overlay.getAttribute('data-remaining'),'5');
