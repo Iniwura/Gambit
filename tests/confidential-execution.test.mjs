@@ -72,3 +72,18 @@ test('read-only recovery retains pending records and rejects wrong hash/chain',a
  await assert.rejects(reconcileConfidentialAction(p,r,H),/journal deployment/);
  p.getNetwork=async()=>({chainId:1n});await assert.rejects(reconcileConfidentialAction(p,r,H2),/wrong chain/);
 });
+
+import {quoteConfidentialAction} from '../src/architecture/confidential-action-controller.mjs';
+test('dynamic fee review uses actual calldata and refuses over-budget quotes',async()=>{
+ const tx={from:A,to:C,data:'0x1234',value:0n,chainId:11155111,signed:false,sent:false};
+ let price=40n,estimate=2000000n,balance=1000000000000n;
+ const provider={async estimateGas(request){assert.deepEqual(request,{from:A,to:C,data:'0x1234',value:0n});return estimate;},async getFeeData(){return {maxFeePerGas:price,maxPriorityFeePerGas:2n}},async getBalance(){return balance}};
+ const q=await quoteConfidentialAction(provider,tx,'5000000000000000');
+ assert.equal(q.gasLimit,'2500000');assert.equal(q.maxFeePerGasWei,'40');assert.ok(Object.isFrozen(q));
+ price=50n;assert.equal((await quoteConfidentialAction(provider,tx,'5000000000000000')).maxFeePerGasWei,'50');
+ await assert.rejects(quoteConfidentialAction(provider,tx,'100'),/fee exceeds/);
+ await assert.rejects(quoteConfidentialAction(provider,{...tx,value:1n},'5000000000000000'),/quote scope/);
+ await assert.rejects(quoteConfidentialAction(provider,tx,'5000000000000001'),/quote scope/);
+ balance=1n;await assert.rejects(quoteConfidentialAction(provider,tx,'5000000000000000'),/insufficient balance/);
+ balance=1000000000000n;estimate=16777216n;await assert.rejects(quoteConfidentialAction(provider,tx,'5000000000000000'),/fee quote/);
+});
