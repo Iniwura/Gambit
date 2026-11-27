@@ -20,6 +20,8 @@ const FROM=getAddress('0x7d567Fa1d5fe35737BbF045f47667e13298Ee176');
 const GAS=18_433_332n; // corroborated combined execution + state gas, NOT a protocol execution-gas cap
 const FEE_LIMIT=1_000_000_000n; // emergency upper bound; explicit user budget must be <= this
 const AUTH='YES_ONE_NEUTRAL_BLACKSITE_SEPOLIA_DEPLOYMENT';
+// Distinct opt-in: old exact-price approvals cannot enable floating fees.
+const BOUNDED_AUTH='YES_ONE_NEUTRAL_BLACKSITE_BOUNDED_FEE_DEPLOYMENT';
 const JOURNAL=resolve(process.cwd(),'.neutral-blacksite-sepolia-deployment-attempt.json');
 const MANIFEST=resolve(process.cwd(),'deployments/sepolia-neutral-blacksite.json');
 function approvedDecimal(name:string,allowZero=false){
@@ -62,15 +64,17 @@ async function main(){
     balanceSufficient:balance>=maximum,nonce,confirmedNonce,predictedAddress,predictedAddressEmpty,referenceBlock:head.number,referenceBlockHash:head.hash,transactionSent:false
   }));
   // CI is read-only even if someone accidentally configures approval variables.
-  if(process.env.CI||process.env.GITHUB_ACTIONS||process.env.GAMBIT_APPROVE_NEUTRAL_BLACKSITE_DEPLOY!==AUTH)return;
+  const authorization=process.env.GAMBIT_APPROVE_NEUTRAL_BLACKSITE_DEPLOY;
+  if(process.env.CI||process.env.GITHUB_ACTIONS||(authorization!==AUTH&&authorization!==BOUNDED_AUTH))return;
+  const bounded=authorization===BOUNDED_AUTH;
   const approved=process.env.GAMBIT_MAX_NEUTRAL_BLACKSITE_DEPLOY_FEE_WEI;
   if(!approved||!/^[1-9][0-9]*$/.test(approved))throw Error('Exact user fee budget required');
   const budget=BigInt(approved);
   const approvedNonce=approvedDecimal('GAMBIT_EXPECTED_NEUTRAL_BLACKSITE_DEPLOY_NONCE');
-  const approvedMaxFee=approvedDecimal('GAMBIT_EXPECTED_NEUTRAL_BLACKSITE_DEPLOY_MAX_FEE_PER_GAS_WEI');
+  const approvedMaxFee=bounded?null:approvedDecimal('GAMBIT_EXPECTED_NEUTRAL_BLACKSITE_DEPLOY_MAX_FEE_PER_GAS_WEI');
   const approvedPriority=approvedDecimal('GAMBIT_EXPECTED_NEUTRAL_BLACKSITE_DEPLOY_PRIORITY_FEE_PER_GAS_WEI',true);
   if(budget>FEE_LIMIT||maximum>budget||maximum>balance)throw Error('Fee/balance authorization exceeded');
-  if(maxFee!==approvedMaxFee||priority!==approvedPriority)
+  if((!bounded&&maxFee!==approvedMaxFee)||priority!==approvedPriority)
     throw Error('Approved fee quote changed');
   const expected=process.env.GAMBIT_EXPECTED_NEUTRAL_BLACKSITE_DEPLOYER;
   if(!expected||getAddress(expected)!==FROM)throw Error('Exact approved deployer required');
@@ -80,9 +84,14 @@ async function main(){
   const freshPending=await p.getTransactionCount(FROM,'pending');
   const freshLatest=await p.getTransactionCount(FROM,'latest');
   const freshFees=await p.getFeeData();
+  const dispatchMaxFee=freshFees.maxFeePerGas,dispatchPriority=freshFees.maxPriorityFeePerGas;
   if(BigInt(freshPending)!==approvedNonce||BigInt(freshLatest)!==approvedNonce||
-    freshFees.maxFeePerGas!==approvedMaxFee||freshFees.maxPriorityFeePerGas!==approvedPriority)
+    dispatchMaxFee===null||dispatchPriority===null||dispatchMaxFee<=0n||dispatchPriority<0n||dispatchPriority>dispatchMaxFee||
+    (!bounded&&dispatchMaxFee!==approvedMaxFee)||dispatchPriority!==approvedPriority)
     throw Error('Approved account or fee state changed before dispatch');
+  const dispatchMaximum=GAS*dispatchMaxFee;
+  if(dispatchMaximum>budget||dispatchMaximum>await p.getBalance(FROM))
+    throw Error('Fresh fee exceeds approved budget or balance');
   const predicted=getCreateAddress({from:FROM,nonce});
   if((await p.getTransactionCount(FROM,'pending'))!==nonce||
     (await p.getTransactionCount(FROM,'latest'))!==nonce||
@@ -93,18 +102,20 @@ async function main(){
   catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;}
   const record={state:'DISPATCH_RESERVED',chainId:Number(CHAIN),from:FROM,nonce,
     creationCodeHash:CREATION,expectedRuntimeHash:RUNTIME,predicted,
-    maximumFeeWei:maximum.toString(),approvedBudgetWei:budget.toString()};
+    gasLimit:GAS.toString(),valueWei:'0',feeMode:bounded?'bounded':'exact',
+    maxFeePerGasWei:dispatchMaxFee.toString(),maxPriorityFeePerGasWei:dispatchPriority.toString(),
+    maximumFeeWei:dispatchMaximum.toString(),approvedBudgetWei:budget.toString()};
   await writeFile(JOURNAL,JSON.stringify(record,null,2)+'\n',{flag:'wx',mode:0o600});
   // One send ONLY. After this point any failure is uncertain: keep journal.
   const sent=await signer.sendTransaction({chainId:CHAIN,type:2,nonce,
-    data:a.bytecode,value:0n,gasLimit:GAS,maxFeePerGas:maxFee,maxPriorityFeePerGas:priority});
+    data:a.bytecode,value:0n,gasLimit:GAS,maxFeePerGas:dispatchMaxFee,maxPriorityFeePerGas:dispatchPriority});
   const dispatched={...record,state:'HASH_RECEIVED',transactionHash:sent.hash};
   await writeFile(JOURNAL,JSON.stringify(dispatched,null,2)+'\n',{mode:0o600});
   console.log('NEUTRAL_BLACKSITE_DEPLOY_HASH '+sent.hash);
   const receipt=await sent.wait(3);
   if(!receipt||receipt.status!==1||receipt.contractAddress===null||
     getAddress(receipt.contractAddress)!==predicted||
-    receipt.gasUsed*receipt.gasPrice>budget||
+    receipt.gasUsed*receipt.gasPrice>dispatchMaximum||receipt.gasUsed*receipt.gasPrice>budget||
     (await p.getBlock(receipt.blockNumber))?.hash!==receipt.blockHash)
     throw Error('Receipt not yet verified; reconcile hash without retry');
   const runtime=await p.getCode(predicted,receipt.blockNumber);
