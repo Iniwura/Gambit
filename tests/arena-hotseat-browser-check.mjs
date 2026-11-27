@@ -51,7 +51,7 @@ async function play(viewport,name){
       window.__arenaLobbyFixture={calls,changeAccount(){
         account='0x'+'2'.repeat(40);
         for(const fn of listeners.get('accountsChanged')??[])fn([account]);
-      },changeChain(){chain='0x1';for(const fn of listeners.get('chainChanged')??[])fn(chain);}};
+      },changeChain(){chain='0x1';for(const fn of listeners.get('chainChanged')??[])fn(chain);},resetChain(){chain='0xaa36a7';for(const fn of listeners.get('chainChanged')??[])fn(chain);}};
     });
     const lobby=page.locator('#gambit-arena-online-lobby');
     await lobby.locator('summary').click();
@@ -78,6 +78,26 @@ async function play(viewport,name){
       wrongChainRejected:true,inviteRecoveryEnabledWithPinnedDeployment:true,
       accountPrompts:0,signatures:0,writes:0
     }));
+    // New V4 player controls are unsigned by default; no dispatch or permission
+    // request during ordinary inspection and navigation.
+    await page.evaluate(()=>window.__arenaLobbyFixture.resetChain());
+    const v4=page.locator('#gambit-arena-hotseat-confidential');
+    await v4.locator('summary').click();
+    await v4.locator('[data-action="find"]').click();
+    await v4.locator('[data-field="wallet"]').selectOption({index:1});
+    await v4.locator('[data-action="inspect"]').click();
+    await v4.getByText(/Sepolia account: 0x2222222222222222222222222222222222222222/).waitFor();
+    assert.equal(await v4.locator('[data-field="action"]').inputValue(),'CREATE_MATCH');
+    assert.equal(await v4.locator('[data-action="send"]').isDisabled(),true);
+    await v4.locator('[data-field="record"]').fill('1');
+    assert.equal(await v4.locator('[data-action="prepare"]').isDisabled(),true,'unread match cannot create or stage an action');
+    await v4.locator('[data-field="record"]').fill('');
+    assert.equal(await v4.locator('[data-field="action"]').inputValue(),'CREATE_MATCH');
+    await page.evaluate(()=>window.__arenaLobbyFixture.changeAccount());
+    assert.equal(await v4.locator('[data-action="prepare"]').isDisabled(),true);
+    assert.ok((await page.evaluate(()=>window.__arenaLobbyFixture.calls)).every(m=>m==='eth_chainId'||m==='eth_accounts'));
+    await v4.locator('summary').click();
+    console.log('GAMBIT_V4_PREPARATION_BROWSER '+JSON.stringify({viewport:name,accountInspection:true,unreadMatchBlocked:true,accountChangeInvalidated:true,signatures:0,writes:0}));
     await page.locator('#gambit-arena-hotseat-start').click();
 
     let lastA=0,lastB=0;
