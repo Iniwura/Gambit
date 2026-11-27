@@ -66,7 +66,7 @@ function mount(mode:Mode){
  function clearView(){view=null;field('view').textContent='';renderActions();}
  function cancel(){
   revision++;controller?.abort();controller=null;busy=false;clearReview();clearPlans();
-  provider?.destroy();provider=null;sdk=null;actor=null;clearView();
+  provider?.destroy();provider=null;sdk?.provider.destroy();sdk=null;actor=null;clearView();
  }
  const changed=()=>{cancel();report('Account or network changed. Check the selected wallet again.');syncPending();};
  function detach(){for(const name of ['accountsChanged','chainChanged','disconnect'])selected?.removeListener?.(name,changed);selected=null;}
@@ -140,7 +140,7 @@ function mount(mode:Mode){
  async function inspect(signal:AbortSignal,epoch:number){
   if(!selected)throw Error('Choose wallet');const a=await readArenaV4SelectedAccount(selected,signal);
   if(!current(epoch,signal))return;
-  provider?.destroy();provider=new BrowserProvider(arenaV4ReadOnlyWallet(selected) as any);actor=a;sdk=null;clearReview();clearView();report('Sepolia account: '+a);
+  provider?.destroy();sdk?.provider.destroy();provider=new BrowserProvider(arenaV4ReadOnlyWallet(selected) as any);actor=a;sdk=null;clearReview();clearView();report('Sepolia account: '+a);
  }
  async function readState(signal:AbortSignal,epoch:number){
   if(!provider||!actor)throw Error('Check account');const n=Number(record.value);
@@ -171,7 +171,11 @@ function mount(mode:Mode){
   clearReview();const chosen=action.value,plan=order(),step=view?('currentRound' in view?view.currentRound:view.attemptsUsed+1):undefined;
   const args={mode,action:chosen,wallet:selected,provider,expectedActor:actor,signal,maximumFeeWei:parseEther(field<HTMLInputElement>('budget').value).toString(),id:view?Number(record.value):undefined,step,order:plan,defender:mode==='arena'?field<HTMLInputElement>('defender').value:undefined};
   report('Preparing exact transaction. Encryption can take time.');
-  if(['SEAL_ROUND','FINALIZE_ROUND','SUBMIT_ATTEMPT','FINALIZE_ATTEMPT'].includes(chosen)&&!sdk)sdk=await createArenaV3SdkSession(selected,signal);
+  if(['SEAL_ROUND','FINALIZE_ROUND','SUBMIT_ATTEMPT','FINALIZE_ATTEMPT'].includes(chosen)&&!sdk){
+   const session=await createArenaV3SdkSession(selected,signal);
+   if(!current(epoch,signal)){session.provider.destroy();return;}
+   sdk=session;
+  }
   const p=await prepareConfidentialAction({...args,sdk:sdk?.sdk});
   if(!current(epoch,signal))return;
   clearPlans();prepared=p;review.hidden=false;
@@ -184,7 +188,7 @@ function mount(mode:Mode){
   const p=prepared;clearReview();const execution=createConfidentialExecution({mode,wallet:selected,provider,journal:journal(),lock:lock()});
   const result=await execution.submit({intent:p.intent,payload:p.payload,approval:p.intent.id,signal});
   if(!current(epoch,signal))return;
-  if(result?.transactionHash)field<HTMLInputElement>('hash').value=result.transactionHash;
+  if(result&&'transactionHash' in result&&typeof result.transactionHash==='string')field<HTMLInputElement>('hash').value=result.transactionHash;
   report(result?.state==='HASH_RECEIVED'?'Transaction submitted. Verify its receipt before another action.':'Wallet outcome uncertain. Do not repeat; recover the transaction hash.');
  }));
  btn('reconcile')?.addEventListener('click',()=>void run(async(signal,epoch)=>{
@@ -197,7 +201,7 @@ function mount(mode:Mode){
     if(results.some(r=>r.state==='UNCONFIRMED')){report('Receipt is not confirmed by both providers. No new action allowed.');return;}
     if(JSON.stringify(results[0])!==JSON.stringify(results[1]))throw Error('Provider disagreement');
     const verified=results[0];j.clearReconciled(verified);
-    if(p.mode===mode&&verified.id){record.value=String(verified.id);clearView();}
+    if(p.mode===mode){if('id' in verified&&verified.id)record.value=String(verified.id);clearReview();clearView();}
     report('Both providers reconciled the receipt. Read current state before another action.');
    }finally{readers.forEach(reader=>reader.destroy());}
   });
