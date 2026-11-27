@@ -65,6 +65,27 @@ async function runScenario(label,viewport){
     assert.ok((await page.evaluate(()=>window.__blacksiteConfidentialFixture.calls)).every(m=>m==='eth_chainId'||m==='eth_accounts'));
     await confidential.locator('summary').click();
     console.log('GAMBIT_NEUTRAL_BLACKSITE_PREPARATION_BROWSER '+JSON.stringify({viewport:label,accountInspection:true,unreadMissionBlocked:true,accountChangeInvalidated:true,signatures:0,writes:0}));
+    // The advanced rehearsal uses the actual neutral four-attempt rules.
+    // Four PROBE submissions always lock, even if a guess happens to be exact.
+    const rehearsal=page.locator('#gambit-neutral-practice');
+    await rehearsal.locator('summary').click();
+    await rehearsal.locator('[data-np-action="start"]').click();
+    assert.equal(await rehearsal.locator('[data-field="glyphs"] select').count(),5);
+    for(let i=1;i<=4;i++){
+      await rehearsal.locator('[data-np-action="attempt"]').click();
+      assert.equal(await rehearsal.locator('[data-field="history"] li').count(),i);
+      assert.equal(await rehearsal.locator('[data-field="heat"]').textContent(),'Heat '+i);
+      assert.equal(await rehearsal.locator('[data-field="remaining"]').textContent(),(4-i)+' attempts left');
+    }
+    assert.match(await rehearsal.locator('[data-field="message"]').textContent(),/Vault locked/);
+    assert.equal(await rehearsal.locator('[data-field="planner"]').isVisible(),false);
+    assert.equal(await rehearsal.locator('[data-field="score"]').textContent(),'Score 0');
+    await rehearsal.locator('[data-np-action="start"]').click();
+    assert.equal(await rehearsal.locator('[data-field="history"] li').count(),0);
+    assert.equal(await rehearsal.locator('[data-field="heat"]').textContent(),'Heat 0');
+    await rehearsal.locator('summary').click();
+    assert.equal(await overlay.getAttribute('data-phase'),'briefing','rehearsal must not change introductory mission');
+    console.log('GAMBIT_NEUTRAL_REHEARSAL_BROWSER '+JSON.stringify({viewport:label,attempts:4,heat:4,locked:true,restart:true,introPreserved:true,walletCalls:0}));
     await page.locator('#gambit-blacksite-begin').click();
     assert.equal(await overlay.getAttribute('data-phase'),'active');
     assert.equal(await overlay.getAttribute('data-remaining'),'5');
