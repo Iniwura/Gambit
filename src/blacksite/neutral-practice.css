@@ -1,0 +1,9 @@
+#gambit-neutral-practice{margin-top:18px;padding:12px;border:1px solid #55718c;border-radius:8px}
+#gambit-neutral-practice summary{cursor:pointer;font-weight:750;padding:8px 0}
+#gambit-neutral-practice .np-stats{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0;font-weight:700}
+#gambit-neutral-practice fieldset{min-width:0}
+#gambit-neutral-practice .np-glyphs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+#gambit-neutral-practice label{display:block;font-size:12px}
+#gambit-neutral-practice select{display:block;width:100%;min-height:46px;padding:5px;color:#edf7ff;background:#15243a;border:1px solid #7397ad;border-radius:6px}
+#gambit-neutral-practice button{min-height:46px;margin-top:10px}
+#gambit-neutral-practice [hidden]{display:none!important}
