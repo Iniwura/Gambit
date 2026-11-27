@@ -51,7 +51,7 @@ async function runScenario(label,viewport){
       window.__blacksiteConfidentialFixture={calls,changeAccount(){account='0x'+'2'.repeat(40);for(const fn of listeners.get('accountsChanged')??[])fn([account]);}};
     });
     const confidential=page.locator('#gambit-blacksite-confidential');
-    await confidential.locator('summary').click();
+    await confidential.locator(':scope > summary').click();
     await confidential.locator('[data-action="find"]').click();
     await confidential.locator('[data-field="wallet"]').selectOption({index:1});
     await confidential.locator('[data-action="inspect"]').click();
@@ -63,7 +63,7 @@ async function runScenario(label,viewport){
     await page.evaluate(()=>window.__blacksiteConfidentialFixture.changeAccount());
     assert.equal(await confidential.locator('[data-action="prepare"]').isDisabled(),true);
     assert.ok((await page.evaluate(()=>window.__blacksiteConfidentialFixture.calls)).every(m=>m==='eth_chainId'||m==='eth_accounts'));
-    await confidential.locator('summary').click();
+    await confidential.locator(':scope > summary').click();
     console.log('GAMBIT_NEUTRAL_BLACKSITE_PREPARATION_BROWSER '+JSON.stringify({viewport:label,accountInspection:true,unreadMissionBlocked:true,accountChangeInvalidated:true,signatures:0,writes:0}));
     // The advanced rehearsal uses the actual neutral four-attempt rules.
     // Four PROBE submissions always lock, even if a guess happens to be exact.
