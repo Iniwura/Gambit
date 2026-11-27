@@ -27,3 +27,10 @@ test('only experimental signed V3 lobby can stage an explicitly approved write; 
   const c=requirePlayableCapability(id);assert.equal(c.authority,'LOCAL_CLEAR_TEXT');assert.equal(c.explicitWriteApproval,false);
  }
 });
+
+test('live validated modes stay unavailable for writes while public debriefs are enabled',()=>{
+ for(const id of ['arena-v4','blacksite-neutral'])assert.equal(getReleaseCapability(id).maturity,'LIVE_VALIDATED_NOT_INTEGRATED');
+ for(const id of ['arena-v4-debrief','blacksite-neutral-debrief']){
+ const c=requirePlayableCapability(id);assert.equal(c.maturity,'READ_ONLY');assert.equal(c.authority,'VERIFIED_PUBLIC_SEPOLIA');assert.equal(c.explicitWriteApproval,false);
+ }
+});
