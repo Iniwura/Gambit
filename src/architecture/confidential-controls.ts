@@ -12,8 +12,8 @@ import {createConfidentialBrowserJournal,createConfidentialBrowserLock} from '..
 type Mode='arena'|'blacksite';
 type Wallet={request:(args:{method:string,params?:unknown})=>Promise<unknown>,on?:(event:string,fn:()=>void)=>unknown,removeListener?:(event:string,fn:()=>void)=>unknown};
 type Prepared=Awaited<ReturnType<typeof prepareConfidentialAction>>;
-type ArenaView={currentRound:number,challenger:string,defender:string,status:string,cumulative:{challenger:number,defender:number},rounds:readonly {challengerSealed:boolean,defenderSealed:boolean}[]};
-type MissionView={operative:string,status:string,attemptsUsed:number,heat:number,score:number};
+type ArenaView={currentRound:number,challenger:string,defender:string,status:string,cumulative:{challenger:number,defender:number},rounds:readonly {round:number,challengerSealed:boolean,defenderSealed:boolean,finalized:boolean,score:{challenger:number,defender:number}|null}[]};
+type MissionView={operative:string,status:string,attemptsUsed:number,heat:number,score:number,history:readonly {attempt:number,route:string,exact:number,misplaced:number|null}[]};
 type View=ArenaView|MissionView;
 const ACTIONS=['STRIKE','GUARD','FLANK'],ROLES=['Scout','Guardian','Striker'];
 const activeABI=new Interface(['function activeMission(address) view returns(uint256)']);
@@ -44,6 +44,8 @@ function mount(mode:Mode){
  <button type="button" data-action="read">READ CURRENT STATE</button>
  ${mode==='blacksite'?'<button type="button" data-action="recover-active">RECOVER ACTIVE MISSION</button>':'<label>Invited defender <input data-field="defender" autocomplete="off" spellcheck="false" maxlength="42"></label>'}
  <p data-field="view" role="status" aria-live="polite"></p>
+ <ol data-field="history" aria-label="Finalized public results"></ol>
+ <button type="button" data-action="new-record" hidden>START ANOTHER ${mode==='arena'?'MATCH':'MISSION'}</button>
  <label>Maximum transaction fee (Sepolia ETH) <input data-field="budget" type="text" inputmode="decimal" value="0.005"></label>
  <label>Action <select data-field="action"></select></label>
  <div data-field="planner"></div>
@@ -65,7 +67,7 @@ function mount(mode:Mode){
  function report(s:string){status.textContent=s;}
  function clearReview(){prepared=null;review.hidden=true;field('consent').textContent='';}
  function clearPlans(){planner.replaceChildren();}
- function clearView(){view=null;field('view').textContent='';renderActions();}
+ function clearView(){view=null;field('view').textContent='';field('history').replaceChildren();const next=btn('new-record');if(next)next.hidden=true;renderActions();}
  function cancel(){
   revision++;controller?.abort();controller=null;busy=false;clearReview();clearPlans();
   provider?.destroy();provider=null;sdk?.provider.destroy();sdk=null;actor=null;clearView();
@@ -147,10 +149,14 @@ function mount(mode:Mode){
  async function readState(signal:AbortSignal,epoch:number){
   if(!provider||!actor)throw Error('Check account');const n=Number(record.value);
   if(!Number.isSafeInteger(n)||n<=0)throw Error('Record ID');
+  clearReview();clearView();
   const fresh=(mode==='arena'?await readArenaV4PublicMatch(provider,RESEARCH_DEBRIEF_PINS.arena,n,{signal}):await readNeutralBlacksiteMission(provider,RESEARCH_DEBRIEF_PINS.blacksite,n,{signal})) as View;
   if(!current(epoch,signal))return;
   view=fresh;clearReview();renderActions();
   field('view').textContent='currentRound' in fresh?'Round '+fresh.currentRound+' / 5 · '+fresh.status+' · '+fresh.cumulative.challenger+' : '+fresh.cumulative.defender:fresh.status+' · '+fresh.attemptsUsed+' / 4 attempts · heat '+fresh.heat+' · score '+fresh.score;
+  const rows='currentRound' in fresh?fresh.rounds.filter(r=>r.finalized&&r.score).map(r=>'Round '+r.round+' · '+r.score!.challenger+' : '+r.score!.defender):fresh.history.map(r=>'Attempt '+r.attempt+' · '+r.route+' · '+r.exact+' exact'+(r.misplaced===null?'':' · '+r.misplaced+' misplaced'));
+  field('history').replaceChildren(...rows.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
+  const next=btn('new-record');if(next)next.hidden=!['COMPLETE','ABANDONED_UNSCORED','TECHNICAL_ABORT_UNSCORED','BREACHED','LOCKED','EXPIRED','TECHNICAL_ABORT'].includes(fresh.status);
  }
  walletSelect.addEventListener('change',selectWallet);
  action.addEventListener('change',()=>{clearReview();renderPlanner();});
@@ -163,6 +169,7 @@ function mount(mode:Mode){
  btn('connect')?.addEventListener('click',()=>void run(async(signal,epoch)=>{if(!selected)throw Error('Choose wallet');await selected.request({method:'eth_requestAccounts'});if(current(epoch,signal))await inspect(signal,epoch);}));
  btn('inspect')?.addEventListener('click',()=>void run(inspect));
  btn('read')?.addEventListener('click',()=>void run(readState));
+ btn('new-record')?.addEventListener('click',()=>{if(busy)return;record.value='';clearReview();clearView();report('Choose a new action. The previous finalized record remains onchain.');});
  btn('recover-active')?.addEventListener('click',()=>void run(async(signal,epoch)=>{
   if(!provider||!actor)throw Error('Check account');const data=activeABI.encodeFunctionData('activeMission',[actor]),raw=await provider.call({to:RESEARCH_DEBRIEF_PINS.blacksite.address,data});
   const n=activeABI.decodeFunctionResult('activeMission',raw)[0];if(!current(epoch,signal))return;
@@ -204,7 +211,7 @@ function mount(mode:Mode){
     if(JSON.stringify(results[0])!==JSON.stringify(results[1]))throw Error('Provider disagreement');
     const verified=results[0];j.clearReconciled(verified);
     if(p.mode===mode){if('id' in verified&&verified.id)record.value=String(verified.id);clearReview();clearView();}
-    report('Both providers reconciled the receipt. Read current state before another action.');
+    report(verified.state==='CONFIRMED_REVERTED'?'Both providers confirmed the transaction reverted. Read current state before another action.':'Both providers reconciled the receipt. Read current state before another action.');
    }finally{readers.forEach(reader=>reader.destroy());}
   });
  }));
