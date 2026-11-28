@@ -6,7 +6,7 @@ GAMBIT is a sci-fi 3v3 tactical game powered by Zama FHE. Program three independ
 
 **Pre-release.** Verified encrypted match infrastructure and playable training exist; the redesigned full-game presentation is a separate internal candidate, not an integrated hosted release.
 
-[Current hosted engineering build](https://iniwura.github.io/Gambit/) · [Full product roadmap](docs/GAMBIT_MASTER_SCOPE.md) · [Verified engineering status](docs/STATUS.md) · [Build history](docs/BUILD_LOG.md) · [R36 visual/disclosure checkpoint](https://github.com/Iniwura/Gambit/blob/design/arena-visual-track/docs/R36_DISCLOSURE_UX_AND_REVIEW.md)
+[Complete project handoff](HANDOFF/README.md) · [Current hosted engineering build](https://iniwura.github.io/Gambit/) · [Full product roadmap](docs/GAMBIT_MASTER_SCOPE.md) · [Verified engineering status](docs/STATUS.md) · [Build history](docs/BUILD_LOG.md) · [R36 visual/disclosure checkpoint](https://github.com/Iniwura/Gambit/blob/design/arena-visual-track/docs/R36_DISCLOSURE_UX_AND_REVIEW.md)
 
 ## What is real today
 
