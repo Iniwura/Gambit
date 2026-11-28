@@ -1,0 +1,153 @@
+/* GAMBIT Arena two-commander LOCAL hotseat: functional greybox, not final art */
+#gambit-arena-hotseat-open{
+  position:fixed;top:59px;right:16px;z-index:10007;
+  min-height:42px;padding:8px 12px;border:1px solid #86b3c6;
+  background:#163046;color:#e8faff;border-radius:8px;
+  font:750 12px/1.2 Inter,system-ui,sans-serif;cursor:pointer
+}
+#gambit-arena-hotseat-mobile-open{display:none}
+#gambit-arena-hotseat-overlay[hidden],
+#gambit-arena-hotseat-overlay [hidden]{display:none!important}
+#gambit-arena-hotseat-overlay{
+  position:fixed;inset:0;z-index:11004;
+  display:flex;justify-content:center;align-items:flex-start;
+  overflow-y:auto;overscroll-behavior:contain;
+  background:#040912ef;padding:clamp(8px,3vh,28px) 10px
+}
+#gambit-arena-hotseat-dialog{
+  width:min(100%,820px);margin:auto 0;padding:clamp(16px,3vw,28px);
+  background:#101e30;border:1px solid #668ca5;border-radius:13px;
+  color:#ebf9ff;box-shadow:0 22px 80px #000c;
+  font:400 15px/1.5 Inter,system-ui,sans-serif
+}
+#gambit-arena-hotseat-dialog *{box-sizing:border-box}
+#gambit-arena-hotseat-dialog .ga-head{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;border-bottom:1px solid #42627b;
+  padding-bottom:14px
+}
+#gambit-arena-hotseat-heading{font:850 20px/1.2 Inter,system-ui,sans-serif}
+#gambit-arena-hotseat-dialog p{color:#c8deec}
+#gambit-arena-hotseat-dialog .ga-head p{font-size:11px;letter-spacing:.04em}
+#gambit-arena-hotseat-dialog .ga-boundary{
+  border-left:3px solid #82c9db;padding:9px 12px;background:#1d3447;
+  font-size:12px
+}
+#gambit-arena-hotseat-dialog h2{font-size:18px;line-height:1.35;margin:15px 0}
+#gambit-arena-hotseat-dialog button{
+  min-height:44px;min-width:44px;border-radius:8px;
+  color:#f8fcff;background:#1b546a;border:1px solid #80b9ce;
+  padding:10px 15px;font:750 13px/1.25 Inter,system-ui,sans-serif;
+  cursor:pointer
+}
+#gambit-arena-hotseat-dialog button:active{transform:translateY(1px)}
+#gambit-arena-hotseat-dialog button:focus-visible,
+#gambit-arena-hotseat-dialog select:focus-visible,
+#gambit-arena-hotseat-open:focus-visible,
+#gambit-arena-hotseat-mobile-open:focus-visible{
+  outline:3px solid #ffd47f;outline-offset:3px
+}
+#gambit-arena-hotseat-dialog .ga-score{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0
+}
+#gambit-arena-hotseat-dialog .ga-score div{
+  padding:12px 10px;background:#1b3046;border:1px solid #527a94;border-radius:8px
+}
+#gambit-arena-hotseat-dialog .ga-score span{
+  display:block;color:#bdd5df;font-weight:650;font-size:11px
+}
+#gambit-arena-hotseat-dialog .ga-score strong{display:block;font-size:26px}
+#gambit-arena-hotseat-status{
+  background:#203b50;border:1px solid #5689a3;border-radius:8px;
+  padding:10px 12px;min-height:44px;overflow-wrap:anywhere
+}
+#gambit-arena-hotseat-dialog .ga-roles{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+  margin:16px 0
+}
+#gambit-arena-hotseat-dialog fieldset{
+  min-width:0;border:1px solid #4e718a;background:#1c3145;
+  border-radius:9px;padding:12px 10px
+}
+#gambit-arena-hotseat-dialog legend{font-weight:800;letter-spacing:.05em;padding:0 5px}
+#gambit-arena-hotseat-dialog label{
+  display:block;font-weight:750;font-size:11px;color:#c6dce6;
+  margin:10px 0 4px;letter-spacing:.02em
+}
+#gambit-arena-hotseat-dialog select{
+  width:100%;min-width:0;min-height:44px;border:1px solid #668fa6;
+  border-radius:7px;background:#172b42;color:#fff;padding:8px;
+  font:600 14px/1.25 Inter,system-ui,sans-serif
+}
+#gambit-arena-hotseat-dialog select:disabled{opacity:.6}
+#gambit-arena-hotseat-dialog .ga-footnote{font-size:12px}
+#gambit-arena-hotseat-form button[type=submit]{
+  width:100%;min-height:50px;background:#15738b;border-color:#9ce5f5
+}
+#gambit-arena-hotseat-accept,#gambit-arena-hotseat-resolve,
+#gambit-arena-hotseat-next,#gambit-arena-hotseat-start{
+  width:100%;min-height:50px
+}
+#gambit-arena-hotseat-history{padding-left:23px;margin-top:24px}
+#gambit-arena-hotseat-history li{
+  padding:7px 2px;border-bottom:1px solid #34566d;font-size:13px;color:#bcd9ea
+}
+#gambit-arena-hotseat-discard{
+  display:block;margin:20px 0 12px;background:#442e3d!important;
+  border-color:#b57f91!important
+}
+@media(max-width:700px){
+  #gambit-arena-hotseat-open{display:none!important}
+  #gambit-mobile-deck button#gambit-arena-hotseat-mobile-open{
+    display:block;width:100%;min-height:46px;flex:none;
+    font-size:12px;color:#eefbff;background:#17435b;border-color:#84bed0
+  }
+  #gambit-arena-hotseat-overlay{padding:7px}
+  #gambit-arena-hotseat-dialog{padding:15px}
+  #gambit-arena-hotseat-dialog .ga-head button{width:100%}
+  #gambit-arena-hotseat-dialog .ga-roles{grid-template-columns:1fr;gap:12px}
+  #gambit-arena-hotseat-dialog fieldset{display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));column-gap:7px;
+    grid-template-rows:auto auto auto}
+  #gambit-arena-hotseat-dialog fieldset legend{grid-column:1 / -1}
+  #gambit-arena-hotseat-dialog fieldset label{font-size:10px}
+  #gambit-arena-hotseat-dialog .ga-score strong{font-size:23px}
+}
+/* At 701–950px the existing Academy owns the second header row at top:55px.
+   Hotseat gets its OWN third row rather than intercepting Academy clicks. */
+@media(min-width:701px) and (max-width:950px){
+  #gambit-arena-hotseat-open{top:110px;right:15px}
+}
+@media(prefers-reduced-motion:reduce){
+  #gambit-arena-hotseat-dialog button:active{transform:none}
+}
+
+/* Online readiness shares the existing responsive dialog, not another overlay. */
+#gambit-arena-online-lobby{margin:18px 0 8px;padding:14px;border:1px solid #527a94;border-radius:8px;background:#16283a}
+#gambit-arena-online-lobby summary{cursor:pointer;font-weight:750;min-height:30px}
+#gambit-arena-online-lobby label{display:block;margin-top:12px;font-weight:650}
+#gambit-arena-online-lobby select,#gambit-arena-online-lobby input{display:block;width:100%;min-height:44px;margin:5px 0 10px;padding:10px;border:1px solid #7798aa;background:#101e30;color:#ebf9ff;border-radius:6px;font:inherit}
+#gambit-arena-online-lobby button{margin:0 8px 6px 0}
+#gambit-arena-online-lobby button:disabled,#gambit-arena-online-lobby input:disabled{opacity:.65;cursor:not-allowed}
+#gambit-arena-online-lobby p{overflow-wrap:anywhere}
+#gambit-arena-online-lobby summary:focus-visible,#gambit-arena-online-lobby input:focus-visible{outline:3px solid #ffd47f;outline-offset:3px}
+#gambit-arena-online-lobby h2,#gambit-arena-online-lobby h3{margin:16px 0 8px;font-size:16px}
+#gambit-arena-online-lobby section{margin-top:14px;padding-top:10px;border-top:1px solid #34566d}
+#gambit-arena-online-lobby .gambit-arena-online-warning{border-left:3px solid #e6bd66;padding:8px 10px;background:#302b20;color:#ffe6a5}
+#gambit-arena-online-review-details{display:grid;grid-template-columns:minmax(125px,auto) 1fr;gap:4px 10px;margin:10px 0;color:#d8ecf4;overflow-wrap:anywhere}
+#gambit-arena-online-review-details dt{font-weight:750;color:#a9c5d2}
+#gambit-arena-online-review-details dd{margin:0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px}
+#gambit-arena-online-pending{border-color:#b57f91;background:#2b2230}
+#gambit-arena-online-pending button{background:#5b3850;border-color:#d79bb4}
+#gambit-arena-online-match-actions{display:flex;flex-wrap:wrap;gap:4px;margin-top:12px}
+#gambit-arena-online-match-actions p{width:100%;margin:4px 0;color:#c8deec}
+#gambit-arena-online-plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+#gambit-arena-online-plans fieldset{min-width:0;border:1px solid #4e718a;border-radius:8px;padding:8px;background:#1c3145}
+#gambit-arena-online-plans legend{font-weight:800}
+#gambit-arena-online-history{font-size:12px;color:#bdd5df}
+@media(max-width:700px){
+  #gambit-arena-online-plans{grid-template-columns:1fr}
+  #gambit-arena-online-review-details{grid-template-columns:1fr}
+  #gambit-arena-online-review-details dd{margin-bottom:5px}
+  #gambit-arena-online-match-actions button,#gambit-arena-online-review button{width:100%;margin-right:0}
+}

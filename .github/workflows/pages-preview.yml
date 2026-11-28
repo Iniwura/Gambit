@@ -1,0 +1,96 @@
+name: GAMBIT static preview — GitHub Pages
+
+on:
+  push:
+    branches:
+      - build/verified-first-slice
+    paths:
+      - '.github/workflows/pages-preview.yml'
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'deploy.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'fhe/contracts/**'
+      - 'fhe/package.json'
+      - 'fhe/package-lock.json'
+      - 'fhe/scripts/**'
+      - 'scripts/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gambit-github-pages-preview
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and verify static preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact tested branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install reproducible root dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install reproducible FHE build dependencies
+        run: npm --prefix fhe ci --no-audit --no-fund
+
+      - name: Verify rules and client type safety
+        run: |
+          node --test tests/*.test.mjs
+          npm run typecheck
+
+      - name: Verify encrypted contracts in local mock
+        run: |
+          npm --prefix fhe run typecheck
+          npm --prefix fhe run compile
+          npm --prefix fhe run hcu:static
+          npm --prefix fhe test
+
+      - name: Compile contract artifact and publish-safe web assets
+        env:
+          VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS: '0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134'
+          VITE_GAMBIT_SQUAD_RUNTIME_HASH: '0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419'
+        run: |
+          npm run build:contract-artifact
+          npx --no-install vite build --base=/Gambit/
+          # v1 wallet deployment helper is not part of the public game preview.
+          rm -f dist/deploy.html
+          test -s dist/index.html
+
+      - name: Upload static GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  publish:
+    name: Publish temporary GitHub Pages preview
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: gambit-pages-preview
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy reviewed static bundle
+        id: deploy
+        uses: actions/deploy-pages@v4

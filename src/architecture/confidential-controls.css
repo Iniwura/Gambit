@@ -1,0 +1,8 @@
+/* Functional-only greybox: final HUD/art remains frozen. */
+#gambit-arena-hotseat-confidential,#gambit-blacksite-confidential{margin-top:18px;padding:12px;border:1px solid #55718c;border-radius:8px;overflow-wrap:anywhere}
+#gambit-arena-hotseat-confidential summary,#gambit-blacksite-confidential summary{cursor:pointer;font-weight:750;padding:8px 0}
+#gambit-arena-hotseat-confidential label,#gambit-blacksite-confidential label{display:block;margin:10px 0}
+#gambit-arena-hotseat-confidential input,#gambit-arena-hotseat-confidential select,#gambit-blacksite-confidential input,#gambit-blacksite-confidential select{display:block;width:100%;min-height:46px;padding:9px;color:#edf7ff;background:#15243a;border:1px solid #7397ad;border-radius:6px;font:inherit}
+#gambit-arena-hotseat-confidential button,#gambit-blacksite-confidential button{margin:5px 5px 5px 0;min-height:46px;max-width:100%;white-space:normal}
+#gambit-arena-hotseat-confidential [data-field="review"],#gambit-blacksite-confidential [data-field="review"]{padding:12px;border:1px solid #7397ad;margin-top:12px}
+#gambit-arena-hotseat-confidential [hidden],#gambit-blacksite-confidential [hidden]{display:none!important}

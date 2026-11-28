@@ -3,21 +3,24 @@
 **Created:** 2026-11-18  
 **Internal stretch target:** 2026-11-22 (Sunday)  
 **Official submission deadline:** 2026-12-14 (verify before submitting)  
-**Status:** PRE-ALPHA. No verified Phaser release, no compiled FHE contract, no verified Sepolia match.
+**Status (updated 21 Nov 2026):** One real encrypted 3v3 Sepolia encounter and its authenticated result are verified, but the full four-pillar architecture and working game are **not finished**. See [real evidence](STATUS.md) and the [authoritative master scope](GAMBIT_MASTER_SCOPE.md). Historical daily targets below reflect the **18 Nov planning snapshot**, not the current release truth.
 
 ## Goal
 Release one small but outstanding top-down confidential tactics game. Do not confuse source code with a functioning game, local RNG with onchain randomness, or a visual sample with playable product.
 
-## Professional production stages and evidence gates
+## Locked build sequence and acceptance gates (owner-corrected 21 Nov)
 
-| Stage | Work | Acceptance evidence |
+**NO FINAL GRAPHICS UNTIL ARCHITECTURE, GAME DESIGN AND WORKING/RESPONSIVE GAME ARE PROVEN.** This ordering overrides the older schedule and should be applied to every pillar: ARENA, BLACKSITE, TRAINING and COMMANDER PROFILE.
+
+| Stage | Actual work | Completion evidence |
 | --- | --- | --- |
-| 0. Pre-production | One-page GDD, player fantasy, core loop, audience, match length, technical risk register | Locked rules, written why FHE is essential, testable win/fail cases |
-| 1. Greybox + systems | Phaser world scene, action input, one authoritative deterministic simulation, two game adapters | Browser loads; complete practice match; restart, replay, no JS errors |
-| 2. Confidential proof | Official Zama Hardhat template, encrypted counter-conditional logic, ACL review, parity tests | Contract compiles; negative tests and parity tests green; signed public-decryption verification |
-| 3. Full vertical slice | Browser wallet, 2 players / asynchronous match, secret inputs, FHE resolve, authenticated public result, animation and match summary | Real two-wallet Sepolia match, chain links, capture of complete flow |
-| 4. Production + polish | Responsive HUD, clear tactical feedback, stable animations, sound, accessibility, reconnect/retry, error states | Blind playtest, desktop/mobile browser QA, performance evidence |
-| 5. RC audit and submission | Independent gameplay/security/code review, README, video, X post, official form | No known critical defects; working live URL; real-person three-minute pitch; artifact links |
+| 1. **Architecture + game plan** | Full game specification, rules, mechanics, complete game flows, module/service boundaries, data models, state diagrams, error/restore contracts, FHE feasibility and how four pillars work together | Reviewed architectural contract, acceptance tests, no unresolved foundational design contradictions |
+| 2. **Functional greybox** | Implement **real** gameplay/navigation for agreed staged scope using provisional art; correct fighter controls, match/lobby/recovery, training, missions, persistence and all planned interaction states | User actions yield correct responses on desktop/mobile, complete paths work, no fake buttons or mocked chain success |
+| 3. **Stability and game-design validation** | End-to-end deterministic and adversarial tests, browser QA, input latency, recovery, balance, uncoached playtests, repeated real chain flows with individual approvals | Working responsive game with recorded green checks and playtest evidence; architecture/gameplay freeze |
+| 4. **Graphics, animation and audio** | Original characters, 2.5D arena, mission environments, transitions, effects, high-quality UI and sound | Consistent polished visual game passes human/automated visual and accessibility checks without breaking functionality |
+| 5. **Release/submission audit** | Security/privacy review, performance, real-world testing, complete submission and real-person pitch | Evidence-backed release verdict; full scope remains tracked even when hackathon tranche is smaller |
+
+**Current stage:** Stage **1 remains in progress** for the complete game, despite a completed Sepolia technical vertical slice. Do not move to Stage 4 just because the encrypted encounter works. Refer to [master-scope Section 5](GAMBIT_MASTER_SCOPE.md) for precise exit gates.
 
 ## Scope for this week (four days remaining)
 
@@ -25,7 +28,7 @@ Release one small but outstanding top-down confidential tactics game. Do not con
 | --- | --- | --- |
 | Wed Nov 18 | Audit and repair repo structure, pull in the real Phaser source/assets, pin dependencies, launch CI | `npm ci`, typecheck, build, engine tests, real browser boot |
 | Thu Nov 19 | Contract compile against current official template; 729-plan parity against reference + adversarial tests | Genuine Hardhat logs, rejected bad permissions/replay, public-decrypt test |
-| Fri Nov 20 | Wire browser wallet/Relayer SDK to match lifecycle and deploy to Sepolia | Two wallets submit encrypted plans, transaction hashes and verified outcome |
+| Fri Nov 20 | Wire browser wallet/new Zama SDK (`@zama-fhe/sdk`) to match lifecycle and deploy to Sepolia | Two wallets submit encrypted plans, transaction hashes and verified outcome |
 | Sat Nov 21 | Join chain result to match renderer; timeout/error/reconnect workflows; full rematch loop | 3 complete real matches and negative-path evidence |
 | Sun Nov 22 | Independent QA, newcomer playtests, final blocker triage, freeze credible RC only if gates pass | Evidence matrix complete, no P0/P1 failures, documented release verdict |
 
@@ -36,7 +39,7 @@ The user requested completion before next week. This is an aggressive internal p
 - GitHub repository contains README, rules reference, layout and tests, **but not the full Phaser game source / binary art pack**; there is no verified production build.
 - Current reference engine reduces an encounter to one ternary base/trigger/response pair per side. Three character drawings are not three autonomous gameplay units. A deeper squad layer must be designed and tested before asserting 'advanced 3v3'.
 - FHE candidate is a research draft; NOT compiled, security-audited or deployed. Its APIs and decryption proof structure must be checked against the latest official Zama template.
-- No wallet or Relayer SDK integration, signed finalization, canonical Sepolia receipt, lobby/challenge lifecycle, reconnect, or proof-driven replay.
+- No wallet or current Zama SDK integration, signed finalization, canonical Sepolia receipt, lobby/challenge lifecycle, reconnect, or proof-driven replay.
 - Existing visuals are illustrations and local browser experiments, not a shipped or browser-verified Phaser 4 release.
 - Repo is currently **PUBLIC** as created by the owner; do not commit secrets.
 
@@ -57,3 +60,9 @@ The user requested completion before next week. This is an aggressive internal p
 ## Decision at Sunday gate
 - `GO`: all P0 gates actually verified. Proceed to independent audit, demo polishing and submission packaging.
 - `NO-GO`: report precise blocker and remaining work, no claim of production-readiness. Continue toward official Dec 14 deadline with quality protected.
+
+## Important SDK version decision (18 Nov 2026)
+
+Zama ended maintenance of the **legacy** `@zama-fhe/relayer-sdk` on **6 November 2026**. New GAMBIT integrations must use `@zama-fhe/sdk` (core SDK) plus a wallet adapter (ethers/viem), not the obsolete `initSDK/createInstance` approach. Official guide: https://github.com/zama-ai/sdk/blob/main/docs/gitbook/src/tutorials/quick-start.md
+
+Current npm package checked on 18 Nov: `@zama-fhe/sdk` **3.8.0**. Actual custom FHE contract input/public-decrypt method integration remains unverified and requires SDK-specific tests. Do not assume the new SDK uses identical low-level APIs as the old Relayer SDK.

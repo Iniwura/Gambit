@@ -1,0 +1,27 @@
+{
+  "contract": "ArenaV4ConfidentialActivationResearch",
+  "version": 1,
+  "sourceCommit": "a3a1df073a6881c8a08e74954b601b863f2b4969",
+  "chainId": 11155111,
+  "address": "0x5F9e0030233370a913780EC9CCb58183C4672c13",
+  "runtimeHash": "0x6f58a369687239e1398f8f5d943825b59a1c47326fd450171ec78e150408544d",
+  "creationCodeHash": "0x9e760de916b8e097c25ff79a7e6c103e79f1009b088f4883d1d20db45bd8b07c",
+  "deployer": "0x7d567Fa1d5fe35737BbF045f47667e13298Ee176",
+  "transactionHash": "0xc8725e44231395e0cf19e15300f5c1f6a8792867d3dc12204cb7fd2ddd86b4bb",
+  "blockNumber": 12221567,
+  "blockHash": "0x8f7eeeec09baa4f72d5ba6ab5b7eb2274f9d736a06881e79912763bac9706243",
+  "estimatedGas": "25569932",
+  "gasLimit": "30683919",
+  "gasUsed": "21139337",
+  "maxFeePerGasWei": "526274",
+  "maxPriorityFeePerGasWei": "2",
+  "actualFeeWei": "5312653617492",
+  "valueWei": "0",
+  "verificationProviders": [
+    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://gateway.tenderly.co/public/sepolia"
+  ],
+  "historicalRuntimeVerified": true,
+  "currentRuntimeVerified": true,
+  "status": "DEPLOYMENT_ONLY_LIVE_GAMEPLAY_UNVERIFIED"
+}

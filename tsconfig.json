@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "checkJs": false,
+    "esModuleInterop": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": [
+      "vite/client"
+    ],
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

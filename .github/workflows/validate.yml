@@ -1,0 +1,172 @@
+name: GAMBIT quality gates
+on:
+  push:
+    branches: [main]
+    # Documentation does not change compiled game/FHE behaviour. Recording
+    # every milestone must not cause repeated 4-job builds or GitHub costs.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  # Draft PRs are build-in-progress. They still require real QA.
+  # Running this on PR rather than feature-branch push avoids duplicate builds.
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+permissions:
+  contents: read
+concurrency:
+  group: gambit-ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  reference:
+    name: Deterministic rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install deterministic test dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run deterministic rules and arena tests
+        run: node --test tests/*.test.mjs
+
+  game:
+    name: Phaser install, typecheck and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Install production game
+        run: npm install --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build browser release
+        run: npm run build
+      - name: Exact-runtime confidential wallet dispatch and receipt fixtures (OFFLINE, NO REAL WRITES)
+        run: node --test tests/confidential-execution-compiled-check.mjs
+      - name: Verify v3 client method signatures against compiled Solidity (NO SIGNING)
+        run: npm run check:arena:v3:abi
+      - name: Independent live SquadGambit public-RPC receipt/runtime verification (READ ONLY)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run check:squad:live:readonly
+      - name: First live encrypted SquadSealed receipt and onchain state (READ ONLY)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run check:seal:live:readonly
+      - name: First challenger openDuel transaction quote (READ ONLY)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run quote:duel:open:readonly
+      - name: Upload complete static browser release (works during Vercel cooldown)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gambit-static-game-preview
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  fhe:
+    name: FHEVM compile (no testnet claims)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: fhe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Zama Hardhat dependencies
+        run: npm install --no-audit --no-fund
+      - name: Typecheck scripts and FHE workspace
+        run: npm run typecheck
+      - name: Compile encrypted encounter
+        run: npm run compile
+      - name: Enforce HCU inventory against reviewed SquadGambit source (READ ONLY)
+        run: npm run hcu:static
+      - name: Source-locked Arena v3 research operation inventory (NOT live HCU)
+        run: npm run hcu:v3:research
+      - name: Execute mock contract tests
+        run: npm test
+      - name: Live Zama SDK ten-input synthetic encryption probe (NO SIGNER, non-gating)
+        continue-on-error: true
+        timeout-minutes: 4
+        run: npm run probe:squad:sdk:readonly
+      - name: Public Sepolia squad deployment estimate (READ ONLY, non-gating)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run preflight:squad:public
+      - name: Arena v3 candidate public Sepolia EVM quote (READ ONLY, non-gating)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run preflight:arena:v3:public
+      - name: Export compiled SealedGambit ABI and bytecode
+        uses: actions/upload-artifact@v4
+        with:
+          name: gambit-sealed-contract-build
+          path: fhe/artifacts/contracts/SealedGambit.sol/SealedGambit.json
+          if-no-files-found: error
+          retention-days: 7
+
+  browser:
+    name: Browser gameplay — desktop and mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install game and browser runner
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.65.1
+          npx playwright install chromium
+      - name: Generate the exact contract artifact served by Vite
+        run: npm run build:contract-artifact
+      - name: Run real browser game and deployment safety checks
+        run: |
+          VITE_GAMBIT_CONTRACT_ADDRESS=0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0 npm run dev -- --host 127.0.0.1 --port 4173 >/tmp/gambit-vite.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173 >/dev/null && break; sleep 1; done
+          # Isolated localhost-only signed UI fixture: no actual wallet or external RPC.
+          VITE_GAMBIT_CONFIDENTIAL_WRITES=true npm run dev -- --host 127.0.0.1 --port 4177 >/tmp/gambit-confidential-fixture.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4177 >/dev/null && break; sleep 1; done
+          node tests/confidential-signed-browser-check.mjs
+          node tests/confidential-live-debrief-browser-check.mjs
+          # Fail fast on the newest interactive surface before expensive regressions.
+          node tests/arena-hotseat-browser-check.mjs
+          node tests/browser-check.mjs
+          node tests/squad-browser-check.mjs
+          node tests/mobile-deck-browser-check.mjs
+          node tests/blacksite-greybox-browser-check.mjs
+          node tests/profile-greybox-browser-check.mjs
+          node tests/training-coach-browser-check.mjs
+          node tests/deploy-browser-check.mjs
+          node tests/sepolia-browser-safety-check.mjs
+          # Deliberately fake v2 config is used for NEGATIVE browser cases only.
+          # The client must reject wallet-less and WRONG-network attempts before a signature.
+          VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS=0x3333333333333333333333333333333333333333 VITE_GAMBIT_SQUAD_RUNTIME_HASH=0x$(printf 'a%.0s' {1..64}) VITE_GAMBIT_CONTRACT_ADDRESS=0x12adc9f3860FB20E9655197386CDFc1DD78FF0c0 npm run dev -- --host 127.0.0.1 --port 4175 >/tmp/gambit-v2-negative.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4175 >/dev/null && break; sleep 1; done
+          node tests/squad-v2-browser-safety-check.mjs
+          # Verified v2 deployment settings: negative wallet tests only; no signer or transaction.
+          VITE_GAMBIT_SQUAD_CONTRACT_ADDRESS=0x493aBFFE41869135d153D6EEfCCA4BcdC61d5134 VITE_GAMBIT_SQUAD_RUNTIME_HASH=0x94754bf634ba275b7a2f047483854553cbdfad51b15209477b467220b576f419 npm run dev -- --host 127.0.0.1 --port 4176 >/tmp/gambit-v2-live-config.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4176 >/dev/null && break; sleep 1; done
+          GAMBIT_SQUAD_UI_URL=http://127.0.0.1:4176 node tests/squad-v2-browser-safety-check.mjs
+      - name: Upload real game screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gambit-browser-evidence
+          path: browser-evidence/
+          if-no-files-found: ignore
+          retention-days: 7

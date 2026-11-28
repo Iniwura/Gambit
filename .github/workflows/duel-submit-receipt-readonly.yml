@@ -1,0 +1,27 @@
+name: GAMBIT Duel 1 verified submission (read-only)
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'scripts/verify-first-duel-submit-readonly.mjs'
+      - 'tests/first-duel-submit-readonly.test.mjs'
+      - '.github/workflows/duel-submit-receipt-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  receipt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned public RPC read-only dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Reject forged sender, event, transaction and duplicate submission
+        run: node --test tests/first-duel-submit-readonly.test.mjs
+      - name: Independently verify the actual submitted Sepolia receipt, calldata and state
+        timeout-minutes: 3
+        run: node scripts/verify-first-duel-submit-readonly.mjs

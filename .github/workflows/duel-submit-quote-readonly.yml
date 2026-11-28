@@ -1,0 +1,27 @@
+name: GAMBIT Duel 1 submit gas quote (no wallet)
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'fhe/scripts/quote-duel1-submit-sepolia.ts'
+      - 'fhe/package.json'
+      - '.github/workflows/duel-submit-quote-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install deterministic FHE dependencies without wallet
+        run: npm --prefix fhe ci --no-audit --no-fund
+      - name: Typecheck read-only FHE script
+        run: npm --prefix fhe run typecheck
+      - name: Quote exact ten-input challenger submission with VoidSigner (NO TX)
+        timeout-minutes: 5
+        run: npm --prefix fhe run quote:duel1:submit:readonly

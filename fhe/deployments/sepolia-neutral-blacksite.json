@@ -1,0 +1,15 @@
+{
+  "contract": "NeutralBlacksiteResearch",
+  "version": 3,
+  "chainId": 11155111,
+  "address": "0x33c062aebeB425b53A25E0b370732Cee5f7F97F9",
+  "runtimeHash": "0x8b17d9514b5cce1220afc3428b5a51fd93198786f501755aa10d9d540572665e",
+  "creationCodeHash": "0x8fee58bd19f98fe194993449d62d9a8a605e385ab0b94478d4a1fbad654b85d4",
+  "deployer": "0x7d567Fa1d5fe35737BbF045f47667e13298Ee176",
+  "transactionHash": "0x520c9baf69bd2962899dbd1090ed8225cb996a7ef5e2c605f7f0addd5e46d1cd",
+  "blockNumber": 12219991,
+  "blockHash": "0x3b75c931ec92b76bb8b669a0ac59e6a1be7245f5e1897e4b90b2dfb14ad18013",
+  "gasUsed": "15238998",
+  "actualFeeWei": "259062966",
+  "status": "DEPLOYMENT_ONLY_LIVE_GAMEPLAY_UNVERIFIED"
+}

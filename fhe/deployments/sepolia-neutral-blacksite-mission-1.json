@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "network": "sepolia",
+  "chainId": 11155111,
+  "contract": "0x33c062aebeB425b53A25E0b370732Cee5f7F97F9",
+  "operative": "0x7d567Fa1d5fe35737BbF045f47667e13298Ee176",
+  "missionId": 1,
+  "deploymentRuntimeHash": "0x8b17d9514b5cce1220afc3428b5a51fd93198786f501755aa10d9d540572665e",
+  "confidentialProtocolId": "10001",
+  "verificationProviders": [
+    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://gateway.tenderly.co/public/sepolia"
+  ],
+  "verification": {
+    "allReceiptsSuccessful": true,
+    "allBlocksCanonical": true,
+    "allTransactionHashesMatchedReceipts": true,
+    "allWritesZeroValue": true,
+    "allWritesFromOperativeToContract": true,
+    "nonces": [1795, 1796, 1797, 1798, 1799, 1800, 1801, 1802, 1803, 1804, 1805, 1806],
+    "transactionCount": 12,
+    "attemptCount": 4,
+    "maxActualFeeWei": "127763410166552",
+    "cumulativeActualFeeWei": "598019875813210",
+    "perTransactionFeeLimitWei": "5000000000000000",
+    "cumulativeFeeLimitWei": "60000000000000000"
+  },
+  "mission": {
+    "openedAt": "1795755276",
+    "deadlineAt": "1795841676",
+    "recoveryDeadlineAt": "1795928076",
+    "attemptsUsed": 4,
+    "heat": 5,
+    "score": 35,
+    "outcome": 1,
+    "activeMissionAfterFinalization": 0,
+    "nextMissionId": 1,
+    "missionCompleted": {
+      "missionId": 1,
+      "outcome": 1,
+      "score": 35,
+      "heat": 5
+    }
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "route": "PROBE",
+      "feedbackPacket": 40,
+      "exact": 3,
+      "misplaced": 0,
+      "nonce": 1795,
+      "blockNumber": 12221311,
+      "transactionHash": "0xd3fe3151b966066ff572dd7fb2052edcde2a6646f8927e0f6cbe59e8b43ac452",
+      "gasUsed": "2236224",
+      "actualFeeWei": "20873377714368"
+    },
+    {
+      "attempt": 1,
+      "action": "resolveAttempt",
+      "nonce": 1796,
+      "blockNumber": 12221312,
+      "transactionHash": "0xe7837d6794ea6f04eeb44852d3dc283df057093d8332281574b0c9bc2b56bf6e",
+      "gasUsed": "4193428",
+      "actualFeeWei": "43493056862732"
+    },
+    {
+      "attempt": 1,
+      "action": "finalizeAttempt",
+      "nonce": 1797,
+      "blockNumber": 12221314,
+      "transactionHash": "0x9af17f8a081bb60990bec0a8a1a2f460e6e523f9518032d0d65d4286e4c6e5dd",
+      "gasUsed": "501191",
+      "actualFeeWei": "5514279300041"
+    },
+    {
+      "attempt": 2,
+      "route": "PROBE",
+      "feedbackPacket": 17,
+      "exact": 0,
+      "misplaced": 1,
+      "nonce": 1798,
+      "blockNumber": 12221318,
+      "transactionHash": "0x0bf3214a54e0354681e3a61624e71c0e8394105f949feab6d225aa8e9bb9d4e6",
+      "gasUsed": "2236260",
+      "actualFeeWei": "35922934019700"
+    },
+    {
+      "attempt": 2,
+      "action": "resolveAttempt",
+      "nonce": 1799,
+      "blockNumber": 12221319,
+      "transactionHash": "0x99831d1e64f8cb84a6b7429370134fb79e20ee9b67667e09926ad1b0b8f15904",
+      "gasUsed": "4193428",
+      "actualFeeWei": "74323378544128"
+    },
+    {
+      "attempt": 2,
+      "action": "finalizeAttempt",
+      "nonce": 1800,
+      "blockNumber": 12221321,
+      "transactionHash": "0x91bcfe12f6f08a98961df8d0b7a450a778c00c119b51548b8928f5c180f1042b",
+      "gasUsed": "501227",
+      "actualFeeWei": "10511772240933"
+    },
+    {
+      "attempt": 3,
+      "route": "PROBE",
+      "feedbackPacket": 41,
+      "exact": 3,
+      "misplaced": 1,
+      "nonce": 1801,
+      "blockNumber": 12221325,
+      "transactionHash": "0x07095192177ba21ebc097b0d4ec9ac2568f03ef5481c846e57ebb5ce53e82b01",
+      "gasUsed": "2236236",
+      "actualFeeWei": "58369876510476"
+    },
+    {
+      "attempt": 3,
+      "action": "resolveAttempt",
+      "nonce": 1802,
+      "blockNumber": 12221326,
+      "transactionHash": "0x2da94ec9e42daf687f1dca8849cc4afbe3b198598899ebe07f35ee7a9cdbe998",
+      "gasUsed": "4193428",
+      "actualFeeWei": "121172565831528"
+    },
+    {
+      "attempt": 3,
+      "action": "finalizeAttempt",
+      "nonce": 1803,
+      "blockNumber": 12221328,
+      "transactionHash": "0x26fe57f93b8f3867454104750e34e5cc06d4fc4852ffb2ab78d67dfe17d699b8",
+      "gasUsed": "501227",
+      "actualFeeWei": "14798942702610"
+    },
+    {
+      "attempt": 4,
+      "route": "BREACH",
+      "feedbackPacket": 69,
+      "exact": 5,
+      "misplaced": 0,
+      "nonce": 1804,
+      "blockNumber": 12221333,
+      "transactionHash": "0xea68724a88c4f91a4654486739cd30e050950bf8681791a40bb60e61538ef9dc",
+      "gasUsed": "2236260",
+      "actualFeeWei": "68871130135860"
+    },
+    {
+      "attempt": 4,
+      "action": "resolveAttempt",
+      "nonce": 1805,
+      "blockNumber": 12221334,
+      "transactionHash": "0xc849caf40c0040f5eb4b50c4c35ec0fa144eec3469dd3c75a74cb1f6ee9ba1ad",
+      "gasUsed": "4193428",
+      "actualFeeWei": "127763410166552"
+    },
+    {
+      "attempt": 4,
+      "action": "finalizeAttempt",
+      "nonce": 1806,
+      "blockNumber": 12221336,
+      "transactionHash": "0xca524210247751f5e1a878393173ac7bc909982624c9b08f9c0c708066f406e0",
+      "gasUsed": "504906",
+      "actualFeeWei": "16405151784282"
+    }
+  ],
+  "confidentiality": {
+    "noPlaintextSecretRecorded": true,
+    "noCiphertextsOrProofBytesRecorded": true,
+    "forbiddenSecretGettersAbsent": ["vaultCode", "guess", "getVaultCode", "getGuess", "setSecret"],
+    "feedbackHandleUnavailableBeforeResolution": true,
+    "encryptionAndAuthenticatedDecryption": "Zama SDK encrypt() produced the six encrypted inputs and input proof; decryptPublicValues() produced the public feedback and authenticated decryption proof supplied to finalizeAttempt.",
+    "publiclyPersistedFeedbackOnly": [40, 17, 41, 69]
+  },
+  "guardNote": "The one-shot helper reported an active-slot assertion after the successful terminal finalize because terminal missions clear activeMission. No retry or extra transaction was sent; the two-provider reconciliation above verifies the terminal state.",
+  "status": "VERIFIED_TERMINAL_BREACH"
+}

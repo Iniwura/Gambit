@@ -1,16 +1,28 @@
 name: Rules checks
 on:
   push:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
 permissions:
   contents: read
+concurrency:
+  group: gambit-rules-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   rules:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install root test dependencies
+        run: npm ci --no-audit --no-fund
       - name: Run deterministic local strategy tests
         run: npm test

@@ -1,0 +1,27 @@
+name: GAMBIT Duel 1 resolution receipt (strictly read-only)
+on:
+  push:
+    branches: [build/verified-first-slice]
+    paths:
+      - 'scripts/verify-first-duel-resolve-readonly.mjs'
+      - 'tests/first-duel-resolve-readonly.test.mjs'
+      - '.github/workflows/duel-resolve-receipt-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned public-RPC-only dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run receipt and forged state rejection tests
+        run: node --test tests/first-duel-resolve-readonly.test.mjs
+      - name: Verify actual DuelReady event, public handle and receipt on Sepolia (NO TX)
+        timeout-minutes: 3
+        run: node scripts/verify-first-duel-resolve-readonly.mjs
