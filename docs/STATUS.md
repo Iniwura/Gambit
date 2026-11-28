@@ -1,5 +1,8 @@
 # GAMBIT — verified engineering status
 
+## Handoff
+A complete project transfer pack is maintained in [HANDOFF/README.md](../HANDOFF/README.md). It covers current status, architecture, design references, asset provenance, agent/toolchain setup, safe environment setup and next acceptance gates. The handoff is a snapshot; re-check current CI/branch state before relying on it.
+
 Updated 2026-11-25. Engineering work is in **draft PR #5** (`build/verified-first-slice`), not merged to main.
 
 ## Current verified snapshot - Arena v3 Match #1 and four-pillar progress
